@@ -14,5 +14,15 @@
     { "code": "NORMAL", "name": "Normal" },
     { "code": "VIP", "name": "VIP" }
   ],
-  "floors": []
+    "floors": [
+    {
+      "floorNumber": 1,
+      "seats": [
+        { "id": 1, "number": "1", "type": "NORMAL", "row": 1, "column": 1, "occupiedSegments": [] },
+        { "id": 2, "number": "2", "type": "NORMAL", "row": 1, "column": 2, "occupiedSegments": [1] },
+        { "id": 3, "number": "3", "type": "NORMAL", "row": 1, "column": 4, "occupiedSegments": [] },
+        { "id": 4, "number": "4", "type": "NORMAL", "row": 1, "column": 5, "occupiedSegments": [1, 2] }
+      ]
+    }
+  ]
 }
