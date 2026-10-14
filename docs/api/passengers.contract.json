@@ -1,0 +1,35 @@
+{
+  "name": "booking-passengers",
+  "version": "1.0.0",
+  "method": "POST",
+  "path": "/bookings/{bookingId}/passengers",
+  "request": {
+    "passengers": [
+      {
+        "type": "ADULT",
+        "firstName": "Ana",
+        "lastName": "Pérez",
+        "documentType": "CEDULA",
+        "documentNumber": "1800000001",
+        "email": "ana.perez@example.com",
+        "phone": "+593999000001"
+      }
+    ]
+  },
+  "rules": [
+    "A passenger may be a guest and must not be created as an active account automatically.",
+    "The number of passengers must match the number of selected seats.",
+    "The server validates required fields and document format before saving."
+  ],
+  "response": {
+    "bookingId": "booking-001",
+    "passengers": [
+      {
+        "passengerId": "passenger-001",
+        "type": "ADULT",
+        "firstName": "Ana",
+        "lastName": "Pérez"
+      }
+    ]
+  }
+}
