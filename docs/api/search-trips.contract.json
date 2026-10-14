@@ -1,0 +1,53 @@
+{
+  "name": "search-trips",
+  "version": "1.0.0",
+  "method": "GET",
+  "path": "/trips",
+  "query": {
+    "origin": "Ambato",
+    "destination": "Quito",
+    "date": "2026-11-15"
+  },
+  "response": {
+    "data": [
+      {
+        "tripId": "trip-001",
+        "departureAt": "2026-11-15T08:00:00-05:00",
+        "arrivalAt": "2026-11-15T11:30:00-05:00",
+        "origin": {
+          "id": "stop-ambato",
+          "name": "Ambato"
+        },
+        "destination": {
+          "id": "stop-quito",
+          "name": "Quito"
+        },
+        "stops": [
+          {
+            "id": "stop-ambato",
+            "name": "Ambato",
+            "sequence": 1
+          },
+          {
+            "id": "stop-latacunga",
+            "name": "Latacunga",
+            "sequence": 2
+          },
+          {
+            "id": "stop-quito",
+            "name": "Quito",
+            "sequence": 3
+          }
+        ],
+        "fare": {
+          "currency": "USD",
+          "amount": 8.5
+        },
+        "seatMapId": "layout-001"
+      }
+    ],
+    "meta": {
+      "count": 1
+    }
+  }
+}
