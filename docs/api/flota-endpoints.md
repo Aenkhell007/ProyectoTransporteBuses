@@ -24,3 +24,28 @@ Actualiza datos de un bus.
 
 ### DELETE /buses/:id
 Elimina o desactiva un bus (a acordar con Matías).
+
+
+## Pisos y asientos
+
+### GET /buses/:id/floors
+Lista los pisos de un bus con sus asientos.
+
+### POST /buses/:id/floors
+Crea un piso para el bus.
+
+### POST /floors/:id/seats
+Crea un asiento en un piso.
+
+Body:
+{
+  "number": "1",
+  "type": "NORMAL",
+  "row": 1,
+  "column": 1
+}
+
+### PUT /seats/:id
+Actualiza tipo o posición de un asiento.
+
+Restricción: el número de asiento es único por bus y piso (error 409 si se repite).
