@@ -23,6 +23,13 @@
         { "id": 3, "number": "3", "type": "NORMAL", "row": 1, "column": 4, "occupiedSegments": [] },
         { "id": 4, "number": "4", "type": "NORMAL", "row": 1, "column": 5, "occupiedSegments": [1, 2] }
       ]
+    },
+    {
+      "floorNumber": 2,
+      "seats": [
+        { "id": 5, "number": "5", "type": "VIP", "row": 1, "column": 1, "occupiedSegments": [] },
+        { "id": 6, "number": "6", "type": "VIP", "row": 1, "column": 2, "occupiedSegments": [2] }
+      ]
     }
   ]
 }
