@@ -49,3 +49,15 @@ Body:
 Actualiza tipo o posición de un asiento.
 
 Restricción: el número de asiento es único por bus y piso (error 409 si se repite).
+
+
+## Mapa y disponibilidad
+
+### GET /trips/:tripId/seat-map
+Devuelve el mapa de asientos del bus asignado al viaje, con ocupación por tramo.
+La respuesta sigue la estructura de docs/api/mapa-asientos.mock.json.
+
+## Errores
+- 400: datos inválidos
+- 404: bus, piso, asiento o viaje inexistente
+- 409: placa duplicada o número de asiento duplicado en el piso
