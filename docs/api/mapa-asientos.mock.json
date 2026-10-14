@@ -1,0 +1,18 @@
+{
+  "tripId": 101,
+  "bus": {
+    "id": 1,
+    "plate": "TBA-1234",
+    "cooperative": "Cooperativa de ejemplo"
+  },
+  "stops": [
+    { "order": 1, "name": "Ambato" },
+    { "order": 2, "name": "Latacunga" },
+    { "order": 3, "name": "Quito" }
+  ],
+  "seatTypes": [
+    { "code": "NORMAL", "name": "Normal" },
+    { "code": "VIP", "name": "VIP" }
+  ],
+  "floors": []
+}
