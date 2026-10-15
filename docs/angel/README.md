@@ -1,64 +1,54 @@
-\# Módulo de reservas, pagos y boletos — Ángel
-
-
+# Módulo de reservas, pagos y boletos — Ángel
 
 Estado: propuesta para revisión del equipo.
 
+## Alcance
 
+- Gestionar el estado y vencimiento de la reserva.
 
-\## Alcance
+- Calcular y validar el total en el servidor con las tarifas acordadas.
 
-\- Gestionar el estado y vencimiento de la reserva.
+- Mostrar instrucciones de transferencia y recibir el comprobante.
 
-\- Calcular y validar el total en el servidor con las tarifas acordadas.
+- Consultar el estado de revisión del pago.
 
-\- Mostrar instrucciones de transferencia y recibir el comprobante.
+- Emitir boletos QR/PDF después de la aprobación, sin duplicarlos.
 
-\- Consultar el estado de revisión del pago.
+- Permitir la consulta y descarga de boletos autorizados.
 
-\- Emitir boletos QR/PDF después de la aprobación, sin duplicarlos.
+## Integración
 
-\- Permitir la consulta y descarga de boletos autorizados.
+- KT: búsqueda, pasajeros, selección de asientos y resumen de compra.
 
+- Mikel: estructura y disponibilidad de asientos por tramo.
 
+- Benjamín: viajes, paradas y tarifas.
 
-\## Integración
+- Matías: identidad, permisos y esquema compartido.
 
-\- KT: búsqueda, pasajeros, selección de asientos y resumen de compra.
+- Pablo: revisión de comprobantes y venta presencial.
 
-\- Mikel: estructura y disponibilidad de asientos por tramo.
+## Decisiones pendientes
 
-\- Benjamín: viajes, paradas y tarifas.
+- Resolver el orden de creación de pasajeros y reserva:
 
-\- Matías: identidad, permisos y esquema compartido.
+  booking.contract.json requiere passengerIds, mientras
 
-\- Pablo: revisión de comprobantes y venta presencial.
+  passengers.contract.json requiere bookingId.
 
+- Acordar los estados de reserva, pago y boleto.
 
+- Definir qué sucede con el vencimiento cuando hay un comprobante en revisión.
 
-\## Decisiones pendientes
+- Acordar contratos de carga, revisión de comprobantes y descarga de boletos.
 
-\- Resolver el orden de creación de pasajeros y reserva:
+- Confirmar el identificador del módulo en el inventario de configuración.
 
-&#x20; booking.contract.json requiere passengerIds, mientras
+## Referencias
 
-&#x20; passengers.contract.json requiere bookingId.
+- docs/api/booking.contract.json en feature/6-compra-kt.
 
-\- Acordar los estados de reserva, pago y boleto.
+- docs/api/passengers.contract.json en feature/6-compra-kt.
 
-\- Definir qué sucede con el vencimiento cuando hay un comprobante en revisión.
-
-\- Acordar contratos de carga, revisión de comprobantes y descarga de boletos.
-
-\- Confirmar el identificador del módulo en el inventario de configuración.
-
-
-
-\## Referencias
-
-\- docs/api/booking.contract.json en feature/6-compra-kt.
-
-\- docs/api/passengers.contract.json en feature/6-compra-kt.
-
-\- Issues relacionados: #3, #7 y #9.
+- Issues relacionados: #3, #7 y #9.
 
