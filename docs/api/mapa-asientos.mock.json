@@ -6,15 +6,19 @@
     "cooperative": "Cooperativa de ejemplo"
   },
   "stops": [
-    { "order": 1, "name": "Ambato" },
-    { "order": 2, "name": "Latacunga" },
-    { "order": 3, "name": "Quito" }
+    { "id": 1, "order": 1, "name": "Ambato" },
+    { "id": 2, "order": 2, "name": "Latacunga" },
+    { "id": 3, "order": 3, "name": "Quito" }
+  ],
+  "segments": [
+    { "number": 1, "fromStopId": 1, "toStopId": 2 },
+    { "number": 2, "fromStopId": 2, "toStopId": 3 }
   ],
   "seatTypes": [
     { "code": "NORMAL", "name": "Normal" },
     { "code": "VIP", "name": "VIP" }
   ],
-    "floors": [
+  "floors": [
     {
       "floorNumber": 1,
       "seats": [
