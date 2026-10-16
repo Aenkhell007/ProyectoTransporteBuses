@@ -117,3 +117,23 @@ Validaciones:
 ### PUT /seats/:id
 Actualiza tipo o posición de un asiento. Éxito: 200.
 Mismas validaciones que en POST /floors/:id/seats.
+
+## Roles y control de acceso
+
+> Los roles de esta tabla son una propuesta a confirmar con Matías (el PGCS
+> prevé cinco roles pero aún no están nombrados en el esquema).
+
+| Recurso | Consultar | Crear / modificar / desactivar |
+|---|---|---|
+| Buses, pisos, asientos | Administrador de cooperativa, oficinista (solo lectura) | Administrador de cooperativa |
+| Mapa de asientos de un viaje | Cliente, oficinista, administrador | Nadie (solo lectura) |
+
+Reglas de aislamiento por cooperativa:
+- La cooperativa del usuario se obtiene de la sesión, nunca del body ni de la URL.
+- Toda consulta filtra por cooperativa. Para bus, piso y asiento, el backend verifica la cadena asiento → piso → bus → cooperativa antes de leer o modificar.
+- Si el ID existe pero pertenece a otra cooperativa, se responde 404 (no 403), para no revelar que existe.
+- Excepción: el mapa de un viaje es de lectura pública para clientes autenticados y solo expone datos de ese viaje.
+
+Errores de autorización:
+- 401: sin sesión o sesión inválida.
+- 403: el rol no tiene permiso para la operación.
