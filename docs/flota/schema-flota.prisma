@@ -30,3 +30,18 @@ model SeatType {
   name  String
   seats Seat[]
 }
+
+
+model Seat {
+  id         Int      @id @default(autoincrement())
+  floorId    Int
+  seatTypeId Int
+  number     String
+  row        Int
+  column     Int
+  floor      BusFloor @relation(fields: [floorId], references: [id])
+  seatType   SeatType @relation(fields: [seatTypeId], references: [id])
+
+  @@unique([floorId, number])
+  @@unique([floorId, row, column])
+}
