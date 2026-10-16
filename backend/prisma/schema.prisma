@@ -1,0 +1,22 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Cooperative {
+  id    Int    @id @default(autoincrement())
+  name  String
+  users User[]
+}
+
+model User {
+  id            Int          @id @default(autoincrement())
+  email         String       @unique
+  role          String
+  cooperativeId Int?
+  cooperative   Cooperative? @relation(fields: [cooperativeId], references: [id])
+}

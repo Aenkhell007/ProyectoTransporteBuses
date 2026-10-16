@@ -1,9 +1,7 @@
 import { Router } from 'express';
-// Importaciones simuladas
-// import { login, register } from '../controllers/authController';
 
 const router = Router();
-router.post('/login', () => {}); // placeholder
-router.post('/register', () => {}); // placeholder
+router.post('/login', (req, res) => { res.status(501).json({ error: "Endpoint no implementado" }); });
+router.post('/register', (req, res) => { res.status(501).json({ error: "Endpoint no implementado" }); });
 
 export default router;

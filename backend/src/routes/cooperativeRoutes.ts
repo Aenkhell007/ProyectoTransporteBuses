@@ -1,8 +1,7 @@
 import { Router } from 'express';
-// import { createCooperative, getCooperatives } from '../controllers/cooperativeController';
 
 const router = Router();
-router.post('/', () => {}); // placeholder para crear cooperativa
-router.get('/', () => {}); // placeholder para listar cooperativas
+router.post('/', (req, res) => { res.status(501).json({ error: "Endpoint no implementado" }); });
+router.get('/', (req, res) => { res.status(501).json({ error: "Endpoint no implementado" }); });
 
 export default router;
