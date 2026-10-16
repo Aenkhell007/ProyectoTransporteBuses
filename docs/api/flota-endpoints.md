@@ -1,15 +1,38 @@
 # Contrato de API: Flota y asientos (EC-004)
 
+## Convenciones generales
+- Los IDs son enteros (igual que en docs/api/mapa-asientos.mock.json).
+- Los nombres de campos van en inglés y camelCase.
+- La cooperativa NO se envía en el body: se toma de la sesión del usuario.
+
 ## Buses
 
 ### GET /buses
-Lista los buses de la cooperativa del usuario.
+Lista los buses de la cooperativa del usuario. Éxito: 200.
+
+Respuesta:
+{
+  "data": [
+    { "id": 1, "plate": "TBA-1234", "brand": "Marca", "status": "ACTIVE" }
+  ]
+}
 
 ### GET /buses/:id
-Detalle de un bus con sus pisos.
+Detalle de un bus con sus pisos. Éxito: 200.
+
+Respuesta:
+{
+  "id": 1,
+  "plate": "TBA-1234",
+  "brand": "Marca",
+  "chassis": "Chasis",
+  "bodywork": "Carrocería",
+  "status": "ACTIVE",
+  "floors": [ { "id": 10, "floorNumber": 1 } ]
+}
 
 ### POST /buses
-Crea un bus.
+Crea un bus. Éxito: 201.
 
 Body:
 {
@@ -19,11 +42,26 @@ Body:
   "bodywork": "Carrocería"
 }
 
-### PUT /buses/:id
-Actualiza datos de un bus.
+Validaciones:
+- plate: obligatoria, única, formato de placa válido.
+- brand, chassis, bodywork: obligatorios, texto no vacío.
+- Errores: 400 (datos inválidos), 409 (placa duplicada).
 
-### DELETE /buses/:id
-Elimina o desactiva un bus (a acordar con Matías).
+### PUT /buses/:id
+Actualiza datos de un bus. Éxito: 200 (devuelve el bus actualizado).
+
+Body (campos permitidos, al menos uno):
+{
+  "brand": "Marca",
+  "chassis": "Chasis",
+  "bodywork": "Carrocería",
+  "plate": "TBA-1234"
+}
+
+Validaciones:
+- Mismas reglas que en POST para los campos enviados.
+- Si cambia plate, no puede coincidir con la de otro bus (409).
+- Errores: 400, 404, 409.
 
 
 ## Pisos y asientos
