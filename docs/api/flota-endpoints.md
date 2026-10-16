@@ -96,7 +96,11 @@ Respuesta:
   ]
 }
 
+### GET /buses
+Lista los buses de la cooperativa del usuario. Éxito: 200.
 Por defecto lista solo buses ACTIVE. Con ?status=INACTIVE lista los desactivados.
+
+Respuesta:
 
 ### POST /buses/:id/floors
 Crea un piso para el bus. Éxito: 201.
@@ -153,3 +157,40 @@ Reglas de aislamiento por cooperativa:
 Errores de autorización:
 - 401: sin sesión o sesión inválida.
 - 403: el rol no tiene permiso para la operación.
+
+
+## Mapa y disponibilidad
+
+### GET /trips/:tripId/seat-map
+Devuelve el mapa del bus asignado al viaje. Éxito: 200.
+Lo consulta el cliente (autenticado), el oficinista y el administrador.
+
+Parámetros opcionales (query):
+- originStopId, destinationStopId: IDs de las paradas de subida y bajada.
+
+Respuesta: misma estructura que docs/api/mapa-asientos.mock.json
+(tripId, bus, stops, segments, seatTypes, floors[].seats[]).
+
+Identificadores y tramos (ver docs/api/mapa-asientos.md):
+- Los IDs de bus, viaje, parada y asiento son enteros.
+- Los IDs de parada son los mismos que usa la reserva (originStopId y
+  destinationStopId) y deben coincidir con la entidad Stop del modelo de rutas.
+- Los tramos se numeran desde 1; cada tramo conecta dos paradas consecutivas
+  (segments[].fromStopId y toStopId).
+- occupiedSegments lista los tramos ocupados del asiento.
+- Con originStopId y destinationStopId, un asiento está disponible solo si
+  ninguno de los tramos de ese recorrido está en occupiedSegments.
+- Es información de consulta: la disponibilidad real se vuelve a verificar en el
+  backend, de forma transaccional, al crear la reserva.
+
+Errores:
+- 401: sin sesión.
+- 404: el viaje no existe.
+- 400: originStopId o destinationStopId no pertenecen al viaje o no están en orden.
+
+## Errores comunes
+- 400: datos inválidos
+- 401: no autenticado
+- 403: rol sin permiso
+- 404: recurso inexistente o de otra cooperativa
+- 409: conflicto (placa, número de asiento o posición duplicada)
