@@ -63,6 +63,20 @@ Validaciones:
 - Si cambia plate, no puede coincidir con la de otro bus (409).
 - Errores: 400, 404, 409.
 
+### DELETE /buses/:id
+Desactiva el bus (status = INACTIVE). No hay eliminación física.
+
+Decisión confirmada por Matías (gestor de configuración): se conserva el
+historial de viajes programados y reservas, por lo que un bus nunca se borra
+de la base de datos.
+
+Comportamiento:
+- Éxito: 204 sin cuerpo; el bus queda con status INACTIVE.
+- Un bus INACTIVE no se puede asignar a nuevos viajes.
+- Si el bus tiene viajes programados o reservas asociadas, responde 409 y no
+  se desactiva.
+- Errores: 401, 403, 404 (bus inexistente o de otra cooperativa), 409.
+
 
 ## Pisos y asientos
 
@@ -81,6 +95,8 @@ Respuesta:
     }
   ]
 }
+
+Por defecto lista solo buses ACTIVE. Con ?status=INACTIVE lista los desactivados.
 
 ### POST /buses/:id/floors
 Crea un piso para el bus. Éxito: 201.
