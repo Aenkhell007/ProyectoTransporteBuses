@@ -1,0 +1,39 @@
+{
+  "tripId": 101,
+  "bus": {
+    "id": 1,
+    "plate": "TBA-1234",
+    "cooperative": "Cooperativa de ejemplo"
+  },
+  "stops": [
+    { "id": 1, "order": 1, "name": "Ambato" },
+    { "id": 2, "order": 2, "name": "Latacunga" },
+    { "id": 3, "order": 3, "name": "Quito" }
+  ],
+  "segments": [
+    { "number": 1, "fromStopId": 1, "toStopId": 2 },
+    { "number": 2, "fromStopId": 2, "toStopId": 3 }
+  ],
+  "seatTypes": [
+    { "code": "NORMAL", "name": "Normal" },
+    { "code": "VIP", "name": "VIP" }
+  ],
+  "floors": [
+    {
+      "floorNumber": 1,
+      "seats": [
+        { "id": 1, "number": "1", "type": "NORMAL", "row": 1, "column": 1, "occupiedSegments": [] },
+        { "id": 2, "number": "2", "type": "NORMAL", "row": 1, "column": 2, "occupiedSegments": [1] },
+        { "id": 3, "number": "3", "type": "NORMAL", "row": 1, "column": 4, "occupiedSegments": [] },
+        { "id": 4, "number": "4", "type": "NORMAL", "row": 1, "column": 5, "occupiedSegments": [1, 2] }
+      ]
+    },
+    {
+      "floorNumber": 2,
+      "seats": [
+        { "id": 5, "number": "5", "type": "VIP", "row": 1, "column": 1, "occupiedSegments": [] },
+        { "id": 6, "number": "6", "type": "VIP", "row": 1, "column": 2, "occupiedSegments": [2] }
+      ]
+    }
+  ]
+}
