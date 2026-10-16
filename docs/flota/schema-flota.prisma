@@ -1,0 +1,15 @@
+enum BusStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Bus {
+  id        Int        @id @default(autoincrement())
+  plate     String     @unique
+  brand     String
+  chassis   String
+  bodywork  String
+  status    BusStatus  @default(ACTIVE)
+  // cooperativeId: pendiente de acordar con Matías (relación con Cooperative)
+  floors    BusFloor[]
+}
