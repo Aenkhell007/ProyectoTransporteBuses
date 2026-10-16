@@ -13,3 +13,20 @@ model Bus {
   // cooperativeId: pendiente de acordar con Matías (relación con Cooperative)
   floors    BusFloor[]
 }
+
+model BusFloor {
+  id          Int    @id @default(autoincrement())
+  busId       Int
+  floorNumber Int
+  bus         Bus    @relation(fields: [busId], references: [id])
+  seats       Seat[]
+
+  @@unique([busId, floorNumber])
+}
+
+model SeatType {
+  id    Int    @id @default(autoincrement())
+  code  String @unique
+  name  String
+  seats Seat[]
+}
