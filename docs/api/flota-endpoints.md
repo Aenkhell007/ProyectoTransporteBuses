@@ -67,13 +67,38 @@ Validaciones:
 ## Pisos y asientos
 
 ### GET /buses/:id/floors
-Lista los pisos de un bus con sus asientos.
+Lista los pisos de un bus con sus asientos. Éxito: 200.
+
+Respuesta:
+{
+  "data": [
+    {
+      "id": 10,
+      "floorNumber": 1,
+      "seats": [
+        { "id": 1, "number": "1", "type": "NORMAL", "row": 1, "column": 1 }
+      ]
+    }
+  ]
+}
 
 ### POST /buses/:id/floors
-Crea un piso para el bus.
+Crea un piso para el bus. Éxito: 201.
+
+Body:
+{ "floorNumber": 2 }
+
+Validaciones:
+- floorNumber: obligatorio, entero mayor o igual a 1.
+- No puede repetirse dentro del mismo bus (409).
+- Un bus tiene como máximo 2 pisos (a confirmar con el equipo).
+- Errores: 400, 404 (bus inexistente), 409.
+
+Respuesta:
+{ "id": 11, "busId": 1, "floorNumber": 2 }
 
 ### POST /floors/:id/seats
-Crea un asiento en un piso.
+Crea un asiento en un piso. Éxito: 201.
 
 Body:
 {
@@ -83,19 +108,12 @@ Body:
   "column": 1
 }
 
+Validaciones:
+- number: obligatorio, texto, único por bus y piso (409 si se repite).
+- type: NORMAL o VIP.
+- row y column: enteros mayores o iguales a 1; la posición no puede repetirse en el piso (409).
+- Errores: 400, 404, 409.
+
 ### PUT /seats/:id
-Actualiza tipo o posición de un asiento.
-
-Restricción: el número de asiento es único por bus y piso (error 409 si se repite).
-
-
-## Mapa y disponibilidad
-
-### GET /trips/:tripId/seat-map
-Devuelve el mapa de asientos del bus asignado al viaje, con ocupación por tramo.
-La respuesta sigue la estructura de docs/api/mapa-asientos.mock.json.
-
-## Errores
-- 400: datos inválidos
-- 404: bus, piso, asiento o viaje inexistente
-- 409: placa duplicada o número de asiento duplicado en el piso
+Actualiza tipo o posición de un asiento. Éxito: 200.
+Mismas validaciones que en POST /floors/:id/seats.
