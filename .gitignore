@@ -1,0 +1,14 @@
+# Dependencias y archivos generados
+node_modules/
+dist/
+dist-verificacion/
+.vite/
+*.tsbuildinfo
+*.log
+
+# Configuración privada
+.env
+.env.*
+!.env.example
+certs/
+backend/conexion-bd/src/generated/
