@@ -1,0 +1,1373 @@
+generator client {
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["partialIndexes"]
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["transporte"]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model abordajes {
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id     String           @db.Uuid
+  compra_id          String           @db.Uuid
+  reserva_asiento_id String           @unique @db.Uuid
+  operador_id        String           @db.Uuid
+  escaneado_at       DateTime         @default(now()) @db.Timestamptz(6)
+  clave_intento      String           @unique @db.VarChar(120)
+  created_at         DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime         @default(now()) @db.Timestamptz(6)
+  compras            compras          @relation(fields: [cooperativa_id, compra_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  cooperativas       cooperativas     @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reserva_asientos   reserva_asientos @relation(fields: [cooperativa_id, reserva_asiento_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios           usuarios         @relation(fields: [operador_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, id])
+  @@unique([cooperativa_id, reserva_asiento_id])
+  @@index([cooperativa_id], map: "abordajes_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model archivos {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  propietario_id     String               @db.Uuid
+  cooperativa_id     String?              @db.Uuid
+  categoria          String
+  ruta_privada       String               @unique
+  mime               String
+  bytes              BigInt
+  sha256             String               @db.Char(64)
+  validado_servidor  Boolean              @default(false)
+  created_at         DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime             @default(now()) @db.Timestamptz(6)
+  cooperativas       cooperativas?        @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios           usuarios             @relation(fields: [propietario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  boletos            boletos[]
+  bus_fotos          bus_fotos[]
+  comprobantes       comprobantes?
+  config_cooperativa config_cooperativa[]
+  cuentas_bancarias  cuentas_bancarias[]
+  exportaciones      exportaciones[]
+  pasajeros          pasajeros[]
+  reembolsos         reembolsos[]
+
+  @@schema("transporte")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model auditoria {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actor_id       String?       @db.Uuid
+  cooperativa_id String?       @db.Uuid
+  entidad        String
+  entidad_id     String?       @db.Uuid
+  accion         String
+  request_id     String?
+  datos          Json          @default("{}")
+  created_at     DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime      @default(now()) @db.Timestamptz(6)
+  usuarios       usuarios?     @relation(fields: [actor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cooperativas   cooperativas? @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([cooperativa_id, created_at(sort: Desc)], map: "auditoria_ambito_fecha")
+  @@schema("transporte")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model bancos {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigo            String              @unique
+  nombre            String              @db.VarChar(150)
+  activo            Boolean             @default(true)
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime            @default(now()) @db.Timestamptz(6)
+  cuentas_bancarias cuentas_bancarias[]
+
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This table contains exclusion constraints and requires additional setup for migrations. Visit https://pris.ly/d/exclusion-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model beneficios {
+  id                 String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id     String                   @db.Uuid
+  codigo             String
+  nombre             String
+  descuento_bp       Int?
+  edad_min           Int?
+  edad_max_exclusiva Int?
+  condiciones        String?
+  activo             Boolean                  @default(false)
+  vigencia           Unsupported("daterange") @default(dbgenerated("daterange(CURRENT_DATE, NULL::date, '[)'::text)"))
+  created_at         DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime                 @default(now()) @db.Timestamptz(6)
+  cooperativas       cooperativas             @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cotizacion_lineas  cotizacion_lineas[]
+
+  @@unique([cooperativa_id, id])
+  @@index([cooperativa_id], map: "beneficios_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model boletos {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id String       @db.Uuid
+  compra_id      String       @unique @db.Uuid
+  qr_id          String       @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  estado         String       @default("PENDIENTE_EMISION")
+  archivo_id     String?      @db.Uuid
+  emitido_at     DateTime?    @db.Timestamptz(6)
+  created_at     DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime     @default(now()) @db.Timestamptz(6)
+  archivos       archivos?    @relation(fields: [archivo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  compras        compras      @relation(fields: [cooperativa_id, compra_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  cooperativas   cooperativas @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, compra_id])
+  @@unique([cooperativa_id, id])
+  @@index([cooperativa_id], map: "boletos_coop_idx")
+  @@schema("transporte")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model bus_equipamiento {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id  String        @db.Uuid
+  bus_id          String        @db.Uuid
+  equipamiento_id String        @db.Uuid
+  created_at      DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime      @default(now()) @db.Timestamptz(6)
+  buses           buses         @relation(fields: [cooperativa_id, bus_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  cooperativas    cooperativas  @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  equipamientos   equipamientos @relation(fields: [equipamiento_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([bus_id, equipamiento_id])
+  @@unique([cooperativa_id, id])
+  @@index([cooperativa_id], map: "bus_equipamiento_coop_idx")
+  @@schema("transporte")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model bus_fotos {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id String       @db.Uuid
+  bus_id         String       @db.Uuid
+  archivo_id     String       @db.Uuid
+  orden          Int          @default(1)
+  created_at     DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime     @default(now()) @db.Timestamptz(6)
+  archivos       archivos     @relation(fields: [archivo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  buses          buses        @relation(fields: [cooperativa_id, bus_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  cooperativas   cooperativas @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([bus_id, archivo_id])
+  @@unique([cooperativa_id, id])
+  @@index([cooperativa_id], map: "bus_fotos_coop_idx")
+  @@schema("transporte")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model buses {
+  id                     String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id         String                   @db.Uuid
+  grupo_id               String                   @db.Uuid
+  unidad                 String                   @db.VarChar(30)
+  placa                  String                   @unique @db.VarChar(20)
+  chasis                 String                   @db.VarChar(100)
+  carroceria             String                   @db.VarChar(100)
+  correo_contacto        String?                  @db.VarChar(254)
+  propietario            String?                  @db.VarChar(200)
+  activo                 Boolean                  @default(true)
+  created_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  bus_equipamiento       bus_equipamiento[]
+  bus_fotos              bus_fotos[]
+  cooperativas           cooperativas             @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  grupos_bus             grupos_bus               @relation(fields: [cooperativa_id, grupo_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  indisponibilidades_bus indisponibilidades_bus[]
+  planos                 planos[]
+
+  @@unique([cooperativa_id, id])
+  @@unique([cooperativa_id, unidad])
+  @@index([cooperativa_id], map: "buses_coop_idx")
+  @@schema("transporte")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model ciudades {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre     String       @db.VarChar(100)
+  provincia  String       @db.VarChar(100)
+  activa     Boolean      @default(true)
+  created_at DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at DateTime     @default(now()) @db.Timestamptz(6)
+  terminales terminales[]
+
+  @@unique([nombre, provincia])
+  @@schema("transporte")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model clases_asiento {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigo       String         @unique
+  nombre       String
+  created_at   DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime       @default(now()) @db.Timestamptz(6)
+  plano_celdas plano_celdas[]
+  tarifas      tarifas[]
+
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model compras {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id        String                  @db.Uuid
+  reserva_id            String                  @unique @db.Uuid
+  pago_id               String                  @unique @db.Uuid
+  codigo                String                  @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  politica_reembolso_id String?                 @db.Uuid
+  estado                String                  @default("CONFIRMADA")
+  viaje_snapshot        Json
+  total_pagado_centavos BigInt
+  created_at            DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                @default(now()) @db.Timestamptz(6)
+  abordajes             abordajes[]
+  boletos               boletos?
+  cooperativas          cooperativas            @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pagos                 pagos                   @relation(fields: [cooperativa_id, pago_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  politicas_reembolso   politicas_reembolso?    @relation(fields: [cooperativa_id, politica_reembolso_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  reservas              reservas                @relation(fields: [cooperativa_id, reserva_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  solicitudes_reembolso solicitudes_reembolso[]
+
+  @@unique([cooperativa_id, id])
+  @@unique([cooperativa_id, pago_id])
+  @@unique([cooperativa_id, reserva_id])
+  @@index([cooperativa_id], map: "compras_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model comprobantes {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id String        @db.Uuid
+  intento_id     String        @unique @db.Uuid
+  archivo_id     String        @unique @db.Uuid
+  referencia     String?       @db.VarChar(120)
+  estado         String        @default("EN_REVISION")
+  motivo         String?       @db.VarChar(300)
+  revisado_por   String?       @db.Uuid
+  revisado_at    DateTime?     @db.Timestamptz(6)
+  version        Int           @default(1)
+  created_at     DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime      @default(now()) @db.Timestamptz(6)
+  archivos       archivos      @relation(fields: [archivo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cooperativas   cooperativas  @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  intentos_pago  intentos_pago @relation(fields: [cooperativa_id, intento_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios       usuarios?     @relation(fields: [revisado_por], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, id])
+  @@unique([cooperativa_id, intento_id])
+  @@index([cooperativa_id, estado, created_at], map: "cola_comprobantes")
+  @@index([cooperativa_id], map: "comprobantes_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model config_cooperativa {
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id   String       @unique @db.Uuid
+  lema             String?      @db.VarChar(200)
+  logo_archivo_id  String?      @db.Uuid
+  color_primario   String       @default("#CB102E") @db.Char(7)
+  color_secundario String       @default("#00833E") @db.Char(7)
+  color_texto      String       @default("#1A2A33") @db.Char(7)
+  soporte_email    String?      @db.VarChar(254)
+  telefono         String?      @db.VarChar(25)
+  whatsapp         String?      @db.VarChar(25)
+  direccion        String?
+  facebook_url     String?
+  instagram_url    String?
+  sobre_nosotros   String?
+  version          Int          @default(1)
+  created_at       DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime     @default(now()) @db.Timestamptz(6)
+  cooperativas     cooperativas @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  archivos         archivos?    @relation(fields: [logo_archivo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, id])
+  @@index([cooperativa_id], map: "config_cooperativa_coop_idx")
+  @@schema("transporte")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model config_global {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clave      String   @unique
+  valor      Json
+  version    Int      @default(1)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@schema("transporte")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model consentimientos {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id  String?   @db.Uuid
+  tipo        String
+  version     String
+  aceptado_at DateTime  @default(now()) @db.Timestamptz(6)
+  ip          String?   @db.Inet
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime  @default(now()) @db.Timestamptz(6)
+  usuarios    usuarios? @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model contactos {
+  id                     String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre                 String        @db.VarChar(150)
+  email                  String        @db.VarChar(254)
+  asunto                 String        @db.VarChar(150)
+  mensaje                String        @db.VarChar(4000)
+  consentimiento_version String        @db.VarChar(100)
+  estado                 String        @default("PENDIENTE")
+  cooperativa_id         String?       @db.Uuid
+  created_at             DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime      @default(now()) @db.Timestamptz(6)
+  cooperativas           cooperativas? @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model cooperativa_metodos_pago {
+  id                    String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id        String       @db.Uuid
+  metodo_id             String       @db.Uuid
+  habilitado            Boolean      @default(false)
+  conexion_verificada   Boolean      @default(false)
+  instrucciones         String?
+  secreto_ref           String?
+  plazo_oficina_minutos Int?
+  created_at            DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime     @default(now()) @db.Timestamptz(6)
+  cooperativas          cooperativas @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  metodos_pago          metodos_pago @relation(fields: [metodo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, id])
+  @@unique([cooperativa_id, metodo_id])
+  @@index([cooperativa_id], map: "cooperativa_metodos_pago_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model cooperativas {
+  id                       String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre                   String                     @db.VarChar(150)
+  razon_social             String                     @db.VarChar(200)
+  ruc                      String                     @unique @db.VarChar(20)
+  activa                   Boolean                    @default(true)
+  version                  Int                        @default(1)
+  created_at               DateTime                   @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime                   @default(now()) @db.Timestamptz(6)
+  abordajes                abordajes[]
+  archivos                 archivos[]
+  auditoria                auditoria[]
+  beneficios               beneficios[]
+  boletos                  boletos[]
+  bus_equipamiento         bus_equipamiento[]
+  bus_fotos                bus_fotos[]
+  buses                    buses[]
+  compras                  compras[]
+  comprobantes             comprobantes[]
+  config_cooperativa       config_cooperativa?
+  contactos                contactos[]
+  cooperativa_metodos_pago cooperativa_metodos_pago[]
+  cotizacion_lineas        cotizacion_lineas[]
+  cotizaciones             cotizaciones[]
+  cuentas_bancarias        cuentas_bancarias[]
+  exportaciones            exportaciones[]
+  frecuencia_grupo         frecuencia_grupo[]
+  frecuencias              frecuencias[]
+  grupo_dias_parada        grupo_dias_parada[]
+  grupo_turnos             grupo_turnos[]
+  grupos_bus               grupos_bus[]
+  indisponibilidades_bus   indisponibilidades_bus[]
+  intentos_pago            intentos_pago[]
+  membresias               membresias[]
+  notificaciones           notificaciones[]
+  oficinas                 oficinas[]
+  pagos                    pagos[]
+  pasajeros                pasajeros[]
+  plano_celdas             plano_celdas[]
+  planos                   planos[]
+  politica_comprobantes    politica_comprobantes?
+  politicas_reembolso      politicas_reembolso[]
+  reembolsos               reembolsos[]
+  reglas_reembolso         reglas_reembolso[]
+  reserva_asientos         reserva_asientos[]
+  reservas                 reservas[]
+  ruta_paradas             ruta_paradas[]
+  rutas                    rutas[]
+  solicitudes_reembolso    solicitudes_reembolso[]
+  tarifas                  tarifas[]
+  viajes                   viajes[]
+
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model cotizacion_lineas {
+  id                   String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id       String           @db.Uuid
+  cotizacion_id        String           @db.Uuid
+  reserva_asiento_id   String           @db.Uuid
+  tarifa_id            String           @db.Uuid
+  beneficio_id         String?          @db.Uuid
+  base_centavos        BigInt
+  descuento_centavos   BigInt
+  servicio_centavos    BigInt
+  impuesto_bp          Int
+  impuesto_servicio_bp Int
+  iva_centavos         BigInt
+  created_at           DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime         @default(now()) @db.Timestamptz(6)
+  beneficios           beneficios?      @relation(fields: [cooperativa_id, beneficio_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  cotizaciones         cotizaciones     @relation(fields: [cooperativa_id, cotizacion_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  cooperativas         cooperativas     @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reserva_asientos     reserva_asientos @relation(fields: [cooperativa_id, reserva_asiento_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  tarifas              tarifas          @relation(fields: [cooperativa_id, tarifa_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, id])
+  @@unique([cotizacion_id, reserva_asiento_id])
+  @@index([cooperativa_id], map: "cotizacion_lineas_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model cotizaciones {
+  id                     String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id         String              @db.Uuid
+  reserva_id             String              @db.Uuid
+  version                Int
+  moneda                 String              @default("USD") @db.Char(3)
+  base_centavos          BigInt
+  descuento_centavos     BigInt
+  servicio_centavos      BigInt
+  subtotal_neto_centavos BigInt
+  iva_centavos           BigInt
+  total_centavos         BigInt
+  created_at             DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime            @default(now()) @db.Timestamptz(6)
+  cotizacion_lineas      cotizacion_lineas[]
+  cooperativas           cooperativas        @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reservas               reservas            @relation(fields: [cooperativa_id, reserva_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, id])
+  @@unique([reserva_id, version])
+  @@index([cooperativa_id], map: "cotizaciones_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model credenciales {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id          String   @unique @db.Uuid
+  password_hash       String
+  algoritmo           String   @default("scrypt-v1")
+  password_updated_at DateTime @default(now()) @db.Timestamptz(6)
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime @default(now()) @db.Timestamptz(6)
+  usuarios            usuarios @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model cuentas_bancarias {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id    String          @db.Uuid
+  banco_id          String          @db.Uuid
+  tipo              String
+  numero            String          @db.VarChar(50)
+  titular           String          @db.VarChar(200)
+  documento_titular String          @db.VarChar(30)
+  alias             String?         @db.VarChar(100)
+  qr_archivo_id     String?         @db.Uuid
+  activa            Boolean         @default(false)
+  version           Int             @default(1)
+  created_at        DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime        @default(now()) @db.Timestamptz(6)
+  bancos            bancos          @relation(fields: [banco_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cooperativas      cooperativas    @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  archivos          archivos?       @relation(fields: [qr_archivo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  intentos_pago     intentos_pago[]
+
+  @@unique([cooperativa_id, banco_id, tipo, numero])
+  @@unique([cooperativa_id, id])
+  @@index([cooperativa_id], map: "cuentas_bancarias_coop_idx")
+  @@schema("transporte")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model equipamientos {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigo           String             @unique
+  nombre           String
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime           @default(now()) @db.Timestamptz(6)
+  bus_equipamiento bus_equipamiento[]
+
+  @@schema("transporte")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model exportaciones {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  solicitado_por String        @db.Uuid
+  cooperativa_id String?       @db.Uuid
+  tipo           String
+  filtros        Json          @default("{}")
+  estado         String        @default("PENDIENTE")
+  archivo_id     String?       @db.Uuid
+  created_at     DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime      @default(now()) @db.Timestamptz(6)
+  archivos       archivos?     @relation(fields: [archivo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cooperativas   cooperativas? @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios       usuarios      @relation(fields: [solicitado_por], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("transporte")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model frecuencia_grupo {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id String       @db.Uuid
+  frecuencia_id  String       @db.Uuid
+  grupo_id       String       @db.Uuid
+  created_at     DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime     @default(now()) @db.Timestamptz(6)
+  cooperativas   cooperativas @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  frecuencias    frecuencias  @relation(fields: [cooperativa_id, frecuencia_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  grupos_bus     grupos_bus   @relation(fields: [cooperativa_id, grupo_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, id])
+  @@unique([frecuencia_id, grupo_id])
+  @@index([cooperativa_id], map: "frecuencia_grupo_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model frecuencias {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id   String             @db.Uuid
+  ruta_id          String             @db.Uuid
+  codigo           String             @db.VarChar(50)
+  hora_salida      DateTime           @db.Time(6)
+  resolucion_ant   String             @db.VarChar(150)
+  tipo_viaje       String
+  activa           Boolean            @default(true)
+  version          Int                @default(1)
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime           @default(now()) @db.Timestamptz(6)
+  frecuencia_grupo frecuencia_grupo[]
+  cooperativas     cooperativas       @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  rutas            rutas              @relation(fields: [cooperativa_id, ruta_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  tarifas          tarifas[]
+  viajes           viajes[]
+
+  @@unique([cooperativa_id, codigo])
+  @@unique([cooperativa_id, id])
+  @@index([cooperativa_id], map: "frecuencias_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model grupo_dias_parada {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id String       @db.Uuid
+  grupo_id       String       @db.Uuid
+  dia_iso        Int
+  created_at     DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime     @default(now()) @db.Timestamptz(6)
+  cooperativas   cooperativas @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  grupos_bus     grupos_bus   @relation(fields: [cooperativa_id, grupo_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, id])
+  @@unique([grupo_id, dia_iso])
+  @@index([cooperativa_id], map: "grupo_dias_parada_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model grupo_turnos {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id String       @db.Uuid
+  grupo_id       String       @db.Uuid
+  nombre         String       @db.VarChar(100)
+  orden          Int
+  created_at     DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime     @default(now()) @db.Timestamptz(6)
+  cooperativas   cooperativas @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  grupos_bus     grupos_bus   @relation(fields: [cooperativa_id, grupo_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, id])
+  @@unique([grupo_id, orden])
+  @@index([cooperativa_id], map: "grupo_turnos_coop_idx")
+  @@schema("transporte")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model grupos_bus {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id    String              @db.Uuid
+  nombre            String              @db.VarChar(100)
+  descripcion       String?
+  activo            Boolean             @default(true)
+  plantilla         Json                @default("{}")
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime            @default(now()) @db.Timestamptz(6)
+  buses             buses[]
+  frecuencia_grupo  frecuencia_grupo[]
+  grupo_dias_parada grupo_dias_parada[]
+  grupo_turnos      grupo_turnos[]
+  cooperativas      cooperativas        @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tarifas           tarifas[]
+
+  @@unique([cooperativa_id, id])
+  @@unique([cooperativa_id, nombre])
+  @@index([cooperativa_id], map: "grupos_bus_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model impuestos {
+  id                                              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigo                                          String    @unique
+  nombre                                          String
+  puntos_base                                     Int
+  concepto                                        String
+  activo                                          Boolean   @default(true)
+  created_at                                      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                                      DateTime  @default(now()) @db.Timestamptz(6)
+  tarifas_tarifas_impuesto_idToimpuestos          tarifas[] @relation("tarifas_impuesto_idToimpuestos")
+  tarifas_tarifas_impuesto_servicio_idToimpuestos tarifas[] @relation("tarifas_impuesto_servicio_idToimpuestos")
+
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model indisponibilidades_bus {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id String       @db.Uuid
+  bus_id         String       @db.Uuid
+  desde          DateTime     @db.Timestamptz(6)
+  hasta          DateTime     @db.Timestamptz(6)
+  motivo         String
+  created_at     DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime     @default(now()) @db.Timestamptz(6)
+  buses          buses        @relation(fields: [cooperativa_id, bus_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  cooperativas   cooperativas @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, id])
+  @@index([cooperativa_id], map: "indisponibilidades_bus_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model intentos_pago {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id     String             @db.Uuid
+  reserva_id         String             @db.Uuid
+  actor_id           String             @db.Uuid
+  metodo_id          String             @db.Uuid
+  cuenta_id          String?            @db.Uuid
+  cuenta_snapshot    Json?
+  clave_intento      String             @db.VarChar(120)
+  estado             String             @default("PENDIENTE")
+  total_centavos     BigInt
+  cotizacion_version Int
+  proveedor_orden    String?            @db.VarChar(200)
+  created_at         DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime           @default(now()) @db.Timestamptz(6)
+  comprobantes       comprobantes?
+  usuarios           usuarios           @relation(fields: [actor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cuentas_bancarias  cuentas_bancarias? @relation(fields: [cooperativa_id, cuenta_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  cooperativas       cooperativas       @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reservas           reservas           @relation(fields: [cooperativa_id, reserva_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  metodos_pago       metodos_pago       @relation(fields: [metodo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pagos              pagos?
+
+  @@unique([actor_id, clave_intento])
+  @@unique([cooperativa_id, id])
+  @@index([cooperativa_id], map: "intentos_pago_coop_idx")
+  @@schema("transporte")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model membresias {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id String       @db.Uuid
+  usuario_id     String       @db.Uuid
+  rol_id         String       @db.Uuid
+  oficina_id     String?      @db.Uuid
+  activa         Boolean      @default(true)
+  created_at     DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime     @default(now()) @db.Timestamptz(6)
+  cooperativas   cooperativas @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  oficinas       oficinas?    @relation(fields: [cooperativa_id, oficina_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  roles          roles        @relation(fields: [rol_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios       usuarios     @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, id])
+  @@index([cooperativa_id], map: "membresias_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model metodos_pago {
+  id                       String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigo                   String                     @unique
+  nombre                   String
+  tipo                     String
+  adaptador_disponible     Boolean                    @default(false)
+  created_at               DateTime                   @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime                   @default(now()) @db.Timestamptz(6)
+  cooperativa_metodos_pago cooperativa_metodos_pago[]
+  intentos_pago            intentos_pago[]
+
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model notificaciones {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id     String?       @db.Uuid
+  cooperativa_id String?       @db.Uuid
+  tipo           String
+  canal          String
+  evento_clave   String
+  payload        Json          @default("{}")
+  estado         String        @default("PENDIENTE")
+  intentos       Int           @default(0)
+  disponible_at  DateTime      @default(now()) @db.Timestamptz(6)
+  leida_at       DateTime?     @db.Timestamptz(6)
+  proveedor_ref  String?
+  error_codigo   String?
+  created_at     DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime      @default(now()) @db.Timestamptz(6)
+  cooperativas   cooperativas? @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios       usuarios?     @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([evento_clave, canal])
+  @@index([disponible_at], map: "notificaciones_pendientes", where: raw("(estado = 'PENDIENTE'::text)"))
+  @@schema("transporte")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model oficinas {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id String       @db.Uuid
+  nombre         String       @db.VarChar(100)
+  direccion      String       @db.VarChar(300)
+  telefono       String?      @db.VarChar(25)
+  activa         Boolean      @default(true)
+  created_at     DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime     @default(now()) @db.Timestamptz(6)
+  membresias     membresias[]
+  cooperativas   cooperativas @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reservas       reservas[]
+
+  @@unique([cooperativa_id, id])
+  @@unique([cooperativa_id, nombre])
+  @@index([cooperativa_id], map: "oficinas_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model pagos {
+  id                 String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id     String        @db.Uuid
+  reserva_id         String        @unique @db.Uuid
+  intento_id         String        @unique @db.Uuid
+  monto_centavos     BigInt
+  recibido_centavos  BigInt?
+  cambio_centavos    BigInt?
+  confirmado_por     String?       @db.Uuid
+  confirmado_at      DateTime      @default(now()) @db.Timestamptz(6)
+  referencia_externa String?
+  created_at         DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime      @default(now()) @db.Timestamptz(6)
+  compras            compras?
+  usuarios           usuarios?     @relation(fields: [confirmado_por], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cooperativas       cooperativas  @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  intentos_pago      intentos_pago @relation(fields: [cooperativa_id, intento_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  reservas           reservas      @relation(fields: [cooperativa_id, reserva_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  reembolsos         reembolsos[]
+
+  @@unique([cooperativa_id, id])
+  @@unique([cooperativa_id, intento_id])
+  @@unique([cooperativa_id, reserva_id])
+  @@index([cooperativa_id], map: "pagos_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model pasajeros {
+  id                  String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id      String           @db.Uuid
+  reserva_asiento_id  String           @unique @db.Uuid
+  nombres             String           @db.VarChar(100)
+  apellidos           String           @db.VarChar(100)
+  tipo_documento      String
+  documento           String           @db.VarChar(30)
+  nacimiento          DateTime?        @db.Date
+  beneficio_codigo    String?
+  respaldo_archivo_id String?          @db.Uuid
+  created_at          DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime         @default(now()) @db.Timestamptz(6)
+  cooperativas        cooperativas     @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reserva_asientos    reserva_asientos @relation(fields: [cooperativa_id, reserva_asiento_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  archivos            archivos?        @relation(fields: [respaldo_archivo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, id])
+  @@unique([cooperativa_id, reserva_asiento_id])
+  @@index([tipo_documento, documento], map: "pasajero_documento")
+  @@index([cooperativa_id], map: "pasajeros_coop_idx")
+  @@schema("transporte")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model permisos {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigo      String        @unique
+  descripcion String
+  created_at  DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime      @default(now()) @db.Timestamptz(6)
+  rol_permiso rol_permiso[]
+
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model plano_celdas {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id   String             @db.Uuid
+  plano_id         String             @db.Uuid
+  piso             Int
+  fila             Int
+  columna          Int
+  tipo             String
+  codigo           String?            @db.VarChar(20)
+  clase_id         String?            @db.Uuid
+  activa           Boolean            @default(true)
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime           @default(now()) @db.Timestamptz(6)
+  clases_asiento   clases_asiento?    @relation(fields: [clase_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cooperativas     cooperativas       @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  planos           planos             @relation(fields: [cooperativa_id, plano_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  reserva_asientos reserva_asientos[]
+
+  @@unique([cooperativa_id, id])
+  @@unique([cooperativa_id, plano_id, id])
+  @@unique([plano_id, codigo])
+  @@unique([plano_id, piso, fila, columna])
+  @@index([cooperativa_id], map: "plano_celdas_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model planos {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id String         @db.Uuid
+  bus_id         String         @db.Uuid
+  numero_version Int
+  nombre         String         @db.VarChar(100)
+  pisos          Int
+  publicado      Boolean        @default(false)
+  created_at     DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime       @default(now()) @db.Timestamptz(6)
+  plano_celdas   plano_celdas[]
+  buses          buses          @relation(fields: [cooperativa_id, bus_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  cooperativas   cooperativas   @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  viajes         viajes[]
+
+  @@unique([bus_id, numero_version])
+  @@unique([cooperativa_id, bus_id, id])
+  @@unique([cooperativa_id, id])
+  @@index([cooperativa_id], map: "planos_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model politica_comprobantes {
+  id                        String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id            String       @unique @db.Uuid
+  max_bytes                 BigInt       @default(5242880)
+  mimes                     String[]     @default(["image/jpeg", "image/png", "application/pdf"])
+  referencia_obligatoria    Boolean      @default(false)
+  prorroga_revision_minutos Int          @default(0)
+  created_at                DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime     @default(now()) @db.Timestamptz(6)
+  cooperativas              cooperativas @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, id])
+  @@index([cooperativa_id], map: "politica_comprobantes_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model politicas_reembolso {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id        String                  @db.Uuid
+  numero_version        Int
+  estado                String                  @default("BORRADOR")
+  condiciones           String?
+  plazo_abono_dias      Int?
+  permite_parcial       Boolean                 @default(false)
+  publicada_at          DateTime?               @db.Timestamptz(6)
+  created_at            DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                @default(now()) @db.Timestamptz(6)
+  compras               compras[]
+  cooperativas          cooperativas            @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reglas_reembolso      reglas_reembolso[]
+  solicitudes_reembolso solicitudes_reembolso[]
+
+  @@unique([cooperativa_id, id])
+  @@unique([cooperativa_id, numero_version])
+  @@index([cooperativa_id], map: "politicas_reembolso_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model reembolsos {
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id        String                @db.Uuid
+  solicitud_id          String                @unique @db.Uuid
+  pago_id               String                @db.Uuid
+  monto_centavos        BigInt
+  ejecutado_por         String                @db.Uuid
+  referencia_externa    String                @db.VarChar(200)
+  evidencia_archivo_id  String?               @db.Uuid
+  clave_intento         String                @unique @db.VarChar(120)
+  ejecutado_at          DateTime              @default(now()) @db.Timestamptz(6)
+  created_at            DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime              @default(now()) @db.Timestamptz(6)
+  cooperativas          cooperativas          @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pagos                 pagos                 @relation(fields: [cooperativa_id, pago_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  solicitudes_reembolso solicitudes_reembolso @relation(fields: [cooperativa_id, solicitud_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios              usuarios              @relation(fields: [ejecutado_por], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  archivos              archivos?             @relation(fields: [evidencia_archivo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, id])
+  @@unique([cooperativa_id, solicitud_id])
+  @@index([cooperativa_id], map: "reembolsos_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This table contains exclusion constraints and requires additional setup for migrations. Visit https://pris.ly/d/exclusion-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model reglas_reembolso {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id        String                  @db.Uuid
+  politica_id           String                  @db.Uuid
+  minutos_desde         Int
+  minutos_hasta         Int?
+  porcentaje_bp         Int
+  created_at            DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                @default(now()) @db.Timestamptz(6)
+  cooperativas          cooperativas            @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  politicas_reembolso   politicas_reembolso     @relation(fields: [cooperativa_id, politica_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  solicitudes_reembolso solicitudes_reembolso[]
+
+  @@unique([cooperativa_id, id])
+  @@index([cooperativa_id], map: "reglas_reembolso_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This table contains exclusion constraints and requires additional setup for migrations. Visit https://pris.ly/d/exclusion-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model reserva_asientos {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id    String              @db.Uuid
+  reserva_id        String              @db.Uuid
+  viaje_id          String              @db.Uuid
+  asiento_id        String              @db.Uuid
+  origen_orden      Int
+  destino_orden     Int
+  estado            String              @default("RETENIDO")
+  expires_at        DateTime            @db.Timestamptz(6)
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime            @default(now()) @db.Timestamptz(6)
+  abordajes         abordajes?
+  cotizacion_lineas cotizacion_lineas[]
+  pasajeros         pasajeros?
+  plano_celdas      plano_celdas        @relation(fields: [cooperativa_id, asiento_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  cooperativas      cooperativas        @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reservas          reservas            @relation(fields: [cooperativa_id, reserva_id, viaje_id], references: [cooperativa_id, id, viaje_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, id])
+  @@unique([reserva_id, asiento_id])
+  @@index([cooperativa_id], map: "reserva_asientos_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model reservas {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id     String             @db.Uuid
+  cliente_id         String             @db.Uuid
+  viaje_id           String             @db.Uuid
+  oficina_id         String?            @db.Uuid
+  origen_orden       Int
+  destino_orden      Int
+  cantidad           Int
+  estado             String             @default("PENDIENTE")
+  expires_at         DateTime           @db.Timestamptz(6)
+  contacto_email     String?            @db.VarChar(254)
+  contacto_telefono  String?            @db.VarChar(25)
+  cotizacion_version Int                @default(0)
+  aceptada_version   Int?
+  total_centavos     BigInt             @default(0)
+  created_at         DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime           @default(now()) @db.Timestamptz(6)
+  compras            compras?
+  cotizaciones       cotizaciones[]
+  intentos_pago      intentos_pago[]
+  pagos              pagos?
+  reserva_asientos   reserva_asientos[]
+  usuarios           usuarios           @relation(fields: [cliente_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cooperativas       cooperativas       @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  oficinas           oficinas?          @relation(fields: [cooperativa_id, oficina_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  viajes             viajes             @relation(fields: [cooperativa_id, viaje_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, id])
+  @@unique([cooperativa_id, id, viaje_id])
+  @@index([cliente_id, created_at(sort: Desc)], map: "reservas_cliente_fecha")
+  @@index([cooperativa_id], map: "reservas_coop_idx")
+  @@index([expires_at], map: "reservas_expirar", where: raw("(estado = 'PENDIENTE'::text)"))
+  @@schema("transporte")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model rol_permiso {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rol_id     String   @db.Uuid
+  permiso_id String   @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  permisos   permisos @relation(fields: [permiso_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  roles      roles    @relation(fields: [rol_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([rol_id, permiso_id])
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model roles {
+  id                     String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigo                 String                   @unique
+  nombre                 String
+  ambito                 String
+  created_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  membresias             membresias[]
+  rol_permiso            rol_permiso[]
+  usuario_roles_globales usuario_roles_globales[]
+
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model ruta_paradas {
+  id                   String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id       String       @db.Uuid
+  ruta_id              String       @db.Uuid
+  terminal_id          String       @db.Uuid
+  orden                Int
+  minutos_desde_origen Int
+  created_at           DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime     @default(now()) @db.Timestamptz(6)
+  cooperativas         cooperativas @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  rutas                rutas        @relation(fields: [cooperativa_id, ruta_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  terminales           terminales   @relation(fields: [terminal_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, id])
+  @@unique([ruta_id, orden])
+  @@unique([ruta_id, terminal_id])
+  @@index([cooperativa_id], map: "ruta_paradas_coop_idx")
+  @@schema("transporte")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model rutas {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id String         @db.Uuid
+  nombre         String         @db.VarChar(200)
+  activa         Boolean        @default(true)
+  created_at     DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime       @default(now()) @db.Timestamptz(6)
+  frecuencias    frecuencias[]
+  ruta_paradas   ruta_paradas[]
+  cooperativas   cooperativas   @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, id])
+  @@index([cooperativa_id], map: "rutas_coop_idx")
+  @@schema("transporte")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model schema_version {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  version     String   @unique
+  descripcion String
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model sesiones {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id  String    @db.Uuid
+  token_hash  String    @unique @db.Char(64)
+  expires_at  DateTime  @db.Timestamptz(6)
+  revocada_at DateTime? @db.Timestamptz(6)
+  ip          String?   @db.Inet
+  user_agent  String?   @db.VarChar(500)
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime  @default(now()) @db.Timestamptz(6)
+  usuarios    usuarios  @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model solicitudes_reembolso {
+  id                                                      String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id                                          String              @db.Uuid
+  compra_id                                               String              @db.Uuid
+  solicitado_por                                          String              @db.Uuid
+  politica_id                                             String              @db.Uuid
+  regla_id                                                String              @db.Uuid
+  porcentaje_bp                                           Int
+  monto_centavos                                          BigInt
+  motivo                                                  String              @db.VarChar(500)
+  estado                                                  String              @default("SOLICITADO")
+  decision_motivo                                         String?
+  decidido_por                                            String?             @db.Uuid
+  decidido_at                                             DateTime?           @db.Timestamptz(6)
+  clave_intento                                           String              @db.VarChar(120)
+  created_at                                              DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at                                              DateTime            @default(now()) @db.Timestamptz(6)
+  reembolsos                                              reembolsos?
+  compras                                                 compras             @relation(fields: [cooperativa_id, compra_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  cooperativas                                            cooperativas        @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  politicas_reembolso                                     politicas_reembolso @relation(fields: [cooperativa_id, politica_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  reglas_reembolso                                        reglas_reembolso    @relation(fields: [cooperativa_id, regla_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios_solicitudes_reembolso_decidido_porTousuarios   usuarios?           @relation("solicitudes_reembolso_decidido_porTousuarios", fields: [decidido_por], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios_solicitudes_reembolso_solicitado_porTousuarios usuarios            @relation("solicitudes_reembolso_solicitado_porTousuarios", fields: [solicitado_por], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, id])
+  @@unique([solicitado_por, clave_intento])
+  @@index([cooperativa_id, estado, created_at], map: "cola_reembolsos")
+  @@index([cooperativa_id], map: "solicitudes_reembolso_coop_idx")
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This table contains exclusion constraints and requires additional setup for migrations. Visit https://pris.ly/d/exclusion-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model tarifas {
+  id                                                String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id                                    String                   @db.Uuid
+  frecuencia_id                                     String                   @db.Uuid
+  grupo_id                                          String                   @db.Uuid
+  clase_id                                          String                   @db.Uuid
+  origen_orden                                      Int
+  destino_orden                                     Int
+  precio_centavos                                   BigInt
+  servicio_centavos                                 BigInt                   @default(0)
+  impuesto_id                                       String                   @db.Uuid
+  impuesto_servicio_id                              String?                  @db.Uuid
+  vigencia                                          Unsupported("daterange")
+  activa                                            Boolean                  @default(true)
+  created_at                                        DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at                                        DateTime                 @default(now()) @db.Timestamptz(6)
+  cotizacion_lineas                                 cotizacion_lineas[]
+  clases_asiento                                    clases_asiento           @relation(fields: [clase_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cooperativas                                      cooperativas             @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  frecuencias                                       frecuencias              @relation(fields: [cooperativa_id, frecuencia_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  grupos_bus                                        grupos_bus               @relation(fields: [cooperativa_id, grupo_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+  impuestos_tarifas_impuesto_idToimpuestos          impuestos                @relation("tarifas_impuesto_idToimpuestos", fields: [impuesto_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  impuestos_tarifas_impuesto_servicio_idToimpuestos impuestos?               @relation("tarifas_impuesto_servicio_idToimpuestos", fields: [impuesto_servicio_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, id])
+  @@index([cooperativa_id], map: "tarifas_coop_idx")
+  @@schema("transporte")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model terminales {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ciudad_id    String         @db.Uuid
+  nombre       String         @db.VarChar(150)
+  direccion    String?
+  activa       Boolean        @default(true)
+  created_at   DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime       @default(now()) @db.Timestamptz(6)
+  ruta_paradas ruta_paradas[]
+  ciudades     ciudades       @relation(fields: [ciudad_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([ciudad_id, nombre])
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model tokens_identidad {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id   String    @db.Uuid
+  proposito    String
+  token_hash   String    @unique @db.Char(64)
+  expires_at   DateTime  @db.Timestamptz(6)
+  consumido_at DateTime? @db.Timestamptz(6)
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime  @default(now()) @db.Timestamptz(6)
+  usuarios     usuarios  @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("transporte")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model usuario_roles_globales {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id String   @db.Uuid
+  rol_id     String   @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  roles      roles    @relation(fields: [rol_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios   usuarios @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([usuario_id, rol_id])
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model usuarios {
+  id                                                                   String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombres                                                              String                   @db.VarChar(100)
+  apellidos                                                            String                   @db.VarChar(100)
+  tipo_documento                                                       String                   @default("CEDULA")
+  documento                                                            String                   @db.VarChar(30)
+  email                                                                String                   @db.VarChar(254)
+  telefono                                                             String?                  @db.VarChar(25)
+  nacimiento                                                           DateTime?                @db.Date
+  activo                                                               Boolean                  @default(true)
+  email_verificado_at                                                  DateTime?                @db.Timestamptz(6)
+  telefono_verificado_at                                               DateTime?                @db.Timestamptz(6)
+  created_at                                                           DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at                                                           DateTime                 @default(now()) @db.Timestamptz(6)
+  abordajes                                                            abordajes[]
+  archivos                                                             archivos[]
+  auditoria                                                            auditoria[]
+  comprobantes                                                         comprobantes[]
+  consentimientos                                                      consentimientos[]
+  credenciales                                                         credenciales?
+  exportaciones                                                        exportaciones[]
+  intentos_pago                                                        intentos_pago[]
+  membresias                                                           membresias[]
+  notificaciones                                                       notificaciones[]
+  pagos                                                                pagos[]
+  reembolsos                                                           reembolsos[]
+  reservas                                                             reservas[]
+  sesiones                                                             sesiones[]
+  solicitudes_reembolso_solicitudes_reembolso_decidido_porTousuarios   solicitudes_reembolso[]  @relation("solicitudes_reembolso_decidido_porTousuarios")
+  solicitudes_reembolso_solicitudes_reembolso_solicitado_porTousuarios solicitudes_reembolso[]  @relation("solicitudes_reembolso_solicitado_porTousuarios")
+  tokens_identidad                                                     tokens_identidad[]
+  usuario_roles_globales                                               usuario_roles_globales[]
+  viajes                                                               viajes[]
+
+  @@unique([tipo_documento, documento])
+  @@schema("transporte")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This table contains exclusion constraints and requires additional setup for migrations. Visit https://pris.ly/d/exclusion-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model viajes {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cooperativa_id String       @db.Uuid
+  frecuencia_id  String       @db.Uuid
+  bus_id         String       @db.Uuid
+  plano_id       String       @db.Uuid
+  conductor_id   String?      @db.Uuid
+  salida         DateTime     @db.Timestamptz(6)
+  llegada        DateTime     @db.Timestamptz(6)
+  liberacion_bus DateTime     @db.Timestamptz(6)
+  estado         String       @default("BORRADOR")
+  version        Int          @default(1)
+  created_at     DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime     @default(now()) @db.Timestamptz(6)
+  reservas       reservas[]
+  usuarios       usuarios?    @relation(fields: [conductor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  planos         planos       @relation(fields: [cooperativa_id, bus_id, plano_id], references: [cooperativa_id, bus_id, id], onDelete: NoAction, onUpdate: NoAction)
+  cooperativas   cooperativas @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  frecuencias    frecuencias  @relation(fields: [cooperativa_id, frecuencia_id], references: [cooperativa_id, id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cooperativa_id, id])
+  @@index([bus_id, salida], map: "viajes_bus_fecha")
+  @@index([cooperativa_id], map: "viajes_coop_idx")
+  @@index([frecuencia_id, salida], map: "viajes_publicados", where: raw("(estado = 'PUBLICADO'::text)"))
+  @@schema("transporte")
+}

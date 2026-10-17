@@ -1,0 +1,28 @@
+{
+  "name": "transporte-conexion-postgresql",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "db:introspect": "prisma db pull --force && node scripts/normalizar-introspeccion.mjs && prisma format",
+    "db:generate": "prisma generate",
+    "db:baseline": "prisma migrate resolve --applied 0_base_transporte",
+    "db:deploy": "prisma migrate deploy",
+    "db:comprobar": "tsx src/comprobar.ts",
+    "admin:crear": "tsx src/crear-admin.ts",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.0.0",
+    "@prisma/client": "^7.0.0",
+    "dotenv": "^17.0.0",
+    "pg": "^8.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.0.0",
+    "prisma": "^7.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.9.0"
+  }
+}
