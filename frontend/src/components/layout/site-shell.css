@@ -34,7 +34,6 @@
 .gc-brand { position: relative; display: flex; flex-shrink: 0; align-self: flex-start; width: 216px; height: 72px; background: #fff; border-radius: 0 0 5px 5px; }
 .gc-brand img { position: absolute; top: 0; display: block; width: 216px; height: 88px; object-fit: contain; background: #fff; border-radius: 0 0 5px 5px; }
 /* Se muestra solo el área del logo de la captura original, sin alterar sus píxeles. */
-.gc-brand__reference { position: absolute; top: 0; display: block; width: 216px; height: 88px; border-radius: 0 0 5px 5px; background-image: url('/images/gran-continental-encabezado-referencia.png'); background-repeat: no-repeat; background-size: 1536px 1024px; background-position: -88px -16px; }
 .gc-navigation { display: flex; align-items: center; gap: 38px; }
 .gc-navigation__links { display: flex; align-items: center; gap: 38px; list-style: none; padding: 0; margin: 0; }
 .gc-navigation a { text-decoration: none; color: inherit; font-size: 14px; font-weight: 400; }
@@ -81,7 +80,6 @@
   .gc-header__inner { flex-wrap: wrap; padding: 16px; min-height: 96px; gap: 0; border-radius: 0; }
   .gc-brand { width: 148px; height: 64px; align-self: center; }
   .gc-brand img { width: 148px; height: 60.3px; top: 2px; }
-  .gc-brand__reference { width: 148px; height: 60.3px; top: 2px; background-size: 1052.45px 701.63px; background-position: -60.3px -10.96px; }
   .gc-menu-toggle { display: inline-flex; }
   .gc-navigation { display: none; width: 100%; padding: 12px 0 16px; border-top: 1px solid #e6e9ed; }
   .gc-navigation--open { display: flex; flex-direction: column; align-items: stretch; gap: 14px; }

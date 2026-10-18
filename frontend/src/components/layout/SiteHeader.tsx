@@ -45,8 +45,12 @@ export function SiteHeader({
       <div className="gc-header__inner">
         <a className="gc-brand" href={homeHref} aria-label="Gran Continental, inicio"
           onClick={() => setMenuOpen(false)}>
-          {logoSrc ? <img src={logoSrc} alt="Gran Continental — El camino merece grandeza" width="216" height="88" />
-            : <span className="gc-brand__reference" aria-hidden="true" />}
+          <img
+            src={logoSrc}
+            alt="Gran Continental — El camino merece grandeza"
+            width="216"
+            height="88"
+          />
         </a>
         <button className="gc-menu-toggle" type="button" aria-controls={navigationId}
           aria-expanded={menuOpen} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
