@@ -1,39 +1,24 @@
 {
-  "tripId": 101,
-  "bus": {
-    "id": 1,
-    "plate": "TBA-1234",
-    "cooperative": "Cooperativa de ejemplo"
-  },
-  "stops": [
-    { "id": 1, "order": 1, "name": "Ambato" },
-    { "id": 2, "order": 2, "name": "Latacunga" },
-    { "id": 3, "order": 3, "name": "Quito" }
+  "viaje_id": "00000000-0000-4000-8000-000000000101",
+  "bus_id": "00000000-0000-4000-8000-000000000001",
+  "plano_id": "00000000-0000-4000-8000-000000000011",
+  "pisos": 2,
+  "clases": [
+    { "id": "00000000-0000-4000-8000-000000000021", "codigo": "NORMAL", "nombre": "Normal" },
+    { "id": "00000000-0000-4000-8000-000000000022", "codigo": "VIP", "nombre": "VIP" }
   ],
-  "segments": [
-    { "number": 1, "fromStopId": 1, "toStopId": 2 },
-    { "number": 2, "fromStopId": 2, "toStopId": 3 }
+  "paradas": [
+    { "orden": 1, "terminal_id": "00000000-0000-4000-8000-000000000031", "nombre": "Ambato" },
+    { "orden": 2, "terminal_id": "00000000-0000-4000-8000-000000000032", "nombre": "Latacunga" },
+    { "orden": 3, "terminal_id": "00000000-0000-4000-8000-000000000033", "nombre": "Quito" }
   ],
-  "seatTypes": [
-    { "code": "NORMAL", "name": "Normal" },
-    { "code": "VIP", "name": "VIP" }
-  ],
-  "floors": [
-    {
-      "floorNumber": 1,
-      "seats": [
-        { "id": 1, "number": "1", "type": "NORMAL", "row": 1, "column": 1, "occupiedSegments": [] },
-        { "id": 2, "number": "2", "type": "NORMAL", "row": 1, "column": 2, "occupiedSegments": [1] },
-        { "id": 3, "number": "3", "type": "NORMAL", "row": 1, "column": 4, "occupiedSegments": [] },
-        { "id": 4, "number": "4", "type": "NORMAL", "row": 1, "column": 5, "occupiedSegments": [1, 2] }
-      ]
-    },
-    {
-      "floorNumber": 2,
-      "seats": [
-        { "id": 5, "number": "5", "type": "VIP", "row": 1, "column": 1, "occupiedSegments": [] },
-        { "id": 6, "number": "6", "type": "VIP", "row": 1, "column": 2, "occupiedSegments": [2] }
-      ]
-    }
+  "celdas": [
+    { "id": "00000000-0000-4000-8000-000000000201", "piso": 1, "fila": 1, "columna": 1, "tipo": "ASIENTO", "codigo": "1", "clase_id": "00000000-0000-4000-8000-000000000021", "activa": true, "ocupaciones": [] },
+    { "id": "00000000-0000-4000-8000-000000000202", "piso": 1, "fila": 1, "columna": 2, "tipo": "ASIENTO", "codigo": "2", "clase_id": "00000000-0000-4000-8000-000000000021", "activa": true, "ocupaciones": [ { "origen_orden": 1, "destino_orden": 2, "estado": "RETENIDO" } ] },
+    { "id": "00000000-0000-4000-8000-000000000203", "piso": 1, "fila": 1, "columna": 3, "tipo": "PASILLO", "codigo": null, "clase_id": null, "activa": true, "ocupaciones": [] },
+    { "id": "00000000-0000-4000-8000-000000000204", "piso": 1, "fila": 1, "columna": 4, "tipo": "ASIENTO", "codigo": "3", "clase_id": "00000000-0000-4000-8000-000000000021", "activa": true, "ocupaciones": [] },
+    { "id": "00000000-0000-4000-8000-000000000205", "piso": 1, "fila": 1, "columna": 5, "tipo": "ASIENTO", "codigo": "4", "clase_id": "00000000-0000-4000-8000-000000000021", "activa": true, "ocupaciones": [ { "origen_orden": 1, "destino_orden": 3, "estado": "RETENIDO" } ] },
+    { "id": "00000000-0000-4000-8000-000000000206", "piso": 2, "fila": 1, "columna": 1, "tipo": "ASIENTO", "codigo": "5", "clase_id": "00000000-0000-4000-8000-000000000022", "activa": true, "ocupaciones": [] },
+    { "id": "00000000-0000-4000-8000-000000000207", "piso": 2, "fila": 1, "columna": 2, "tipo": "ASIENTO", "codigo": "6", "clase_id": "00000000-0000-4000-8000-000000000022", "activa": true, "ocupaciones": [ { "origen_orden": 2, "destino_orden": 3, "estado": "RETENIDO" } ] }
   ]
 }
