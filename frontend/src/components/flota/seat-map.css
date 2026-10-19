@@ -1,0 +1,11 @@
+.seat-map { display: flex; flex-wrap: wrap; gap: 1.5rem; }
+.seat-map__grilla { display: grid; gap: 0.4rem; }
+.seat-map__celda { width: 2.5rem; height: 2.5rem; }
+.seat-map__celda--bloque { background: #d1d5db; border-radius: 4px; }
+.seat-map__asiento {
+  border: 2px solid #374151; border-radius: 6px; font-weight: 600;
+  cursor: pointer; background: #fff;
+}
+.seat-map__asiento--libre:hover { background: #dbeafe; }
+.seat-map__asiento--elegido { background: #2563eb; color: #fff; border-color: #1d4ed8; }
+.seat-map__asiento--ocupado { background: #e5e7eb; color: #9ca3af; cursor: not-allowed; }
