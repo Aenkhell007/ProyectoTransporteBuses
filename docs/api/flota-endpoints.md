@@ -7,25 +7,33 @@
 ## Convenciones generales
 - Los IDs son UUID (texto).
 - La cooperativa NO se envía en el body: se toma de la sesión.
-- Listas: { "data": [...] }.
+- Las listas responden { "data": [...] }.
 - Un error de unicidad de la base de datos se responde 409.
 
 ## Buses
 
 ### GET /buses
 Lista los buses de la cooperativa. Éxito: 200.
-Por defecto solo activos; con ?activo=false lista los desactivados.
+Por defecto lista solo los activos; con ?activo=false lista los desactivados.
 
 Respuesta:
 {
   "data": [
-    { "id": "uuid", "unidad": "12", "placa": "TBA-1234", "chasis": "Chasis",
-      "carroceria": "Carrocería", "grupo_id": "uuid", "activo": true }
+    {
+      "id": "uuid",
+      "unidad": "12",
+      "placa": "TBA-1234",
+      "chasis": "Chasis",
+      "carroceria": "Carrocería",
+      "grupo_id": "uuid",
+      "activo": true
+    }
   ]
 }
 
 ### GET /buses/:id
 Detalle de un bus con sus planos. Éxito: 200.
+Errores: 401, 404 (bus inexistente o de otra cooperativa).
 
 ### POST /buses
 Crea un bus. Éxito: 201.
@@ -44,35 +52,59 @@ Body:
 Validaciones:
 - unidad: obligatoria, única dentro de la cooperativa.
 - placa: obligatoria, única en todo el sistema.
-- chasis, carroceria: obligatorios, texto no vacío.
+- chasis y carroceria: obligatorios, texto no vacío.
 - grupo_id: obligatorio, debe ser un grupo de la misma cooperativa (módulo de Benjamín).
-- Errores: 400, 409 (placa o unidad duplicada).
+- correo_contacto: opcional, con formato de correo.
+- Errores: 400 (datos inválidos), 409 (placa o unidad duplicada).
 
 ### PUT /buses/:id
-Actualiza datos de un bus (al menos un campo). Éxito: 200.
-Mismas validaciones que POST. Errores: 400, 404, 409.
+Actualiza datos de un bus (al menos un campo). Éxito: 200 (devuelve el bus actualizado).
+Mismas validaciones que POST para los campos enviados.
+Errores: 400, 404, 409.
 
 ### DELETE /buses/:id
-Desactiva el bus (activo = false). No hay eliminación física (decisión de Matías).
-- Éxito: 204.
-- Con viajes programados o reservas asociadas: 409.
-- Pendiente de confirmar si el 409 cuenta cualquier viaje o solo los futuros.
+Desactiva el bus (activo = false). No hay eliminación física.
+
+Decisión confirmada por Matías (gestor de configuración): se conserva el
+historial de viajes y reservas, por lo que un bus nunca se borra de la base.
+
+Comportamiento:
+- Éxito: 204 sin cuerpo.
+- Un bus desactivado no se puede asignar a nuevos viajes.
+- Si el bus tiene viajes programados o reservas asociadas, responde 409 y no se desactiva.
+- Errores: 401, 403, 404 (bus inexistente o de otra cooperativa), 409.
+- Pendiente de confirmar: si el 409 cuenta cualquier viaje o solo los futuros.
 
 ## Planos, pisos y asientos
-Un bus tiene planos versionados (tabla planos); cada plano es una grilla de
+Un bus tiene planos versionados (tabla planos). Cada plano es una grilla de
 celdas (tabla plano_celdas) con hasta 3 pisos.
 
 ### GET /clases-asiento
-Catálogo de clases (Normal, VIP). Éxito: 200.
-{ "data": [ { "id": "uuid", "codigo": "NORMAL", "nombre": "Normal" } ] }
+Catálogo de clases de asiento. Éxito: 200.
+
+Respuesta:
+{
+  "data": [
+    { "id": "uuid", "codigo": "NORMAL", "nombre": "Normal" },
+    { "id": "uuid", "codigo": "EJECUTIVO", "nombre": "Ejecutivo" }
+  ]
+}
+
+Los códigos reales de clases_asiento se confirman con el equipo (según las vistas aprobadas).
 
 ### GET /buses/:id/planos
-Lista las versiones de plano del bus (numero_version, nombre, pisos, publicado).
+Lista las versiones de plano del bus (numero_version, nombre, pisos, publicado). Éxito: 200.
 
 ### POST /buses/:id/planos
 Crea una nueva versión del plano (publicado = false). Éxito: 201.
-Body: { "nombre": "Plano 2 pisos", "pisos": 2 }
+
+Body:
+{ "nombre": "Plano 2 pisos", "pisos": 2 }
+
+Validaciones:
+- nombre: obligatorio.
 - pisos: entero entre 1 y 3.
+- Errores: 400, 404.
 
 ### GET /planos/:id
 Plano con todas sus celdas. Éxito: 200.
@@ -94,50 +126,73 @@ Validaciones:
 - fila: mayor que 0. columna: entre 1 y 12.
 - tipo: ASIENTO, PASILLO o BLOQUE.
 - ASIENTO: codigo y clase_id obligatorios. PASILLO y BLOQUE: sin codigo ni clase_id.
-- codigo único dentro del plano; la posición (piso, fila, columna) no se repite.
+- El codigo no se repite dentro del plano; la posición (piso, fila, columna) tampoco.
 - Errores: 400, 404, 409.
 
 ### POST /planos/:id/publicar
-Marca el plano como publicado; desde entonces no se edita, se crea otra versión
-(propuesta, a confirmar con Matías).
+Marca el plano como publicado. Desde entonces no se edita: se crea otra versión
+(propuesta, a confirmar con Matías). Éxito: 200. Errores: 404, 409 (ya publicado).
 
 ## Disponibilidad de buses (para Benjamín)
 
 ### GET /buses/disponibles?desde=...&hasta=...
 Buses activos sin viajes (no cancelados) ni indisponibilidades que se solapen
-con el rango. Éxito: 200. Error 400 si desde >= hasta.
+con el rango. Éxito: 200.
+Error 400 si desde es mayor o igual que hasta.
 
 ### GET /buses/:id/indisponibilidades
+Lista las indisponibilidades del bus. Éxito: 200.
+
 ### POST /buses/:id/indisponibilidades
-Body: { "desde": "ISO", "hasta": "ISO", "motivo": "Mantenimiento" }
+Registra un período en que el bus no está disponible. Éxito: 201.
+
+Body:
+{ "desde": "2026-11-01T08:00:00-05:00", "hasta": "2026-11-02T08:00:00-05:00", "motivo": "Mantenimiento" }
+
+Validaciones:
 - hasta debe ser posterior a desde (400).
+- motivo: obligatorio.
 
 ## Mapa de asientos de un viaje (para KT)
 
 ### GET /viajes/:viajeId/mapa-asientos?origen_orden=1&destino_orden=3
 Devuelve el plano del viaje (viajes.plano_id) con la ocupación. Éxito: 200.
-Estructura: ver docs/api/mapa-asientos.mock.json.
+La estructura de la respuesta está en docs/api/mapa-asientos.mock.json.
 
 Regla de ocupación:
 - Las paradas se identifican por su orden en la ruta (ruta_paradas.orden).
 - Cada celda trae ocupaciones: [{ origen_orden, destino_orden, estado }].
-- Un asiento está libre para el recorrido o → d solo si ninguna ocupación
+- Un asiento está libre para el recorrido o -> d solo si ninguna ocupación
   cumple origen_orden < d y destino_orden > o.
-- Una retención vencida (expires_at pasado) no cuenta. Qué estados cuentan
-  como ocupados se confirma con KT y Matías.
-- Es información de consulta: la disponibilidad real se verifica de nuevo, de forma
+- Una retención vencida (expires_at pasado) no cuenta como ocupación.
+- Qué estados de reserva_asientos cuentan como ocupados se confirma con KT y Matías.
+- Es información de consulta: la disponibilidad real se vuelve a verificar, de forma
   transaccional, al crear la reserva.
 
 Errores: 400 (orden inválido), 401, 404 (viaje inexistente o de otra cooperativa).
 
 ## Roles y control de acceso
-Propuesta a alinear con las tablas roles, permisos y rol_permiso:
+Propuesta, a alinear con las tablas roles, permisos y rol_permiso:
 - Administrador de cooperativa: crea y modifica buses, planos y celdas.
 - Oficinista: solo lectura de buses y mapa.
 - Cliente: solo mapa de asientos de viajes publicados.
-- Aislamiento por cooperativa: la sesión define cooperativa_id y un recurso de otra
-  cooperativa responde 404. Errores: 401 sin sesión, 403 sin permiso.
+
+Aislamiento por cooperativa:
+- La sesión define cooperativa_id.
+- Un recurso de otra cooperativa responde 404 (no 403), para no revelar que existe.
+- Errores: 401 sin sesión, 403 sin permiso.
+
+## Errores comunes
+- 400: datos inválidos
+- 401: no autenticado
+- 403: rol sin permiso
+- 404: recurso inexistente o de otra cooperativa
+- 409: conflicto (placa, unidad, código de asiento o posición duplicados)
 
 ## Pendiente
-- Fotos del bus (bus_fotos + archivos): endpoint por definir.
+- Nombres de los campos (español como la base, o con traducción).
+- Si un plano publicado o con viajes es inmutable.
+- Estados de reserva_asientos que cuentan como ocupados.
+- Códigos reales de las clases de asiento (Normal / Ejecutivo).
+- Fotos del bus (bus_fotos y archivos): endpoint por definir.
 - Equipamiento (bus_equipamiento): fuera de la primera entrega salvo que se pida.
