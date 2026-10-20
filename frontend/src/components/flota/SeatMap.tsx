@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { MapaAsientos } from '../../types/flota';
 import { asientoDisponible } from '../../utils/disponibilidad';
 import './seat-map.css';
@@ -12,6 +12,25 @@ interface SeatMapProps {
 
 export default function SeatMap({ mapa, origen, destino, onChange }: SeatMapProps) {
   const [seleccion, setSeleccion] = useState<string[]>([]);
+
+  // IDs de los asientos libres para el recorrido actual.
+  const disponibles = useMemo(
+    () =>
+      new Set(
+        mapa.celdas.filter((c) => asientoDisponible(c, origen, destino)).map((c) => c.id),
+      ),
+    [mapa, origen, destino],
+  );
+
+  // Si cambia el recorrido o el mapa, se quitan los asientos elegidos que ya no
+  // están disponibles y se notifica al componente padre.
+  useEffect(() => {
+    const vigentes = seleccion.filter((id) => disponibles.has(id));
+    if (vigentes.length !== seleccion.length) {
+      setSeleccion(vigentes);
+      onChange?.(vigentes);
+    }
+  }, [disponibles, seleccion, onChange]);
 
   const alternar = (id: string) => {
     const nueva = seleccion.includes(id)
@@ -45,8 +64,8 @@ export default function SeatMap({ mapa, origen, destino, onChange }: SeatMapProp
                     />
                   );
                 }
-                const libre = asientoDisponible(c, origen, destino);
-                const elegido = seleccion.includes(c.id);
+                const libre = disponibles.has(c.id);
+                const elegido = libre && seleccion.includes(c.id);
                 const clase = mapa.clases.find((k) => k.id === c.clase_id);
                 const estado = elegido ? 'elegido' : libre ? 'libre' : 'ocupado';
                 return (
