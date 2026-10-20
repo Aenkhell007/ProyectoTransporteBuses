@@ -5,7 +5,7 @@
   "pisos": 2,
   "clases": [
     { "id": "00000000-0000-4000-8000-000000000021", "codigo": "NORMAL", "nombre": "Normal" },
-    { "id": "00000000-0000-4000-8000-000000000022", "codigo": "VIP", "nombre": "VIP" }
+    { "id": "00000000-0000-4000-8000-000000000022", "codigo": "EJECUTIVO", "nombre": "Ejecutivo" }
   ],
   "paradas": [
     { "orden": 1, "terminal_id": "00000000-0000-4000-8000-000000000031", "nombre": "Ambato" },
