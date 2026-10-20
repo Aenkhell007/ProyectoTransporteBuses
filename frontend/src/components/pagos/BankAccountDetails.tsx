@@ -46,7 +46,9 @@ export default function BankAccountDetails({
       }, 2500);
     } catch {
       if (!montado.current) return;
-      setMensaje("No se pudo copiar. Selecciona el dato y cópialo manualmente.");
+      setMensaje(
+        "No se pudo copiar. Selecciona el dato y cópialo manualmente.",
+      );
     } finally {
       if (montado.current) setCopiando(false);
     }
@@ -128,9 +130,11 @@ export default function BankAccountDetails({
                 className="h-auto w-full max-w-48 bg-white"
               />
               <figcaption className="text-xs leading-5 text-slate-600">
-                <strong className="block text-blue-950">QR de demostración</strong>
-                Escanéalo con la cámara de tu celular para leer los datos de esta
-                cuenta. No permite realizar pagos.
+                <strong className="block text-blue-950">
+                  QR de demostración
+                </strong>
+                Escanéalo con la cámara de tu celular para leer los datos de
+                esta cuenta. No permite realizar pagos.
               </figcaption>
               <a
                 href={cuenta.qrSrc}
