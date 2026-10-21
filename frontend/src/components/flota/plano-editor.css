@@ -1,0 +1,54 @@
+.plano-editor__barra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.plano-editor__herramienta {
+  background: #fff;
+  border: 2px solid #374151;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 0.35rem 0.75rem;
+}
+.plano-editor__herramienta--activa {
+  background: #2563eb;
+  border-color: #1d4ed8;
+  color: #fff;
+}
+.plano-editor__pisos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+.plano-editor__grilla {
+  display: grid;
+  gap: 0.3rem;
+}
+.plano-editor__celda {
+  background: #f3f4f6;
+  border: 1px dashed #9ca3af;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  height: 2.75rem;
+  width: 2.75rem;
+}
+.plano-editor__celda--asiento {
+  background: #fff;
+  border: 2px solid #374151;
+}
+.plano-editor__celda--clase-0 {
+  background: #dbeafe;
+}
+.plano-editor__celda--clase-1 {
+  background: #fde68a;
+}
+.plano-editor__celda--pasillo {
+  background: #e5e7eb;
+  border: 1px solid #d1d5db;
+}
+.plano-editor__celda--bloque {
+  background: #4b5563;
+  border: 1px solid #374151;
+}
