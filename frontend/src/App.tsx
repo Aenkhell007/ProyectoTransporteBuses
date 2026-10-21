@@ -2,6 +2,9 @@ import { Route, Routes, useLocation } from 'react-router';
 import { PublicLayout, SiteFooter } from './components/layout';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 
+import MetodoPago from './pages/pagos/MetodoPago';
+import PasoPagoPendiente from './pages/pagos/PasoPagoPendiente';
+
 const homeSections: Record<string, { title: string; activeItem: string; id?: string }> = {
   '': { title: 'Aquí va el inicio', activeItem: 'inicio' },
   '#rutas': { title: 'Aquí van las rutas', activeItem: 'rutas', id: 'rutas' },
@@ -27,6 +30,10 @@ export function App() {
       <Route path="/" element={<PlaceholderPage title={section.title} id={section.id} />} />
       <Route path="/iniciar-sesion" element={<PlaceholderPage title="Aquí va iniciar sesión" />} />
       <Route path="/registrarse" element={<PlaceholderPage title="Aquí va el registro" />} />
+      <Route path="/pago" element={<MetodoPago />} />
+      <Route path="/resumen" element={<PasoPagoPendiente />} />
+      <Route path="/pago/comprobante" element={<PasoPagoPendiente comprobante />} />
+
       <Route path="*" element={<PlaceholderPage title="Aquí va esta página" />} />
     </Routes>
   </PublicLayout>;
