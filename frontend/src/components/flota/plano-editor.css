@@ -52,3 +52,10 @@
   background: #4b5563;
   border: 1px solid #374151;
 }
+.plano-editor-pagina {
+  background: #fff;
+  border-radius: 12px;
+  margin: 1.5rem auto;
+  max-width: 56rem;
+  padding: 1.5rem;
+}
