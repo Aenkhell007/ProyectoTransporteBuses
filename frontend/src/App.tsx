@@ -1,6 +1,7 @@
 import { Route, Routes, useLocation } from 'react-router';
 import { PublicLayout, SiteFooter } from './components/layout';
 import { PlaceholderPage } from './pages/PlaceholderPage';
+import { InicioPage } from './pages/compra/InicioPage';
 
 import MetodoPago from './pages/pagos/MetodoPago';
 import PasoPagoPendiente from './pages/pagos/PasoPagoPendiente';
@@ -27,7 +28,7 @@ export function App() {
 
   return <PublicLayout header={{ activeItem: location.pathname === '/' ? section.activeItem : undefined }}>
     <Routes>
-      <Route path="/" element={<PlaceholderPage title={section.title} id={section.id} />} />
+      <Route path="/" element={<InicioPage />} />
       <Route path="/iniciar-sesion" element={<PlaceholderPage title="Aquí va iniciar sesión" />} />
       <Route path="/registrarse" element={<PlaceholderPage title="Aquí va el registro" />} />
       <Route path="/pago" element={<MetodoPago />} />
