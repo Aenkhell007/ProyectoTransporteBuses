@@ -1,3 +1,5 @@
+import { Link } from 'react-router';
+
 export default function RecuperarContrasenaPage() {
   return (
     <div className="flex h-screen bg-gray-50">
@@ -12,7 +14,7 @@ export default function RecuperarContrasenaPage() {
               <label className="block text-sm font-medium text-gray-700">Correo electrónico</label>
               <input type="email" className="mt-1 w-full border rounded-md p-2" placeholder="nombre@correo.com" />
             </div>
-            <button className="w-full bg-red-600 text-white p-2 rounded-md font-bold hover:bg-red-700">
+            <button type="submit" className="w-full bg-red-600 text-white p-2 rounded-md font-bold hover:bg-red-700">
               Enviar enlace
             </button>
           </form>
@@ -20,8 +22,8 @@ export default function RecuperarContrasenaPage() {
             Por seguridad, si el correo está registrado, recibirás instrucciones para recuperar tu acceso.
           </div>
           <div className="mt-6 flex flex-col space-y-2 text-center text-sm text-gray-600">
-            <a href="/login" className="hover:underline">← Volver a iniciar sesión</a>
-            <span>¿No tienes una cuenta? <a href="/registro" className="text-red-600 font-bold hover:underline">Regístrate</a></span>
+            <Link to="/iniciar-sesion" className="hover:underline">← Volver a iniciar sesión</Link>
+            <span>¿No tienes una cuenta? <Link to="/registrarse" className="text-red-600 font-bold hover:underline">Regístrate</Link></span>
           </div>
         </div>
       </div>
