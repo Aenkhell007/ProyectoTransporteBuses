@@ -1,8 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
-// Importamos las funciones scrypt-v1 establecidas por el equipo
-import { hashPassword, verifyPassword } from '../conexion-bd/src/password.js';
+import { hashPassword, verifyPassword } from '../../conexion-bd/src/password.js';
 
 const prisma = new PrismaClient();
 
@@ -10,8 +9,8 @@ export const register = async (req: Request, res: Response) => {
   try {
     const { nombres, apellidos, email, password, documento } = req.body;
     
-    if (!nombres || !email || !password) {
-      return res.status(400).json({ error: 'Faltan campos obligatorios' });
+    if (!nombres || !email || !password || !documento) {
+      return res.status(400).json({ error: 'Faltan campos obligatorios, incluyendo el documento de identidad.' });
     }
 
     const result = await prisma.$transaction(async (tx) => {
@@ -21,7 +20,7 @@ export const register = async (req: Request, res: Response) => {
           apellidos, 
           email: email.toLowerCase(), 
           tipo_documento: 'CEDULA', 
-          documento: documento || '9999999999' 
+          documento 
         }
       });
       await tx.credenciales.create({
@@ -30,10 +29,10 @@ export const register = async (req: Request, res: Response) => {
       return newUser;
     });
 
-    res.status(201).json({ message: 'Usuario registrado', userId: result.id });
+    res.status(201).json({ message: 'Usuario registrado exitosamente', userId: result.id });
   } catch (error: any) {
-    if (error.code === 'P2002') return res.status(409).json({ error: 'El correo ya está registrado.' });
-    res.status(500).json({ error: 'Error al registrar usuario.' });
+    if (error.code === 'P2002') return res.status(409).json({ error: 'El correo o documento ya están registrados.' });
+    res.status(500).json({ error: 'Error interno al registrar usuario.' });
   }
 };
 
@@ -42,28 +41,37 @@ export const login = async (req: Request, res: Response) => {
     const { email, password } = req.body;
     
     if (!process.env.JWT_SECRET) {
-      return res.status(500).json({ error: 'Falta JWT_SECRET en el servidor.' });
+      return res.status(500).json({ error: 'Falta configuración del JWT_SECRET.' });
     }
 
-    const user = await prisma.usuarios.findUnique({
+    const user = await prisma.usuarios.findFirst({
       where: { email: email.toLowerCase() },
-      include: { credenciales: true, usuario_roles_globales: { include: { roles: true } } }
+      include: { 
+        credenciales: true, 
+        usuario_roles_globales: { include: { roles: true } },
+        membresias: true
+      }
     });
 
-    const credencial = user?.credenciales[0];
-    if (!user || !credencial || !verifyPassword(password, credencial.password_hash)) {
+    if (!user || !user.credenciales || !verifyPassword(password, user.credenciales.password_hash)) {
       return res.status(401).json({ error: 'Credenciales inválidas.' });
     }
 
-    const rol = user.usuario_roles_globales[0]?.roles?.codigo || 'CLIENTE';
+    if (user.estado === 'INACTIVO' || user.activo === false) {
+      return res.status(403).json({ error: 'Acceso denegado. El usuario está inactivo.' });
+    }
+
+    const rol = user.usuario_roles_globales?.[0]?.roles?.codigo || 'CLIENTE';
+    const cooperativa_id = user.membresias?.[0]?.cooperativa_id || null;
+
     const token = jwt.sign(
-      { id: user.id, rol, cooperativa_id: user.cooperativa_id }, 
+      { id: user.id, rol, cooperativa_id }, 
       process.env.JWT_SECRET, 
       { expiresIn: '8h' }
     );
 
-    res.json({ token, user: { id: user.id, email: user.email, rol } });
+    res.json({ token, user: { id: user.id, email: user.email, rol, cooperativa_id } });
   } catch (error) {
-    res.status(500).json({ error: 'Error en el login.' });
+    res.status(500).json({ error: 'Error en el inicio de sesión.' });
   }
 };
