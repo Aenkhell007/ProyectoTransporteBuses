@@ -1,0 +1,34 @@
+.buses-page {
+  background: #fff;
+  border-radius: 12px;
+  margin: 1.5rem auto;
+  max-width: 56rem;
+  padding: 1.5rem;
+}
+.bus-form {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  margin-bottom: 1rem;
+}
+.bus-form__campo {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+  gap: 0.25rem;
+}
+.bus-form__error {
+  color: #b91c1c;
+  font-size: 0.8rem;
+}
+.buses-page__tabla {
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+  width: 100%;
+}
+.buses-page__tabla th,
+.buses-page__tabla td {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.5rem;
+  text-align: left;
+}
