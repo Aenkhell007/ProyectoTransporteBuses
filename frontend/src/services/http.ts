@@ -1,7 +1,9 @@
 // La URL de la API sale de VITE_API_URL. En el frontend nunca van credenciales de
 // base de datos: solo la dirección de la API.
-const BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
-
+const BASE_URL = ((import.meta.env.VITE_API_URL as string | undefined) ?? '/api').replace(
+  /\/+$/,
+  '',
+);
 export class ApiError extends Error {
   status: number;
 
@@ -22,10 +24,15 @@ const MENSAJES: Record<number, string> = {
 };
 
 export async function http<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
-  const respuesta = await fetch(`${BASE_URL}${ruta}`, {
-    credentials: 'include', // la sesión viaja en una cookie
+    const headers = new Headers(opciones.headers);
+  if (opciones.body && !(opciones.body instanceof FormData) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  const respuesta = await fetch(`${BASE_URL}/${ruta.replace(/^\/+/, '')}`, {
+    credentials: 'include', // PENDIENTE: confirmar con backend si la sesión va en cookie
     ...opciones,
-    headers: { 'Content-Type': 'application/json', ...(opciones.headers ?? {}) },
+    headers,
   });
 
   if (!respuesta.ok) {
