@@ -1,0 +1,83 @@
+import { ParadaOrdenada, TarifaTramo } from '../types/paradasTramos';
+
+// Mock temporal para validación de paradas ordenadas y tarifas por tramo (V16 / ADM06)
+export const PARADAS_ORDENADAS_MOCK: ParadaOrdenada[] = [
+  {
+    id: 'par-01',
+    frecuenciaId: 'freq-001',
+    orden: 1,
+    ciudad: 'Quito',
+    tiempoEstimadoLlegada: '08:00',
+    habilitadaEmbarque: true,
+    habilitadaDesembarque: false,
+  },
+  {
+    id: 'par-02',
+    frecuenciaId: 'freq-001',
+    orden: 2,
+    ciudad: 'Latacunga',
+    tiempoEstimadoLlegada: '09:45',
+    habilitadaEmbarque: true,
+    habilitadaDesembarque: true,
+  },
+  {
+    id: 'par-03',
+    frecuenciaId: 'freq-001',
+    orden: 3,
+    ciudad: 'Cuenca',
+    tiempoEstimadoLlegada: '16:30',
+    habilitadaEmbarque: true,
+    habilitadaDesembarque: true,
+  },
+  {
+    id: 'par-04',
+    frecuenciaId: 'freq-001',
+    orden: 4,
+    ciudad: 'Loja',
+    tiempoEstimadoLlegada: '20:30',
+    habilitadaEmbarque: false,
+    habilitadaDesembarque: true,
+  },
+];
+
+export const TARIFAS_TRAMO_MOCK: TarifaTramo[] = [
+  {
+    id: 'tar-01',
+    frecuenciaId: 'freq-001',
+    paradaOrigenId: 'par-01',
+    ciudadOrigen: 'Quito',
+    ordenOrigen: 1,
+    paradaDestinoId: 'par-04',
+    ciudadDestino: 'Loja',
+    ordenDestino: 4,
+    clase: 'NORMAL',
+    precioBase: 22.0,
+    vigente: true,
+  },
+  {
+    id: 'tar-02',
+    frecuenciaId: 'freq-001',
+    paradaOrigenId: 'par-02',
+    ciudadOrigen: 'Latacunga',
+    ordenOrigen: 2,
+    paradaDestinoId: 'par-03',
+    ciudadDestino: 'Cuenca',
+    ordenDestino: 3,
+    clase: 'NORMAL',
+    precioBase: 14.5,
+    vigente: true,
+  },
+  {
+    id: 'tar-03',
+    frecuenciaId: 'freq-001',
+    paradaOrigenId: 'par-02',
+    ciudadOrigen: 'Latacunga',
+    ordenOrigen: 2,
+    paradaDestinoId: 'par-03',
+    ciudadDestino: 'Cuenca',
+    ordenDestino: 3,
+    clase: 'VIP',
+    precioBase: 18.0,
+    vigente: true,
+  },
+];
