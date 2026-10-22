@@ -1,28 +1,49 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { hashPassword } from '../../conexion-bd/src/password.js';
-
+ 
 const prisma = new PrismaClient();
-
+ 
 export const crearCooperativaConResponsable = async (req: Request, res: Response) => {
   const { cooperativa, responsable } = req.body;
   const usuarioActual = (req as any).usuario;
-
-  // Validación de permisos administrativos globales
+ 
   if (usuarioActual.rol !== 'ADMIN_SISTEMA') {
-    return res.status(403).json({ error: 'Acceso denegado. Se requieren permisos cooperativas.admin e identidad.admin.' });
+    res.status(403).json({ error: 'Acceso denegado. Se requieren permisos.' });
+    return;
   }
-  
-  if (!cooperativa?.nombre || !responsable?.email || !responsable?.password || !responsable?.documento) {
-    return res.status(400).json({ error: 'Datos incompletos.' });
+ 
+  if (
+    !cooperativa?.nombre ||
+    !cooperativa?.razon_social ||
+    !cooperativa?.ruc ||
+    !responsable?.email ||
+    !responsable?.password ||
+    !responsable?.documento
+  ) {
+    res.status(400).json({ error: 'Datos incompletos.' });
+    return;
   }
-
+ 
   try {
+    // Se valida el rol ANTES de la transaccion para no crear datos a medias.
+    const rolDb = await prisma.roles.findUnique({ where: { codigo: 'ADMIN_COOPERATIVA' } });
+    if (!rolDb) {
+      res.status(400).json({ error: 'Rol ADMIN_COOPERATIVA no encontrado.' });
+      return;
+    }
+ 
+    const passwordHash = await hashPassword(responsable.password);
+ 
     const resultado = await prisma.$transaction(async (tx) => {
       const nuevaCoop = await tx.cooperativas.create({
-        data: { nombre: cooperativa.nombre }
+        data: {
+          nombre: cooperativa.nombre,
+          razon_social: cooperativa.razon_social,
+          ruc: cooperativa.ruc
+        }
       });
-
+ 
       const nuevoAdmin = await tx.usuarios.create({
         data: {
           nombres: responsable.nombres,
@@ -32,28 +53,29 @@ export const crearCooperativaConResponsable = async (req: Request, res: Response
           documento: responsable.documento
         }
       });
-
+ 
       await tx.credenciales.create({
-        data: { usuario_id: nuevoAdmin.id, password_hash: hashPassword(responsable.password) }
+        data: { usuario_id: nuevoAdmin.id, password_hash: passwordHash }
       });
-
-      const rolDb = await tx.roles.findUnique({ where: { codigo: 'COOPERATIVA' } });
-      if (rolDb) {
-        await tx.usuario_roles_globales.create({
-          data: { usuario_id: nuevoAdmin.id, rol_id: rolDb.id }
-        });
-      }
-
+ 
+      // Rol de cooperativa -> vive en la membresia (rol_id).
       await tx.membresias.create({
-        data: { usuario_id: nuevoAdmin.id, cooperativa_id: nuevaCoop.id }
+        data: {
+          usuario_id: nuevoAdmin.id,
+          cooperativa_id: nuevaCoop.id,
+          rol_id: rolDb.id
+        }
       });
-
+ 
       return { cooperativaId: nuevaCoop.id, responsableId: nuevoAdmin.id };
     });
-
+ 
     res.status(201).json({ message: 'Cooperativa y responsable creados', data: resultado });
   } catch (error: any) {
-    if (error.code === 'P2002') return res.status(409).json({ error: 'Datos duplicados.' });
+    if (error.code === 'P2002') {
+      res.status(409).json({ error: 'Datos duplicados.' });
+      return;
+    }
     res.status(500).json({ error: 'Error interno.' });
   }
 };
