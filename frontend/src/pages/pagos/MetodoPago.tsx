@@ -4,7 +4,7 @@ import BookingProgress from "../../components/pagos/BookingProgress";
 import PaymentMethodSelector from "../../components/pagos/PaymentMethodSelector";
 import type { PaymentMethodOption } from "../../components/pagos/PaymentMethodSelector";
 import BankAccountSelector from "../../components/pagos/BankAccountSelector";
-import type { BankAccountOption } from "../../components/pagos/BankAccountSelector";
+import { cuentasDemo } from "../../mocks/cuentasBancarias";
 import BankAccountDetails from "../../components/pagos/BankAccountDetails";
 
 // Datos temporales. Después vendrán del backend.
@@ -39,27 +39,6 @@ const metodosDemo: PaymentMethodOption[] = [
   },
 ];
 
-// Cuentas ficticias para probar la interfaz. No sirven para pagar.
-const cuentasDemo: BankAccountOption[] = [
-  {
-    id: "demo-pichincha",
-    banco: "Banco Pichincha",
-    tipo: "Corriente",
-    numero: "DEMO-NO-TRANSFERIR-5432",
-    titular: "Cooperativa de ejemplo",
-    ruc: "DEMO-SIN-RUC",
-    qrSrc: "/images/qr-demo/demo-pichincha.png",
-  },
-  {
-    id: "demo-guayaquil",
-    banco: "Banco Guayaquil",
-    tipo: "Ahorros",
-    numero: "DEMO-NO-TRANSFERIR-9876",
-    titular: "Cooperativa de ejemplo",
-    ruc: "DEMO-SIN-RUC",
-    qrSrc: "/images/qr-demo/demo-guayaquil.png",
-  },
-];
 
 export default function MetodoPago() {
   const location = useLocation();
