@@ -3,11 +3,13 @@
 
 /** 4760 -> "$ 47.60"; -840 -> "- $ 8.40"; 0 -> "$ 0.00". */
 export function formatearCentavos(centavos: number): string {
-  if (!Number.isSafeInteger(centavos)) return '—';
-  const signo = centavos < 0 ? '- ' : '';
+  if (!Number.isSafeInteger(centavos)) return "—";
+  const signo = centavos < 0 ? "- " : "";
   const absoluto = Math.abs(centavos);
-  const enteros = Math.trunc(absoluto / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  const decimales = String(absoluto % 100).padStart(2, '0');
+  const enteros = Math.trunc(absoluto / 100)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const decimales = String(absoluto % 100).padStart(2, "0");
   return `${signo}$ ${enteros}.${decimales}`;
 }
 
