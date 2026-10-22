@@ -6,9 +6,9 @@ const prisma = new PrismaClient();
 export const obtenerMiPerfil = async (req: Request, res: Response) => {
   try {
     const usuarioId = (req as any).usuario.id;
-    const perfil = await prisma.user.findUnique({
+    const perfil = await prisma.usuarios.findUnique({
       where: { id: usuarioId },
-      select: { id: true, nombres: true, apellidos: true, email: true, role: true }
+      select: { id: true, nombres: true, apellidos: true, email: true, rol: true }
     });
     res.json(perfil);
   } catch (error) {
@@ -21,7 +21,7 @@ export const actualizarMiPerfil = async (req: Request, res: Response) => {
     const usuarioId = (req as any).usuario.id;
     const { nombres, apellidos } = req.body;
     
-    const perfilActualizado = await prisma.user.update({
+    const perfilActualizado = await prisma.usuarios.update({
       where: { id: usuarioId },
       data: { nombres, apellidos },
       select: { id: true, nombres: true, apellidos: true, email: true }
