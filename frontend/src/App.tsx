@@ -1,4 +1,5 @@
 import { Route, Routes, useLocation } from "react-router";
+import { ResultadosPage } from "./pages/compra/ResultadosPage";
 import { PublicLayout, SiteFooter } from "./components/layout";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 
@@ -64,6 +65,7 @@ export function App() {
           path="/registrarse"
           element={<PlaceholderPage title="Aquí va el registro" />}
         />
+        <Route path="/viajes" element={<ResultadosPage />} />
         <Route path="/pago" element={<MetodoPago />} />
         <Route path="/resumen" element={<PasoPagoPendiente />} />
         <Route path="/pago/comprobante" element={<SubirComprobante />} />
