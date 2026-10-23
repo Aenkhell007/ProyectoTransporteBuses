@@ -8,7 +8,7 @@ export const obtenerUsuarios = async (req: Request, res: Response) => {
   try {
     const usuarioActual = (req as any).usuario;
     const whereClause =
-      usuarioActual.rol === 'ADMIN_COOPERATIVA'
+      usuarioActual.rol === 'COOPERATIVA'
         ? { membresias: { some: { cooperativa_id: usuarioActual.cooperativa_id } } }
         : {};
  
@@ -32,7 +32,7 @@ export const crearUsuario = async (req: Request, res: Response) => {
       return;
     }
  
-    if (usuarioActual.rol === 'ADMIN_COOPERATIVA') {
+    if (usuarioActual.rol === 'COOPERATIVA') {
       if (cooperativa_id !== usuarioActual.cooperativa_id) {
         res.status(403).json({ error: 'Solo puede crear usuarios para su propia cooperativa.' });
         return;

@@ -27,9 +27,9 @@ export const crearCooperativaConResponsable = async (req: Request, res: Response
  
   try {
     // Se valida el rol ANTES de la transaccion para no crear datos a medias.
-    const rolDb = await prisma.roles.findUnique({ where: { codigo: 'ADMIN_COOPERATIVA' } });
+    const rolDb = await prisma.roles.findUnique({ where: { codigo: 'COOPERATIVA' } });
     if (!rolDb) {
-      res.status(400).json({ error: 'Rol ADMIN_COOPERATIVA no encontrado.' });
+      res.status(400).json({ error: 'Rol COOPERATIVA no encontrado.' });
       return;
     }
  
