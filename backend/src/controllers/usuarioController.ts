@@ -1,8 +1,7 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../conexion-bd/src/db.js';
 import { hashPassword } from '../../conexion-bd/src/password.js';
  
-const prisma = new PrismaClient();
  
 export const obtenerUsuarios = async (req: Request, res: Response) => {
   try {
