@@ -97,10 +97,8 @@ export const login = async (req: Request, res: Response) => {
       return;
     }
  
-    // Membresías activas (si la tabla tiene columna "activo" se respeta; si no, todas cuentan).
-    const membresiasActivas = (user.membresias ?? []).filter((m) =>
-      'activo' in m ? m.activo !== false : true
-    );
+    // Solo membresías activas (la columna se llama "activa").
+    const membresiasActivas = (user.membresias ?? []).filter((m) => m.activa);
     const membresiaConRol = membresiasActivas.find((m) => m.roles) ?? null;
     const membresia = membresiaConRol ?? membresiasActivas[0] ?? null;
  
