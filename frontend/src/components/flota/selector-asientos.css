@@ -1,0 +1,88 @@
+.selector-asientos__contador {
+  font-weight: 600;
+}
+.selector-asientos__pisos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+.selector-asientos__grilla {
+  display: grid;
+  gap: 0.4rem;
+}
+.selector-asientos__celda {
+  height: 2.5rem;
+  width: 2.5rem;
+}
+.selector-asientos__celda--bloque {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+.selector-asientos__asiento {
+  background: #fff;
+  border: 2px solid #374151;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.selector-asientos__asiento--ejecutivo {
+  border-color: #b45309;
+  border-width: 3px;
+}
+.selector-asientos__asiento--libre:hover:not(:disabled) {
+  background: #dbeafe;
+}
+.selector-asientos__asiento--libre:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.selector-asientos__asiento--elegido {
+  background: #2563eb;
+  border-color: #1d4ed8;
+  color: #fff;
+}
+.selector-asientos__asiento--reservado,
+.selector-asientos__asiento--ocupado,
+.selector-asientos__asiento--seleccionado {
+  background: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+.selector-asientos__leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+}
+.selector-asientos__muestra {
+  border: 2px solid #374151;
+  border-radius: 4px;
+  display: inline-block;
+  height: 1rem;
+  vertical-align: middle;
+  width: 1rem;
+}
+.selector-asientos__muestra--libre {
+  background: #fff;
+}
+.selector-asientos__muestra--elegido {
+  background: #2563eb;
+}
+.selector-asientos__muestra--reservado {
+  background: #e5e7eb;
+}
+.selector-asientos__muestra--ejecutivo {
+  background: #fff;
+  border-color: #b45309;
+}
+
+/* Contenedor de la página de selección de asientos. */
+.seleccion-asientos-pagina {
+  background: #fff;
+  border-radius: 12px;
+  margin: 1.5rem auto;
+  max-width: 56rem;
+  padding: 1.5rem;
+}
