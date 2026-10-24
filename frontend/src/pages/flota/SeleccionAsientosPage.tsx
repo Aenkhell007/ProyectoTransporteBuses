@@ -52,7 +52,12 @@ export default function SeleccionAsientosPage() {
         <p>El tramo no es válido: el destino debe ser posterior al origen.</p>
       )}
       <p>Asientos elegidos: {codigos || 'ninguno'}</p>
-      <button type="button" disabled={seleccion.length !== cantidad} onClick={confirmar}>
+            <button
+        type="button"
+        className="seleccion-asientos-pagina__confirmar"
+        disabled={seleccion.length !== cantidad}
+        onClick={confirmar}
+      >
         Confirmar asientos
       </button>
       {cuerpo && (
