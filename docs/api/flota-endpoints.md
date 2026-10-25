@@ -205,15 +205,28 @@ función lance "Viaje o tramo no disponible"; el código HTTP (404 o 422) está 
 confirmar con Matías.
 
 ## Roles y control de acceso
-Propuesta, a alinear con las tablas roles, permisos y rol_permiso:
-- Administrador de cooperativa: crea y modifica buses, planos y celdas.
-- Oficinista: solo lectura de buses y mapa.
-- Cliente: solo mapa de asientos de viajes publicados.
+Los permisos salen de la base (tablas roles, permisos y rol_permiso) y se aplican con
+políticas de seguridad por fila para el rol de la API:
+- Leer buses, planos y celdas: permiso cooperativa.leer ("Consultar operación del ámbito")
+  sobre la cooperativa del recurso.
+- Crear, modificar o desactivar buses, planos y celdas, y editar grupos de buses: permiso
+  flota.admin ("Editar flota y grupos").
+
+Quién tiene cada permiso (rol_permiso):
+- COOPERATIVA: ambos. Es el rol que administra la flota de su cooperativa.
+- ADMIN_SISTEMA: todos los permisos.
+- OFICINISTA: cooperativa.leer, pero no flota.admin. Ve la flota sin modificarla.
+- PERSONAL_BUS: cooperativa.leer, pero no flota.admin. Ve la flota sin modificarla.
+- CLIENTE: ningún permiso de cooperativa; solo el mapa de asientos de un viaje.
 
 Aislamiento por cooperativa:
-- La sesión define cooperativa_id.
-- Un recurso de otra cooperativa responde 404 (no 403), para no revelar que existe.
-- Errores: 401 sin sesión, 403 sin permiso.
+- La sesión define el actor; no se envía la cooperativa ni el usuario en el body.
+- Un recurso de otra cooperativa no aparece, así que se responde 404.
+- Errores: 401 sin sesión, 403 sin permiso (según el mensaje de la base: "Sin permiso").
+- Pendiente de confirmar con Matías: si ADMIN_SISTEMA puede operar sobre la flota de
+  cualquier cooperativa.
+
+Mapa de asientos de un viaje: ver su sección; la función plano_disponible no exige sesión.
 
 ## Errores comunes
 - 400: datos inválidos
