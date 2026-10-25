@@ -111,7 +111,12 @@ Plano con todas sus celdas. Éxito: 200.
 
 ### PUT /planos/:id/celdas
 Reemplaza la grilla del plano (lo usa el editor visual). Éxito: 200.
-Solo permitido si el plano no está publicado (propuesta, a confirmar).
+
+Regla de la base: un plano no se puede modificar si existe un viaje no cancelado que lo
+use. En ese caso las celdas no se insertan, mueven ni borran y la base lanza el error
+"Plano en uso: cree una nueva version". El código HTTP está por acordar (se propone 409).
+Para cambiar un plano en uso se crea una versión nueva con POST /buses/:id/planos y se
+cargan sus celdas; los viajes ya programados siguen con la versión anterior.
 
 Body:
 {
@@ -121,17 +126,20 @@ Body:
   ]
 }
 
-Validaciones:
-- piso: entre 1 y el número de pisos del plano.
+Validaciones (las impone la base):
+- piso: entre 1 y el número de pisos del plano ("Piso fuera de plano" si lo excede) y
+  entre 1 y 3.
 - fila: mayor que 0. columna: entre 1 y 12.
 - tipo: ASIENTO, PASILLO o BLOQUE.
 - ASIENTO: codigo y clase_id obligatorios. PASILLO y BLOQUE: sin codigo ni clase_id.
 - El codigo no se repite dentro del plano; la posición (piso, fila, columna) tampoco.
-- Errores: 400, 404, 409.
+- Errores: 400, 404 y el de plano en uso.
 
 ### POST /planos/:id/publicar
-Marca el plano como publicado. Desde entonces no se edita: se crea otra versión
-(propuesta, a confirmar con Matías). Éxito: 200. Errores: 404, 409 (ya publicado).
+Marca el plano como publicado (columna publicado de la tabla planos). Éxito: 200.
+Pendiente de confirmar con Matías: la base no usa esa columna para bloquear la edición
+(el bloqueo depende de los viajes que usan el plano), así que hay que definir qué efecto
+tiene publicar. Errores: 404, 409 (ya publicado).
 
 ## Disponibilidad de buses (para Benjamín)
 
