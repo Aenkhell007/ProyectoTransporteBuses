@@ -236,9 +236,17 @@ Mapa de asientos de un viaje: ver su sección; la función plano_disponible no e
 - 409: conflicto (placa, unidad, código de asiento o posición duplicados)
 
 ## Pendiente
-- Nombres de los campos (español como la base, o con traducción).
-- Si un plano publicado o con viajes es inmutable.
-- Estados de reserva_asientos que cuentan como ocupados.
-- Códigos reales de las clases de asiento (Normal / Ejecutivo).
+- Código HTTP del error "Viaje o tramo no disponible" del mapa (404 o 422).
+- Código HTTP del error "Plano en uso" (se propone 409).
+- Si la API exige sesión para consultar el mapa (la función no la exige).
+- Efecto de publicar un plano, ya que la base bloquea por viajes y no por publicado.
+- Si ADMIN_SISTEMA puede operar sobre la flota de cualquier cooperativa.
+- Si el 409 del DELETE de bus cuenta cualquier viaje o solo los futuros.
 - Fotos del bus (bus_fotos y archivos): endpoint por definir.
 - Equipamiento (bus_equipamiento): fuera de la primera entrega salvo que se pida.
+
+## Decisiones tomadas
+- Los campos van en español y snake_case, como la base (decisión 9 de compra-endpoints.md).
+- Las clases de asiento son NORMAL y EJECUTIVO.
+- Un bus no se elimina: se desactiva (activo = false).
+- Escribir en la flota exige flota.admin, que tiene el rol COOPERATIVA.
