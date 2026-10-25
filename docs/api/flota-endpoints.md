@@ -156,20 +156,45 @@ Validaciones:
 ## Mapa de asientos de un viaje (para KT)
 
 ### GET /viajes/:viajeId/mapa-asientos?origen_orden=1&destino_orden=3
-Devuelve el plano del viaje (viajes.plano_id) con la ocupación. Éxito: 200.
-La estructura de la respuesta está en docs/api/mapa-asientos.mock.json.
+Llama a la función transporte.plano_disponible(viaje, origen, destino). Éxito: 200.
+Solo responde para viajes PUBLICADO con salida futura.
 
-Regla de ocupación:
-- Las paradas se identifican por su orden en la ruta (ruta_paradas.orden).
-- Cada celda trae ocupaciones: [{ origen_orden, destino_orden, estado }].
-- Un asiento está libre para el recorrido o -> d solo si ninguna ocupación
-  cumple origen_orden < d y destino_orden > o.
-- Una retención vencida (expires_at pasado) no cuenta como ocupación.
-- Qué estados de reserva_asientos cuentan como ocupados se confirma con KT y Matías.
-- Es información de consulta: la disponibilidad real se vuelve a verificar, de forma
-  transaccional, al crear la reserva.
+Respuesta:
+{
+  "planoId": "uuid",
+  "celdas": [
+    { "id": "uuid", "piso": 1, "fila": 1, "columna": 1, "tipo": "ASIENTO",
+      "codigo": "1", "clase": "NORMAL", "estado": "DISPONIBLE" },
+    { "id": "uuid", "piso": 1, "fila": 1, "columna": 3, "tipo": "PASILLO",
+      "codigo": null, "clase": null, "estado": "DISPONIBLE" }
+  ]
+}
 
-Errores: 400 (orden inválido), 401, 404 (viaje inexistente o de otra cooperativa).
+Detalles:
+- El id de cada celda es el que se envía como asiento_ids en POST /reservas.
+- No hay lista de pisos ni de clases: los pisos se deducen de las celdas y la clase es
+  el código de clases_asiento (NORMAL o EJECUTIVO).
+- tipo es ASIENTO, PASILLO o BLOQUE. Solo los ASIENTO se pueden reservar.
+
+Estados de una celda para el tramo pedido:
+- DISPONIBLE: sin reserva en el tramo.
+- OCUPADO: una compra confirmada cubre el tramo.
+- RESERVADO: otra persona lo tiene retenido y la retención no ha vencido.
+- SELECCIONADO: la retención es de quien consulta.
+
+Regla del tramo: dos rangos [origen, destino) que se cruzan cuentan como ocupación. Una
+retención vencida (expires_at pasado) no cuenta.
+
+Sesión: la función no la exige. Sin sesión ningún asiento sale SELECCIONADO, porque no se
+sabe quién consulta. Si la API exige sesión en esta ruta es una decisión pendiente.
+
+Es información de consulta: la disponibilidad real se verifica de nuevo, de forma
+transaccional, al crear la reserva (reservar_asientos), y una restricción de la base
+impide que dos retenciones del mismo asiento se crucen en un tramo.
+
+Errores: un viaje inexistente, no publicado, ya salido o un tramo inválido hace que la
+función lance "Viaje o tramo no disponible"; el código HTTP (404 o 422) está pendiente de
+confirmar con Matías.
 
 ## Roles y control de acceso
 Propuesta, a alinear con las tablas roles, permisos y rol_permiso:
