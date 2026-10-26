@@ -7,6 +7,8 @@ import { DatosInvalidos, leerCredenciales, leerRegistro } from "./validation";
 import { hashPassword, verifyPassword, HASH_SIN_USUARIO } from "./password";
 
 import { correoConfigurado, enviarCorreo, enlaceRecuperacion } from "./brevo";
+import { prepararActivacion, enviarActivacion, procesarBienvenidas, registrarErrorCorreo } from "./activacion";
+import { correoRecuperacion } from "./correos";
 
 export const authRouter = Router();
 const COOKIE = "transporte_sesion";
@@ -48,6 +50,7 @@ function codigo(error: unknown): string | undefined {
 }
 function errorRespuesta(res: Response, error: unknown) {
   if (error instanceof DatosInvalidos) { res.status(400).json({ error: error.message }); return; }
+  if (codigo(error) === "PAV02") { res.clearCookie(COOKIE, opcionesCookie); res.status(403).json({error:"Tu cuenta está pendiente de activación. Abre el enlace enviado a tu correo o solicita uno nuevo.",codigo:"CUENTA_NO_ACTIVADA"}); return; }
   if (codigo(error) === "23505") { res.status(409).json({ error: "No se pudo registrar: el correo o documento ya está en uso." }); return; }
   if (codigo(error) === "28000") { res.clearCookie(COOKIE, opcionesCookie); res.status(401).json({ error: "La sesión ha vencido. Inicia sesión otra vez." }); return; }
   console.error("Error de autenticación; código:", codigo(error) ?? "interno");
@@ -88,18 +91,53 @@ async function perfil(cliente: PoolClient) {
 authRouter.post("/register", async (req, res) => {
   try {
     const datos = leerRegistro(req.body);
+    if (!correoConfigurado()) { res.status(503).json({error:"El registro no está disponible temporalmente. Inténtalo más tarde."}); return; }
     const hash = await hashPassword(datos.password);
-    const resultado = await pool.query(
-      "SELECT transporte.registrar_cliente($1,$2,$3,$4,$5,$6,$7,$8) AS id",
-      [datos.nombres, datos.apellidos, datos.tipoDocumento, datos.documento, datos.email, datos.telefono, hash, "PRUEBA_ACADEMICA_20261026"],
-    );
-    let correoEnviado = false;
-    if (correoConfigurado()) {
-      try { await enviarCorreo(datos.email, "Bienvenido a Gran Continental", "Tu cuenta se creó correctamente. Ya puedes iniciar sesión. Si no solicitaste esta cuenta, puedes ignorar este mensaje."); correoEnviado = true; }
-      catch { console.error("No se pudo enviar el correo de bienvenida."); }
+    const cliente = await pool.connect();
+    let id: string;
+    let solicitud: Awaited<ReturnType<typeof prepararActivacion>>;
+    try {
+      await cliente.query("BEGIN");
+      const resultado = await cliente.query("SELECT transporte.registrar_cliente($1,$2,$3,$4,$5,$6,$7,$8) AS id",
+        [datos.nombres,datos.apellidos,datos.tipoDocumento,datos.documento,datos.email,datos.telefono,hash,"PRUEBA_ACADEMICA_20261026"]);
+      id = resultado.rows[0].id;
+      solicitud = await prepararActivacion(datos.email,cliente);
+      await cliente.query("COMMIT");
+    } catch(error) { await cliente.query("ROLLBACK").catch(()=>{}); throw error; }
+    finally { cliente.release(); }
+    let correoAceptado = false;
+    if (solicitud) {
+      try { await enviarActivacion(solicitud); correoAceptado = true; }
+      catch(error) { registrarErrorCorreo(error); }
     }
-    res.status(201).json({id:resultado.rows[0].id, correoEnviado, mensaje: "Cuenta creada. Ya puedes iniciar sesión." + (correoEnviado ? " Enviamos un correo de bienvenida." : " El correo de bienvenida no se pudo enviar; tu cuenta sí quedó creada.")});
-  } catch (error) { errorRespuesta(res, error); }
+    res.status(201).json({id,activacionRequerida:true,correoAceptado,mensaje:
+      "Tu cuenta se creó correctamente. Para iniciar sesión, debes activarla mediante el enlace enviado a tu correo electrónico. " +
+      (correoAceptado ? "Revisa tu bandeja de entrada y la carpeta de spam. El enlace vence en 60 minutos." : "No pudimos confirmar el envío del correo. Tu cuenta está guardada; solicita un nuevo enlace de activación en unos minutos.")});
+  } catch(error) { errorRespuesta(res,error); }
+});
+
+authRouter.post("/activation/resend",async(req,res)=>{
+  try {
+    const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    if (!email || email.length>254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new DatosInvalidos("Ingresa un correo válido.");
+    if (!correoConfigurado()) { res.status(503).json({error:"El servicio de correo no está disponible temporalmente."}); return; }
+    const solicitud = await prepararActivacion(email);
+    if (solicitud) { try {await enviarActivacion(solicitud);} catch(error) {registrarErrorCorreo(error);} }
+    res.json({mensaje:"Si existe una cuenta pendiente de activación y el tiempo de espera lo permite, recibirás un nuevo enlace. Revisa tu bandeja de entrada y spam. Espera al menos un minuto antes de solicitar otro correo."});
+  } catch(error) {errorRespuesta(res,error);}
+});
+
+authRouter.post("/activation/confirm",async(req,res)=>{
+  try {
+    const token = req.body?.token;
+    if (typeof token !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(token)) throw new DatosInvalidos("El enlace de activación no es válido. Solicita uno nuevo.");
+    await pool.query("SELECT transporte.confirmar_activacion($1)",[hashToken(token)]);
+    void procesarBienvenidas();
+    res.json({mensaje:"Tu cuenta ha sido activada correctamente. Ya puedes iniciar sesión en Gran Continental."});
+  } catch(error) {
+    if(codigo(error)==="PAV01") {res.status(400).json({error:"El enlace de activación venció, ya fue utilizado o no es válido. Si tu cuenta ya está activada, inicia sesión; de lo contrario, solicita otro enlace."});return;}
+    errorRespuesta(res,error);
+  }
 });
 
 authRouter.post("/login", async (req, res) => {
@@ -161,7 +199,8 @@ authRouter.post("/password/forgot", async (req, res) => {
       const credencial = await cliente.query("SELECT * FROM transporte.credencial_login($1)", [email]);
       await cliente.query("SELECT transporte.solicitar_recuperacion($1,$2)", [email, hashToken(token)]);
       if (credencial.rows[0]?.activo) {
-        await enviarCorreo(email, "Recupera tu contraseña — Gran Continental", `Recibimos una solicitud para cambiar tu contraseña.\n\nAbre este enlace:\n${enlace}\n\nVence en 30 minutos y solo puede usarse una vez. Si no lo solicitaste, ignora este correo.`);
+        const contenido = correoRecuperacion(enlace);
+        await enviarCorreo(email,contenido.subject,contenido.textContent,{htmlContent:contenido.htmlContent});
       }
       await cliente.query("COMMIT");
     } catch (error) {

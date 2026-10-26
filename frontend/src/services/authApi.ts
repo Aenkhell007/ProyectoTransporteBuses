@@ -28,6 +28,8 @@ async function peticion<T>(ruta: string, body?: unknown): Promise<T> {
 }
 
 export const authApi = {
+  activate: (token: string) => peticion<{mensaje:string}>("/activation/confirm", {token}),
+  resendActivation: (email: string) => peticion<{mensaje:string}>("/activation/resend", {email}),
   forgot: (email: string) => peticion<{mensaje:string}>("/password/forgot", {email}),
   reset: (token: string, password: string) => peticion<{mensaje:string}>("/password/reset", {token,password}),
   me: () => peticion<{ usuario: UsuarioSesion }>("/me"),

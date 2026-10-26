@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import { pool } from "./database";
 import { authRouter } from "./auth/router";
 import { correoConfigurado } from "./auth/brevo";
+import { iniciarBienvenidas } from "./auth/activacion";
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
 app.disable("x-powered-by");
@@ -20,5 +21,5 @@ app.use((error:unknown,_req:express.Request,res:express.Response,_next:express.N
   const status=error && typeof error === "object" && "status" in error ? Number(error.status) : 500;
   res.status(status===413?413:status===400?400:500).json({error:status===413?"Solicitud demasiado grande.":status===400?"JSON no válido.":"No se pudo procesar la solicitud."});
 });
-const server=app.listen(port,"127.0.0.1",()=>console.log(`API disponible en http://127.0.0.1:${port}`));
+const server=app.listen(port,"127.0.0.1",()=>{console.log(`API disponible en http://127.0.0.1:${port}`); iniciarBienvenidas();});
 server.on("error",()=>{console.error("No se pudo abrir el puerto del backend. Comprueba si ya está en uso.");process.exitCode=1;void pool.end();});

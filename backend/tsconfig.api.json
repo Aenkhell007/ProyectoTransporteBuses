@@ -13,6 +13,8 @@
   },
   "files": [
     "src/server.ts",
-    "src/auth/auth.test.ts"
+    "src/auth/auth.test.ts",
+    "src/auth/activacion.test.ts",
+    "src/auth/activacion.db.test.ts"
   ]
 }

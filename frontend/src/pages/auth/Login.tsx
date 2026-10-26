@@ -33,6 +33,7 @@ export default function Login() {
       {error && <p role="alert" className="rounded bg-red-50 p-3 text-sm text-red-800">{error}</p>}
       <button disabled={enviando || cargando} className="min-h-11 w-full rounded-md bg-[#ff0018] px-5 py-3 font-semibold text-white hover:bg-red-700 disabled:opacity-50">{enviando ? "Iniciando sesión…" : "Iniciar sesión"}</button>
     </form>
+    <Link to="/reenviar-activacion" className="mt-4 block text-sm text-blue-700 underline">¿No recibiste el correo para activar tu cuenta?</Link>
     <Link to="/recuperar-contrasena" className="mt-4 block text-sm text-blue-700 underline">¿Olvidaste tu contraseña?</Link>
     <p className="mt-5 border-t border-slate-100 pt-5 text-sm">¿No tienes cuenta? <Link to="/registrarse" className="font-semibold text-red-600 underline">Regístrate</Link></p>
   </section>;

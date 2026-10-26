@@ -99,7 +99,7 @@ export default function RegistroPage() {
       <div className="registro-formulario">
         <h1 id="registro-titulo">Crear cuenta</h1>
         <p className="registro-subtitulo">Completa tus datos para registrarte en Gran Continental.</p>
-        {mensaje ? <div role="status" className="registro-exito"><p>{mensaje}</p><Link to="/iniciar-sesion">Ir a iniciar sesión →</Link></div> : <form onSubmit={handleSubmit}>
+        {mensaje ? <div role="status" className="registro-exito"><p>{mensaje}</p><Link to="/reenviar-activacion">¿No recibiste el correo? Solicitar otro enlace</Link><br/><Link to="/iniciar-sesion">Iniciar sesión después de activar mi cuenta →</Link></div> : <form onSubmit={handleSubmit}>
           <fieldset disabled={enviando} className="registro-controles">
             <legend className="sr-only">Datos de la nueva cuenta</legend>
             <div className="registro-par">

@@ -1,3 +1,5 @@
+import ActivarCuenta from "./pages/auth/ActivarCuenta";
+import ReenviarActivacion from "./pages/auth/ReenviarActivacion";
 import Login from "./pages/auth/Login";
 import RegistroPage from "./pages/identidad/RegistroPage";
 import MiCuenta from "./pages/auth/MiCuenta";
@@ -62,6 +64,8 @@ export function App() {
       }}
     >
       <Routes>
+        <Route path="/activar-cuenta" element={<ActivarCuenta />} />
+        <Route path="/reenviar-activacion" element={<ReenviarActivacion />} />
         <Route path="/" element={<InicioPage />} />
         <Route
           path="/iniciar-sesion"
