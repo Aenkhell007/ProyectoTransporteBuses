@@ -42,7 +42,7 @@ function Campo({ nombre, titulo, valor, cambiar, icono, placeholder, tipo = "tex
     <label htmlFor={`registro-${nombre}`} className="registro-label">{titulo}</label>
     <div className="registro-input">
       <Icono nombre={icono}/>
-      {nombre === "telefono" && <span className="registro-prefijo"><span aria-hidden="true">🇪🇨</span> +593</span>}
+      {nombre === "telefono" && <span className="registro-prefijo" aria-label="Ecuador, prefijo +593"><img className="registro-bandera" src="/images/banderas/ecuador.svg" alt="" width="24" height="16"/> +593</span>}
       <input id={`registro-${nombre}`} name={nombre} value={valor} onChange={cambiar}
         required type={esClave && visible ? "text" : tipo} autoComplete={autoComplete}
         minLength={esClave ? 8 : nombre === "cedula" ? 10 : undefined} maxLength={maximo}
