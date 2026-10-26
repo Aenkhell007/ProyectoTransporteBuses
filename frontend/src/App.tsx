@@ -5,6 +5,7 @@ import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { InicioPage } from "./pages/compra/InicioPage";
 
 import MetodoPago from "./pages/pagos/MetodoPago";
+import { PasajerosPage } from "./pages/compra/PasajerosPage";
 import PasoPagoPendiente from "./pages/pagos/PasoPagoPendiente";
 import SubirComprobante from "./pages/pagos/SubirComprobante";
 
@@ -59,6 +60,7 @@ export function App() {
           path="/iniciar-sesion"
           element={<PlaceholderPage title="Aquí va iniciar sesión" />}
         />
+        <Route path="/pasajeros" element={<PasajerosPage />} />
         <Route
           path="/registrarse"
           element={<PlaceholderPage title="Aquí va el registro" />}
