@@ -101,3 +101,20 @@
   cursor: not-allowed;
   opacity: 0.5;
 }
+
+.seleccion-asientos-pagina__error {
+  background: #fef2f2;
+  border: 1px solid #b91c1c;
+  border-radius: 6px;
+  color: #7f1d1d;
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+}
+.seleccion-asientos-pagina__exito {
+  background: #f0fdf4;
+  border: 1px solid #15803d;
+  border-radius: 6px;
+  color: #14532d;
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+}
