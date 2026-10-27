@@ -17,9 +17,9 @@ function modoDe(valor: string | null): ModoSimulacion {
 
 export default function SeleccionAsientosPage() {
   const [parametros] = useSearchParams();
-  const viajeId = parametros.get('viaje') ?? '00000000-0000-4000-8000-000000000101';
-  const origen = entero(parametros.get('origen'), 1);
-  const destino = entero(parametros.get('destino'), 3);
+  const viajeId = parametros.get('viaje_id') ?? '00000000-0000-4000-8000-000000000101';
+  const origen = entero(parametros.get('origen_orden'), 1);
+  const destino = entero(parametros.get('destino_orden'), 3);
   const cantidad = entero(parametros.get('cantidad'), 2);
   const modo = modoDe(parametros.get('simular'));
 
