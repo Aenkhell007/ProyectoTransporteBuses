@@ -17,7 +17,6 @@ export default function RegistroPage() {
       alert('Las contraseñas no coinciden');
       return;
     }
-    console.log('Enviando registro:', formData);
   };
 
   return (
@@ -78,7 +77,7 @@ export default function RegistroPage() {
         </form>
         
         <div className="mt-6 text-center text-sm">
-          <p>¿Ya tienes una cuenta? <a href="/login" className="text-red-600 font-bold hover:underline">Inicia sesión</a></p>
+          <p>¿Ya tienes una cuenta? <a href="/iniciar-sesion" className="text-red-600 font-bold hover:underline">Inicia sesión</a></p>
           <a href="/" className="block mt-4 text-gray-600 hover:underline">← Volver al inicio</a>
         </div>
       </div>

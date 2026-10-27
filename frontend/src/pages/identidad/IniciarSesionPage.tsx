@@ -8,7 +8,6 @@ export default function IniciarSesionPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Aquí integraremos la llamada a la API POST /api/auth/login
-    console.log('Enviando:', { email, password });
   };
 
   return (
@@ -65,7 +64,7 @@ export default function IniciarSesionPage() {
         </form>
 
         <div className="mt-6 text-center text-sm">
-          <p>¿Aún no tienes una cuenta? <a href="/registro" className="text-red-600 font-bold hover:underline">Regístrate</a></p>
+          <p>¿Aún no tienes una cuenta? <a href="/registrarse" className="text-red-600 font-bold hover:underline">Regístrate</a></p>
           <a href="/" className="block mt-4 text-gray-600 hover:underline">← Volver al inicio</a>
         </div>
       </div>
