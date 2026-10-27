@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import SelectorAsientos from '../../components/flota/SelectorAsientos';
 import { ErrorCompra, erroresPorCampo, mensajeDeError } from '../../features/compra/errores';
 import { simularPlanoDisponible } from '../../mocks/mapaViaje';
@@ -17,6 +17,7 @@ function modoDe(valor: string | null): ModoSimulacion {
 
 export default function SeleccionAsientosPage() {
   const [parametros] = useSearchParams();
+  const navegar = useNavigate();
   const viajeId = parametros.get('viaje_id') ?? '00000000-0000-4000-8000-000000000101';
   const origen = entero(parametros.get('origen_orden'), 1);
   const destino = entero(parametros.get('destino_orden'), 3);
@@ -63,6 +64,7 @@ export default function SeleccionAsientosPage() {
         modo,
       );
       setReserva(respuesta);
+      navegar(`/pasajeros?reserva_id=${respuesta.reserva_id}`);
     } catch (error) {
       setMensajeError(mensajeDeError(error));
       setDetalles(Object.values(erroresPorCampo(error)));
