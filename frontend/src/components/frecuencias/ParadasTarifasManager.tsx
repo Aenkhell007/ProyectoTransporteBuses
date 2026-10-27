@@ -41,7 +41,7 @@ export const ParadasTarifasManager: React.FC<ParadasTarifasManagerProps> = ({
             {tarifas.map((t) => (
               <li key={t.id} className="text-sm border-b pb-2 flex justify-between items-center">
                 <span>
-                  {t.ciudadOrigen} $\rightarrow$ {t.ciudadDestino} ({t.clase})
+                  {t.ciudadOrigen} → {t.ciudadDestino} ({t.clase})
                 </span>
                 <span className="font-bold text-[#C8102E]">${t.precioBase.toFixed(2)}</span>
               </li>
