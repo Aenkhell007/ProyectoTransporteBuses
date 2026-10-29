@@ -25,3 +25,17 @@ Algunas piezas están en pull requests en revisión y pueden no estar todavía e
 - Contrato de API: docs/api/flota-endpoints.md
 - Mapa de asientos de ejemplo: docs/api/mapa-asientos.mock.json y docs/api/mapa-asientos.md
 - Contrato de compra (KT): docs/api/compra-endpoints.md
+
+## Cómo probar cada pantalla
+Las pantallas no tienen ruta registrada para no tocar App.tsx. Para verlas, agregar
+temporalmente en frontend/src/App.tsx el import de la página y una ruta antes de path="*", y
+levantar la aplicación con `npm run dev` dentro de frontend. No subir ese cambio.
+
+| Página | Ruta de prueba | Qué comprobar |
+|---|---|---|
+| BusesPage | /flota/buses | Placa repetida y de formato inválido, desactivar y ver desactivados |
+| PlanoEditorPage | /flota/plano-editor | Pintar, borrar, renumerar y cambiar pisos |
+| PlanosBusPage | /flota/planos-bus | Plano en uso solo lectura y crear nueva versión |
+| SeleccionAsientosPage | /asientos?viaje_id=...&origen_orden=2&destino_orden=3&cantidad=1 | Límite por pasajeros, tramo y errores con &simular=conflicto, invalido o red |
+
+Verificación general: `npm run build` dentro de frontend (incluye la revisión de tipos).
