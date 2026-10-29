@@ -39,3 +39,24 @@ levantar la aplicación con `npm run dev` dentro de frontend. No subir ese cambi
 | SeleccionAsientosPage | /asientos?viaje_id=...&origen_orden=2&destino_orden=3&cantidad=1 | Límite por pasajeros, tramo y errores con &simular=conflicto, invalido o red |
 
 Verificación general: `npm run build` dentro de frontend (incluye la revisión de tipos).
+
+## Reglas de la base que aplica el módulo
+- Un plano usado por un viaje no cancelado no se edita (tg_plano_inmutable): se crea una
+  versión nueva.
+- Una celda de plano es ASIENTO, PASILLO o BLOQUE; piso de 1 a 3 y columna de 1 a 12. Un
+  ASIENTO lleva código y clase; el código no se repite dentro del plano.
+- El mapa de un viaje viene de plano_disponible, con estado por celda: DISPONIBLE, OCUPADO,
+  RESERVADO o SELECCIONADO.
+- La sobreventa la impide la base (reservar_asientos y una restricción EXCLUDE), no el
+  frontend: la pantalla solo informa.
+- Escribir en la flota exige el permiso flota.admin, que tiene el rol COOPERATIVA.
+
+## Dependencias
+- Servidor Express (pendiente): sin él no hay conexión real.
+- Pasajeros y reserva de Kevin: la reserva simulada compartida y la ruta /asientos.
+- Matías: efecto de publicar un plano, códigos HTTP de los errores y alcance de ADMIN_SISTEMA.
+
+## Pendiente
+- Conectar los servicios a la API real cuando exista el servidor.
+- Edición de un bus y carga de fotos.
+- Distribución Normal y Ejecutivo de las vistas aprobadas.
