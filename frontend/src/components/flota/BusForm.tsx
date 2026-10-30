@@ -8,6 +8,9 @@ interface BusFormProps {
   grupos: GrupoBus[];
   existentes: Bus[];
   onGuardar: (datos: BusFormData) => void;
+  /** Si se pasa un bus, el formulario edita ese bus en lugar de crear uno nuevo. */
+  bus?: Bus;
+  onCancelar?: () => void;
 }
 
 const VACIO: BusFormData = {
@@ -20,8 +23,20 @@ const VACIO: BusFormData = {
   correo_contacto: '',
 };
 
-export default function BusForm({ grupos, existentes, onGuardar }: BusFormProps) {
-  const [datos, setDatos] = useState<BusFormData>(VACIO);
+function desdeBus(bus: Bus): BusFormData {
+  return {
+    unidad: bus.unidad,
+    placa: bus.placa,
+    chasis: bus.chasis,
+    carroceria: bus.carroceria,
+    grupo_id: bus.grupo_id,
+    propietario: bus.propietario ?? '',
+    correo_contacto: bus.correo_contacto ?? '',
+  };
+}
+
+export default function BusForm({ grupos, existentes, onGuardar, bus, onCancelar }: BusFormProps) {
+  const [datos, setDatos] = useState<BusFormData>(bus ? desdeBus(bus) : VACIO);
   const [errores, setErrores] = useState<ErroresBus>({});
 
   const cambiar = (campo: keyof BusFormData, valor: string) =>
@@ -29,11 +44,11 @@ export default function BusForm({ grupos, existentes, onGuardar }: BusFormProps)
 
   const enviar = (evento: FormEvent) => {
     evento.preventDefault();
-    const encontrados = validarBus(datos, existentes);
+    const encontrados = validarBus(datos, existentes, bus?.id);
     setErrores(encontrados);
     if (Object.keys(encontrados).length > 0) return;
     onGuardar({ ...datos, placa: datos.placa.trim().toUpperCase() });
-    setDatos(VACIO);
+    if (!bus) setDatos(VACIO);
   };
 
   const campo = (nombre: keyof BusFormData, etiqueta: string) => (
@@ -62,7 +77,12 @@ export default function BusForm({ grupos, existentes, onGuardar }: BusFormProps)
       </label>
       {campo('propietario', 'Propietario')}
       {campo('correo_contacto', 'Correo de contacto')}
-      <button type="submit">Agregar bus</button>
+      <button type="submit">{bus ? 'Guardar cambios' : 'Agregar bus'}</button>
+      {bus && onCancelar && (
+        <button type="button" onClick={onCancelar}>
+          Cancelar
+        </button>
+      )}
     </form>
   );
 }
