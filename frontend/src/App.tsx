@@ -8,6 +8,7 @@ import MetodoPago from "./pages/pagos/MetodoPago";
 import { PasajerosPage } from "./pages/compra/PasajerosPage";
 import PasoPagoPendiente from "./pages/pagos/PasoPagoPendiente";
 import SubirComprobante from "./pages/pagos/SubirComprobante";
+import { ResumenCompraPage } from "./pages/compra/ResumenCompraPage";
 
 const homeSections: Record<
   string,
@@ -67,7 +68,7 @@ export function App() {
         />
         <Route path="/viajes" element={<ResultadosPage />} />
         <Route path="/pago" element={<MetodoPago />} />
-        <Route path="/resumen" element={<PasoPagoPendiente />} />
+        <Route path="/resumen" element={<ResumenCompraPage />} />
         <Route path="/pago/comprobante" element={<SubirComprobante />} />
 
         <Route
