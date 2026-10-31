@@ -1,21 +1,23 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Link, Navigate, useNavigate } from "react-router";
+import { Link, Navigate, useLocation } from "react-router";
+import { destinoTrasLogin } from "../../features/auth/destinoTrasLogin";
 import { useAuth } from "../../features/auth/AuthContext";
 
 export default function Login() {
   const { usuario, cargando, login } = useAuth();
-  const navigate = useNavigate();
+  const location = useLocation();
+  const destino = destinoTrasLogin(location.state?.from);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [visible, setVisible] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
-  if (!cargando && usuario) return <Navigate to="/mi-cuenta" replace />;
+  if (!cargando && usuario) return <Navigate to={destino} state={destino.state} replace />;
   async function enviar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (enviando) return;
     setEnviando(true); setError("");
-    try { await login(email, password); setPassword(""); navigate("/mi-cuenta", { replace: true }); }
+    try { await login(email, password); setPassword("");  }
     catch (error) { setError(error instanceof Error ? error.message : "No se pudo iniciar sesión."); }
     finally { setEnviando(false); }
   }

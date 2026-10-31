@@ -1,4 +1,5 @@
 import { useId, useState } from 'react';
+import { useAuth } from '../../features/auth/AuthContext';
 import './site-shell.css';
 
 export interface NavigationLink {
@@ -23,7 +24,7 @@ export interface SiteHeaderProps {
   activeItem?: string;
   loginHref?: string;
   registerHref?: string;
-  /** Si hay sesión, sustituye los botones de acceso por el enlace del cliente. */
+  /** Destino del enlace de cuenta; los datos y el estado proceden de la sesión. */
   account?: { label: string; href: string };
 }
 
@@ -32,7 +33,22 @@ export function SiteHeader({
   homeHref = '/', links = DEFAULT_NAVIGATION, activeItem,
   loginHref = '/iniciar-sesion', registerHref = '/registrarse', account,
 }: SiteHeaderProps) {
+  const { usuario, logout } = useAuth();
+  const [saliendo, setSaliendo] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const nombreCompleto = usuario ? `${usuario.nombres} ${usuario.apellidos}`.trim() : '';
+
+  async function cerrarSesion() {
+    if (saliendo) return;
+    setSaliendo(true);
+    try {
+      await logout();
+    } catch {
+      window.alert('No se pudo cerrar la sesión. Inténtalo de nuevo.');
+    } finally {
+      setSaliendo(false);
+    }
+  }
   const navigationId = useId();
 
   return (
@@ -73,19 +89,37 @@ export function SiteHeader({
             ))}
           </ul>
           <div className="gc-header__actions">
-            {account ? <a className="gc-button gc-button--account" href={account.href}>{account.label}</a> : <>
-              <a className="gc-button gc-button--login" href={loginHref}>
-                <PersonIcon /> Iniciar sesión
-              </a>
+            <a className="gc-button gc-button--login"
+              href={usuario ? (account?.href ?? '/mi-cuenta') : loginHref}
+              title={usuario ? nombreCompleto : undefined}>
+              <PersonIcon />
+              <ActionLabel espacio="Iniciar sesión" texto={usuario ? nombreCompleto : 'Iniciar sesión'} />
+            </a>
+            {usuario ? (
+              <button className="gc-button gc-button--register" type="button"
+                onClick={cerrarSesion} disabled={saliendo} aria-busy={saliendo}
+                style={{ fontFamily: 'inherit', fontSize: '14px', lineHeight: 'inherit', cursor: 'pointer' }}>
+                <PersonIcon />
+                <ActionLabel espacio="Registrarse" texto={saliendo ? 'Saliendo…' : 'Salir'} />
+              </button>
+            ) : (
               <a className="gc-button gc-button--register" href={registerHref}>
-                <PersonIcon /> Registrarse
+                <PersonIcon /> <ActionLabel espacio="Registrarse" texto="Registrarse" />
               </a>
-            </>}
+            )}
           </div>
         </nav>
       </div>
     </header>
   );
+}
+
+// El texto original reserva el mismo ancho en ambos estados, también en móvil.
+function ActionLabel({ espacio, texto }: { espacio: string; texto: string }) {
+  return <span style={{ position: 'relative', display: 'inline-block', minWidth: 0 }}>
+    <span aria-hidden="true" style={{ visibility: 'hidden' }}>{espacio}</span>
+    <span style={{ position: 'absolute', inset: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{texto}</span>
+  </span>;
 }
 
 function PersonIcon() {

@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { Link, Navigate } from "react-router";
+import { Link, Navigate, useLocation } from "react-router";
 import { useAuth } from "../../features/auth/AuthContext";
 
 export default function MiCuenta() {
+  const location = useLocation();
   const { usuario, cargando, errorSesion, logout } = useAuth();
   const [error, setError] = useState("");
   const [saliendo, setSaliendo] = useState(false);
   if (cargando) return <p role="status" className="m-6 rounded bg-white p-6">Consultando sesión…</p>;
   if (errorSesion) return <p role="alert" className="m-6 rounded bg-white p-6 text-red-700">{errorSesion}</p>;
-  if (!usuario) return <Navigate to="/iniciar-sesion" replace />;
+  if (!usuario) return <Navigate to="/iniciar-sesion" state={{ from: location }} replace />;
   async function salir() {
     setSaliendo(true); setError("");
     try { await logout(); } catch { setError("No se pudo cerrar la sesión en el servidor. Inténtalo de nuevo."); }

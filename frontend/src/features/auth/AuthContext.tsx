@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, startTransition, useContext, useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import type { ReactNode } from "react";
 import { authApi, ErrorAuth } from "../../services/authApi";
 import type { UsuarioSesion } from "../../services/authApi";
@@ -13,6 +14,7 @@ interface AuthState {
 const Contexto = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
   const [usuario, setUsuario] = useState<UsuarioSesion | null>(null);
   const [cargando, setCargando] = useState(true);
   const [errorSesion, setErrorSesion] = useState("");
@@ -27,7 +29,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const datos = await authApi.login(email, password);
     setUsuario(datos.usuario); setErrorSesion("");
   }
-  async function logout() { await authApi.logout(); setUsuario(null); }
+  async function logout() {
+    await authApi.logout();
+    startTransition(() => {
+      navigate("/", { replace: true });
+      setUsuario(null);
+    });
+  }
   return <Contexto.Provider value={{ usuario, cargando, errorSesion, login, logout }}>{children}</Contexto.Provider>;
 }
 export function useAuth() {
