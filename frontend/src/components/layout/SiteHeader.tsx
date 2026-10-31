@@ -1,4 +1,6 @@
 import { useId, useState } from 'react';
+import type { ComponentProps } from 'react';
+import { Link } from 'react-router';
 import { useAuth } from '../../features/auth/AuthContext';
 import './site-shell.css';
 
@@ -33,7 +35,7 @@ export function SiteHeader({
   homeHref = '/', links = DEFAULT_NAVIGATION, activeItem,
   loginHref = '/iniciar-sesion', registerHref = '/registrarse', account,
 }: SiteHeaderProps) {
-  const { usuario, logout } = useAuth();
+  const { usuario, cargando, logout } = useAuth();
   const [saliendo, setSaliendo] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const nombreCompleto = usuario ? `${usuario.nombres} ${usuario.apellidos}`.trim() : '';
@@ -59,7 +61,7 @@ export function SiteHeader({
       }
     }}>
       <div className="gc-header__inner">
-        <a className="gc-brand" href={homeHref} aria-label="Gran Continental, inicio"
+        <HeaderLink className="gc-brand" href={homeHref} aria-label="Gran Continental, inicio"
           onClick={() => setMenuOpen(false)}>
           <img
             src={logoSrc}
@@ -67,7 +69,7 @@ export function SiteHeader({
             width="216"
             height="88"
           />
-        </a>
+        </HeaderLink>
         <button className="gc-menu-toggle" type="button" aria-controls={navigationId}
           aria-expanded={menuOpen} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
           onClick={() => setMenuOpen(!menuOpen)}>
@@ -81,20 +83,21 @@ export function SiteHeader({
           <ul className="gc-navigation__links">
             {links.map((link) => (
               <li key={link.id}>
-                <a href={link.href} aria-current={activeItem === link.id
+                <HeaderLink href={link.href} aria-current={activeItem === link.id
                   ? (link.href.includes('#') ? 'location' : 'page') : undefined}>
                   {link.label}
-                </a>
+                </HeaderLink>
               </li>
             ))}
           </ul>
-          <div className="gc-header__actions">
-            <a className="gc-button gc-button--login"
+          <div className="gc-header__actions" aria-busy={cargando}
+            style={{ visibility: cargando ? 'hidden' : undefined }}>
+            <HeaderLink className="gc-button gc-button--login"
               href={usuario ? (account?.href ?? '/mi-cuenta') : loginHref}
               title={usuario ? nombreCompleto : undefined}>
               <PersonIcon />
               <ActionLabel espacio="Iniciar sesión" texto={usuario ? nombreCompleto : 'Iniciar sesión'} />
-            </a>
+            </HeaderLink>
             {usuario ? (
               <button className="gc-button gc-button--register" type="button"
                 onClick={cerrarSesion} disabled={saliendo} aria-busy={saliendo}
@@ -103,15 +106,29 @@ export function SiteHeader({
                 <ActionLabel espacio="Registrarse" texto={saliendo ? 'Saliendo…' : 'Salir'} />
               </button>
             ) : (
-              <a className="gc-button gc-button--register" href={registerHref}>
+              <HeaderLink className="gc-button gc-button--register" href={registerHref}>
                 <PersonIcon /> <ActionLabel espacio="Registrarse" texto="Registrarse" />
-              </a>
+              </HeaderLink>
             )}
           </div>
         </nav>
       </div>
     </header>
   );
+}
+
+// Los enlaces internos mantienen montado el proveedor de sesión. Los externos conservan su comportamiento.
+function HeaderLink({ href = '/', onClick, ...props }: ComponentProps<'a'>) {
+  const interno = (href.startsWith('/') && !href.startsWith('//')) || href.startsWith('#');
+  if (!interno) return <a href={href} onClick={onClick} {...props} />;
+  return <Link to={href} {...props} onClick={(event) => {
+    onClick?.(event);
+    if (!event.defaultPrevented && event.button === 0 &&
+        !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey &&
+        (!props.target || props.target === '_self') && href === '/') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+  }} />;
 }
 
 // El texto original reserva el mismo ancho en ambos estados, también en móvil.
