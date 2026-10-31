@@ -31,9 +31,13 @@ La recuperación de contraseña también utiliza una plantilla formal HTML, cons
 
 Archivo SQL: `backend/conexion-bd/prisma/migrations/20261026_activacion_email/migration.sql`.
 
-En la base compartida localmente configurada, `prisma migrate deploy` devolvió P3005 porque el esquema existente no tiene su baseline registrado. No se forzó ni se simuló ese baseline. Se instaló únicamente el SQL anterior mediante una transacción administrativa, conservando una copia local de las funciones de sesión previas. Esta migración todavía no está registrada como aplicada en `_prisma_migrations`.
+El 30 de octubre de 2026 se reconcilió el historial de la base compartida configurada. Antes de registrar migraciones se reprodujeron ambos archivos SQL en PostgreSQL local y se compararon contra Supabase: coincidieron tablas/vistas, columnas, restricciones, índices, funciones, triggers, políticas RLS y permisos de aplicación revisados. Se creó un respaldo privado del esquema `transporte` con sus datos y se comprobó su restauración completa en una base local temporal protegida. El respaldo queda fuera de Git.
 
-Antes de usar Prisma Migrate para futuros despliegues, el equipo debe validar y registrar la base histórica real y reconciliar esta aplicación manual. No volver a aplicar la migración inicial sobre la base existente.
+Como el SQL ya estaba instalado, se registraron las dos migraciones mediante `prisma migrate resolve --applied`, sin volver a ejecutar sus cambios. El historial reside en `transporte._prisma_migrations`. Los checksums de ambas entradas coinciden con los archivos del repositorio. Una comparación posterior confirmó que la estructura de negocio no cambió.
+
+Comprobaciones finales: `prisma migrate status` indica que la base está al día; `npm run db:deploy` informa que no hay migraciones pendientes; `npm run db:comprobar` conecta correctamente como `transporte_app` con versión 1.0.0. El error P3005 que impedía usar Prisma Migrate quedó resuelto para esta base.
+
+Para los pasos del equipo y la diferencia entre una base nueva y la base compartida existente, consultar [baseline-prisma.md](baseline-prisma.md).
 
 La instalación no borra registros, no modifica correos ni marca usuarios existentes como verificados. Reutiliza las tablas y permisos actuales. El servidor usa `transporte_app`; la conexión administrativa solo se utilizó para instalar las funciones y ejecutar las pruebas de base de datos.
 
@@ -46,4 +50,4 @@ La instalación no borra registros, no modifica correos ni marca usuarios existe
 - Permisos de las funciones comprobados con `transporte_app`.
 - HTTP: confirmación de token inexistente y correo de reenvío inválido devuelven 400.
 
-Pendiente: recorrido manual con un correo real, confirmación del enlace y comprobación de los eventos de entrega de Brevo. Durante estas comprobaciones no se enviaron mensajes reales ni se activaron cuentas de personas.
+El responsable del proyecto confirmó previamente el recorrido con correo real. Durante la reconciliación del baseline no se enviaron mensajes ni se activaron cuentas. Las pruebas unitarias se repitieron con nueve resultados correctos y la revisión de tipos del servidor también pasó; esta operación no sustituye una nueva prueba manual completa de la interfaz.
