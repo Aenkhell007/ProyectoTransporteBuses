@@ -1,12 +1,15 @@
 import { Route, Routes, useLocation } from "react-router";
 import { ResultadosPage } from "./pages/compra/ResultadosPage";
 import { PublicLayout, SiteFooter } from "./components/layout";
+import { MisViajesPage } from "./pages/mis-viajes/MisViajesPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { InicioPage } from "./pages/compra/InicioPage";
 
 import MetodoPago from "./pages/pagos/MetodoPago";
+import { PasajerosPage } from "./pages/compra/PasajerosPage";
 import PasoPagoPendiente from "./pages/pagos/PasoPagoPendiente";
 import SubirComprobante from "./pages/pagos/SubirComprobante";
+import { ResumenCompraPage } from "./pages/compra/ResumenCompraPage";
 
 const homeSections: Record<
   string,
@@ -59,14 +62,16 @@ export function App() {
           path="/iniciar-sesion"
           element={<PlaceholderPage title="Aquí va iniciar sesión" />}
         />
+        <Route path="/pasajeros" element={<PasajerosPage />} />
         <Route
           path="/registrarse"
           element={<PlaceholderPage title="Aquí va el registro" />}
         />
         <Route path="/viajes" element={<ResultadosPage />} />
         <Route path="/pago" element={<MetodoPago />} />
-        <Route path="/resumen" element={<PasoPagoPendiente />} />
+        <Route path="/resumen" element={<ResumenCompraPage />} />
         <Route path="/pago/comprobante" element={<SubirComprobante />} />
+        <Route path="/mis-viajes" element={<MisViajesPage />} />
 
         <Route
           path="*"
