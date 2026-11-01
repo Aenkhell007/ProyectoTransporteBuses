@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import BookingProgress from "./BookingProgress";
-import "./payment-layout.css";
 
 interface PaymentLayoutProps {
   title: string;
@@ -11,7 +10,7 @@ interface PaymentLayoutProps {
 // Las vistas 6, 7 y 7.1 comparten dimensiones y posición del resumen.
 // El contenido real de la reserva se incorporará cuando se integre el flujo.
 export default function PaymentLayout({ title, description, children }: PaymentLayoutProps) {
-  return <section className="payment-layout mx-auto my-4 w-[calc(100%-24px)] max-w-360 rounded-lg bg-white p-4 sm:my-6 sm:w-[calc(100%-36px)] sm:p-6">
+  return <section className="payment-layout [html:has(&)]:[scrollbar-gutter:stable] mx-auto my-4 w-[calc(100%-24px)] max-w-360 rounded-lg bg-white p-4 sm:my-6 sm:w-[calc(100%-36px)] sm:p-6">
     <BookingProgress />
     <header className="mb-6">
       <h1 className="text-2xl font-bold text-blue-950">{title}</h1>
