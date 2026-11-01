@@ -1,0 +1,2 @@
+/* Reserva el mismo espacio lateral aunque una vista sea más corta que otra. */
+html:has(.payment-layout) { scrollbar-gutter: stable; }
