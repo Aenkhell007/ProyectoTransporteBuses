@@ -1,4 +1,5 @@
 import { ErrorCompra } from '../features/compra/errores';
+import { RESERVA_DEMO_ID } from './compra/reserva';
 
 export interface SolicitudReserva {
   viaje_id: string;
@@ -23,6 +24,10 @@ const esperar = (ms: number) => new Promise((resolver) => setTimeout(resolver, m
  * Imita POST /reservas (reservar_asientos). Los modos permiten ver los errores del
  * contrato: conflicto = 409 ASIENTO_NO_DISPONIBLE, invalido = 422 ASIENTOS_INVALIDOS y
  * red = sin conexión (status 0).
+ *
+ * Al tener éxito devuelve la reserva demo del módulo de compra (RESERVA_DEMO_ID), para que
+ * la pantalla de pasajeros la encuentre. Es una sola reserva simulada compartida; los datos
+ * de esa reserva son fijos y no reflejan los asientos elegidos.
  */
 export async function simularReserva(
   solicitud: SolicitudReserva,
@@ -48,7 +53,7 @@ export async function simularReserva(
   }
 
   return {
-    reserva_id: crypto.randomUUID(),
+    reserva_id: RESERVA_DEMO_ID,
     expires_at: new Date(Date.now() + RETENCION_MINUTOS * 60000).toISOString(),
   };
 }
