@@ -19,6 +19,7 @@ import PasoPagoPendiente from "./pages/pagos/PasoPagoPendiente";
 import SubirComprobante from "./pages/pagos/SubirComprobante";
 import SeguimientoPago from "./pages/pagos/SeguimientoPago";
 import ConfirmacionCompra from "./pages/pagos/ConfirmacionCompra";
+import SolicitarReembolso from "./pages/mis-viajes/SolicitarReembolso";
 import { ResumenCompraPage } from "./pages/compra/ResumenCompraPage";
 
 const homeSections: Record<
@@ -91,6 +92,7 @@ export function App() {
         <Route path="/pago/seguimiento" element={<SeguimientoPago />} />
         <Route path="/pago/confirmacion" element={<ConfirmacionCompra />} />
         <Route path="/mis-viajes" element={<MisViajesPage />} />
+        <Route path="/mis-viajes/reembolso" element={<SolicitarReembolso />} />
 
         <Route
           path="*"
