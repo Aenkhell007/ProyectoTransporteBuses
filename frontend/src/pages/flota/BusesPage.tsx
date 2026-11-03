@@ -4,6 +4,17 @@ import { busesMock, gruposMock } from '../../mocks/buses';
 import type { Bus, BusFormData } from '../../types/bus';
 import './buses.css';
 
+// Función auxiliar para centralizar la limpieza de datos y no repetir código
+const normalizarDatos = (datos: BusFormData) => ({
+  unidad: datos.unidad.trim(),
+  placa: datos.placa,
+  chasis: datos.chasis.trim(),
+  carroceria: datos.carroceria.trim(),
+  grupo_id: datos.grupo_id,
+  propietario: datos.propietario.trim() || null,
+  correo_contacto: datos.correo_contacto.trim() || null,
+});
+
 export default function BusesPage() {
   const [buses, setBuses] = useState<Bus[]>(busesMock);
   const [verInactivos, setVerInactivos] = useState(false);
@@ -12,37 +23,24 @@ export default function BusesPage() {
   const editando = buses.find((b) => b.id === editandoId);
 
   const agregar = (datos: BusFormData) => {
+    // Fallback de seguridad por si crypto.randomUUID falla en HTTP local
+    const idGenerado = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `simulado-${Date.now()}`;
+
     const nuevo: Bus = {
-      id: crypto.randomUUID(),
-      unidad: datos.unidad.trim(),
-      placa: datos.placa,
-      chasis: datos.chasis.trim(),
-      carroceria: datos.carroceria.trim(),
-      grupo_id: datos.grupo_id,
-      propietario: datos.propietario.trim() || null,
-      correo_contacto: datos.correo_contacto.trim() || null,
+      id: idGenerado,
+      ...normalizarDatos(datos),
       activo: true,
     };
     setBuses((anteriores) => [...anteriores, nuevo]);
   };
 
-  // PUT /buses/:id: actualiza los datos del bus; el estado activo no cambia aquí.
   const guardarEdicion = (datos: BusFormData) => {
     setBuses((anteriores) =>
       anteriores.map((b) =>
-        b.id === editandoId
-          ? {
-              ...b,
-              unidad: datos.unidad.trim(),
-              placa: datos.placa,
-              chasis: datos.chasis.trim(),
-              carroceria: datos.carroceria.trim(),
-              grupo_id: datos.grupo_id,
-              propietario: datos.propietario.trim() || null,
-              correo_contacto: datos.correo_contacto.trim() || null,
-            }
-          : b,
-      ),
+        b.id === editandoId ? { ...b, ...normalizarDatos(datos) } : b
+      )
     );
     setEditandoId(null);
   };
