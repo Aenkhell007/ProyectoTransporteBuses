@@ -1,11 +1,22 @@
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
+import {
+  botonPrimario,
+  celdaTabla,
+  encabezadoTabla,
+  entrada,
+  etiquetaCampo,
+  subtitulo,
+  tabla,
+  tarjeta,
+  textoError,
+  titulo,
+} from '../../components/flota/estilos';
 import { busesMock } from '../../mocks/buses';
 import { indisponibilidadesMock } from '../../mocks/indisponibilidades';
 import type { Indisponibilidad, IndisponibilidadForm } from '../../types/indisponibilidad';
 import { aIso, busesDisponibles, validarIndisponibilidad } from '../../utils/indisponibilidad';
 import type { ErroresIndisponibilidad } from '../../utils/indisponibilidad';
-import './buses.css';
 
 const VACIO: IndisponibilidadForm = { desde: '', hasta: '', motivo: '' };
 
@@ -61,13 +72,13 @@ export default function IndisponibilidadesPage() {
   );
 
   return (
-    <div className="buses-page">
-      <h2>Indisponibilidad de buses (datos simulados)</h2>
+    <div className={tarjeta}>
+      <h2 className={titulo}>Indisponibilidad de buses (datos simulados)</h2>
 
-      <h3>Registrar un período</h3>
-      <label className="bus-form__campo">
+      <h3 className={subtitulo}>Registrar un período</h3>
+      <label className={`${etiquetaCampo} max-w-sm`}>
         Bus
-        <select value={busId} onChange={(e) => setBusId(e.target.value)}>
+        <select className={entrada} value={busId} onChange={(e) => setBusId(e.target.value)}>
           {buses.map((b) => (
             <option key={b.id} value={b.id}>
               Unidad {b.unidad} · {b.placa}
@@ -75,84 +86,114 @@ export default function IndisponibilidadesPage() {
           ))}
         </select>
       </label>
-      <form className="bus-form" onSubmit={registrar} noValidate>
-        <label className="bus-form__campo">
+      <form className="mt-3 grid gap-3 sm:grid-cols-3" onSubmit={registrar} noValidate>
+        <label className={etiquetaCampo}>
           Desde *
           <input
             type="datetime-local"
+            className={entrada}
             value={datos.desde}
+            aria-invalid={Boolean(errores.desde)}
             onChange={(e) => setDatos({ ...datos, desde: e.target.value })}
           />
-          {errores.desde && <span className="bus-form__error">{errores.desde}</span>}
+          {errores.desde && (
+            <span className={textoError} role="alert">
+              {errores.desde}
+            </span>
+          )}
         </label>
-        <label className="bus-form__campo">
+        <label className={etiquetaCampo}>
           Hasta *
           <input
             type="datetime-local"
+            className={entrada}
             value={datos.hasta}
+            aria-invalid={Boolean(errores.hasta)}
             onChange={(e) => setDatos({ ...datos, hasta: e.target.value })}
           />
-          {errores.hasta && <span className="bus-form__error">{errores.hasta}</span>}
+          {errores.hasta && (
+            <span className={textoError} role="alert">
+              {errores.hasta}
+            </span>
+          )}
         </label>
-        <label className="bus-form__campo">
+        <label className={etiquetaCampo}>
           Motivo *
           <input
+            className={entrada}
             value={datos.motivo}
+            aria-invalid={Boolean(errores.motivo)}
             onChange={(e) => setDatos({ ...datos, motivo: e.target.value })}
           />
-          {errores.motivo && <span className="bus-form__error">{errores.motivo}</span>}
+          {errores.motivo && (
+            <span className={textoError} role="alert">
+              {errores.motivo}
+            </span>
+          )}
         </label>
-        <button type="submit">Registrar</button>
+        <div className="sm:col-span-3">
+          <button type="submit" className={botonPrimario}>
+            Registrar
+          </button>
+        </div>
       </form>
 
-      <table className="buses-page__tabla">
-        <thead>
-          <tr>
-            <th>Desde</th>
-            <th>Hasta</th>
-            <th>Motivo</th>
-          </tr>
-        </thead>
-        <tbody>
-          {delBus.map((i) => (
-            <tr key={i.id}>
-              <td>{formatear(i.desde)}</td>
-              <td>{formatear(i.hasta)}</td>
-              <td>{i.motivo}</td>
-            </tr>
-          ))}
-          {delBus.length === 0 && (
+      <div className="mt-4 overflow-x-auto">
+        <table className={tabla}>
+          <thead>
             <tr>
-              <td colSpan={3}>Este bus no tiene períodos de indisponibilidad.</td>
+              <th className={encabezadoTabla}>Desde</th>
+              <th className={encabezadoTabla}>Hasta</th>
+              <th className={encabezadoTabla}>Motivo</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {delBus.map((i) => (
+              <tr key={i.id}>
+                <td className={celdaTabla}>{formatear(i.desde)}</td>
+                <td className={celdaTabla}>{formatear(i.hasta)}</td>
+                <td className={celdaTabla}>{i.motivo}</td>
+              </tr>
+            ))}
+            {delBus.length === 0 && (
+              <tr>
+                <td className={celdaTabla} colSpan={3}>
+                  Este bus no tiene períodos de indisponibilidad.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
-      <h3>Buses disponibles en un rango</h3>
-      <div className="bus-form">
-        <label className="bus-form__campo">
+      <h3 className={subtitulo}>Buses disponibles en un rango</h3>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className={etiquetaCampo}>
           Desde
           <input
             type="datetime-local"
+            className={entrada}
             value={consulta.desde}
             onChange={(e) => setConsulta({ ...consulta, desde: e.target.value })}
           />
         </label>
-        <label className="bus-form__campo">
+        <label className={etiquetaCampo}>
           Hasta
           <input
             type="datetime-local"
+            className={entrada}
             value={consulta.hasta}
             onChange={(e) => setConsulta({ ...consulta, hasta: e.target.value })}
           />
         </label>
       </div>
       {consulta.desde !== '' && consulta.hasta !== '' && !consultaValida && (
-        <p className="bus-form__error">La fecha final debe ser posterior a la inicial.</p>
+        <p className={`${textoError} mt-2`} role="alert">
+          La fecha final debe ser posterior a la inicial.
+        </p>
       )}
       {consultaValida && (
-        <ul>
+        <ul className="mt-3 list-disc pl-6 text-sm text-slate-800">
           {disponibles.map((b) => (
             <li key={b.id}>
               Unidad {b.unidad} · {b.placa}
