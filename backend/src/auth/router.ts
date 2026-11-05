@@ -62,6 +62,7 @@ function tokenPeticion(req: Request): string | null {
   const token: unknown = req.cookies?.[COOKIE];
   return typeof token === "string" && /^[A-Za-z0-9_-]{43}$/.test(token) ? token : null;
 }
+
 async function perfil(cliente: PoolClient) {
   const usuario = await cliente.query(
     "SELECT id, nombres, apellidos, email, email_verificado_at FROM transporte.usuarios WHERE id = transporte.actor()",
