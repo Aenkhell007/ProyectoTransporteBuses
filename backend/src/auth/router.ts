@@ -1,8 +1,9 @@
 import { Router } from "express";
 import type { Request, Response, NextFunction, CookieOptions } from "express";
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { pool } from "../database";
+import { conSesion, hashToken } from "../sesion";
 import { DatosInvalidos, leerCredenciales, leerRegistro } from "./validation";
 import { hashPassword, verifyPassword, HASH_SIN_USUARIO } from "./password";
 
@@ -60,21 +61,6 @@ function errorRespuesta(res: Response, error: unknown) {
 function tokenPeticion(req: Request): string | null {
   const token: unknown = req.cookies?.[COOKIE];
   return typeof token === "string" && /^[A-Za-z0-9_-]{43}$/.test(token) ? token : null;
-}
-const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
-
-async function conSesion<T>(token: string, trabajo: (cliente: PoolClient) => Promise<T>) {
-  const cliente = await pool.connect();
-  try {
-    await cliente.query("BEGIN");
-    await cliente.query("SELECT transporte.abrir_contexto($1::text, $2::text)", [hashToken(token), randomUUID()]);
-    const resultado = await trabajo(cliente);
-    await cliente.query("COMMIT");
-    return resultado;
-  } catch (error) {
-    await cliente.query("ROLLBACK").catch(() => {});
-    throw error;
-  } finally { cliente.release(); }
 }
 
 async function perfil(cliente: PoolClient) {

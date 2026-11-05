@@ -63,6 +63,35 @@ const CAMPOS_PERFIL = [
   "email",
 ] as const;
 
+// Borrador de las fichas por reserva, para que recargar la página no pierda lo escrito.
+// Vive solo en esta pestaña y se borra al guardar o al cancelar la reserva.
+const claveBorrador = (reservaId: string) => `gc.compra.borrador.${reservaId}`;
+
+function leerBorrador(reservaId: string): FichaPasajero[] | null {
+  try {
+    const guardado = sessionStorage.getItem(claveBorrador(reservaId));
+    return guardado ? (JSON.parse(guardado) as FichaPasajero[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+function guardarBorrador(reservaId: string, fichas: FichaPasajero[]) {
+  try {
+    sessionStorage.setItem(claveBorrador(reservaId), JSON.stringify(fichas));
+  } catch {
+    // Sin almacenamiento, lo escrito se conserva mientras la página siga abierta.
+  }
+}
+
+function borrarBorrador(reservaId: string) {
+  try {
+    sessionStorage.removeItem(claveBorrador(reservaId));
+  } catch {
+    // Nada que borrar.
+  }
+}
+
 /** Vista 4: datos de los pasajeros, un pasajero por asiento reservado. */
 export function PasajerosPage() {
   const navigate = useNavigate();
@@ -102,9 +131,18 @@ export function PasajerosPage() {
             email: reserva.contacto.email,
           };
         }
-        setFichas(iniciales);
-        setAbiertas(iniciales.map(() => true));
-        setErrores(iniciales.map(() => ({})));
+        const borrador = leerBorrador(reserva.reserva_id);
+        const fichasIniciales =
+          borrador &&
+          borrador.length === iniciales.length &&
+          borrador.every(
+            (f, i) => f.reserva_asiento_id === iniciales[i].reserva_asiento_id,
+          )
+            ? borrador
+            : iniciales;
+        setFichas(fichasIniciales);
+        setAbiertas(fichasIniciales.map(() => true));
+        setErrores(fichasIniciales.map(() => ({})));
         setCarga({ estado: "listo", reserva, beneficios });
       })
       .catch((e) =>
@@ -117,6 +155,11 @@ export function PasajerosPage() {
   }, [reservaId]);
 
   useEffect(cargar, [cargar]);
+
+  useEffect(() => {
+    if (carga.estado === "listo" && reservaId)
+      guardarBorrador(reservaId, fichas);
+  }, [carga.estado, reservaId, fichas]);
 
   const reserva = carga.estado === "listo" ? carga.reserva : null;
   const beneficios = carga.estado === "listo" ? carga.beneficios : [];
@@ -196,6 +239,7 @@ export function PasajerosPage() {
         },
         pasajeros: fichas.map(fichaAPasajero),
       });
+      borrarBorrador(reservaId);
       setEnvio({ estado: "enviando", paso: "Calculando el total…" });
       await cotizarReserva(reservaId);
       navigate(`/resumen?reserva_id=${encodeURIComponent(reservaId)}`);
@@ -239,6 +283,7 @@ export function PasajerosPage() {
     if (!reservaId) return;
     try {
       await cancelarReserva(reservaId);
+      borrarBorrador(reservaId);
       navigate(`/viajes?${busquedaDelViaje}`);
     } catch (e) {
       setConfirmarEdicion(false);

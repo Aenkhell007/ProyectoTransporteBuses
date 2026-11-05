@@ -67,6 +67,9 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
   const listo = viaje.estado_documento === "LISTO";
   const ubicacion = piso(viaje.pisos, viaje.pisos_asientos);
   const fecha = formatearFechaLarga(diaEnEcuador(viaje.salida));
+  // Vistas de Ángel: 8 (confirmación y boleto) y 9.2 (reembolso); ambas leen reserva_id.
+  const reservaParam = `reserva_id=${encodeURIComponent(viaje.reserva_id)}`;
+  const enlaceConfirmacion = `/pago/confirmacion?${reservaParam}`;
   const mensajeWhatsApp = `Mi viaje con Gran Continental: ${viaje.origen.ciudad} → ${viaje.destino.ciudad}, ${fecha}, salida ${formatearHora(viaje.salida)}. Código de compra ${viaje.codigo}.`;
 
   return (
@@ -191,11 +194,11 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
         </div>
       </div>
 
-      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         {conBoleto && (
           <>
             <Link
-              to={`/boleto?compra_id=${encodeURIComponent(viaje.compra_id ?? "")}`}
+              to={enlaceConfirmacion}
               className={`${boton} border-red-600 bg-red-600 text-white hover:bg-red-700`}
             >
               <Icono nombre="boleto" /> Ver boleto
@@ -222,11 +225,20 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
                 <span className="sr-only"> (se abre en otra pestaña)</span>
               </a>
             )}
+            {viaje.estado === "CONFIRMADA" && (
+              <Link
+                to={`/mis-viajes/reembolso?${reservaParam}`}
+                className={`${boton} border-slate-400 text-slate-700 hover:bg-slate-50`}
+              >
+                <Icono nombre="xCirculo" /> Solicitar reembolso
+                <span className="sr-only"> {viaje.codigo}</span>
+              </Link>
+            )}
           </>
         )}
         {enVerificacion && (
           <Link
-            to={`/pago/seguimiento?reserva_id=${encodeURIComponent(viaje.reserva_id)}`}
+            to={`/pago/seguimiento?${reservaParam}`}
             className={`${boton} border-blue-700 text-blue-800 hover:bg-blue-50 sm:max-w-xs sm:self-end lg:ml-auto`}
           >
             <Icono nombre="documento" /> Ver reserva
@@ -235,7 +247,7 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
         )}
         {(viaje.estado === "CANCELADA" || viaje.estado === "REEMBOLSADA") && (
           <Link
-            to={`/boleto?compra_id=${encodeURIComponent(viaje.compra_id ?? "")}`}
+            to={enlaceConfirmacion}
             className={`${boton} border-blue-700 text-blue-800 hover:bg-blue-50 sm:max-w-xs lg:ml-auto`}
           >
             <Icono nombre="documento" /> Ver detalle
