@@ -4,12 +4,13 @@ import { ACCEPT_COMPROBANTE, validarComprobante } from "../../features/pagos/val
 import type { ComprobanteLocal } from "../../features/pagos/validarComprobante";
 
 interface Props {
+  politica?: {maxBytes:number;mimes:string[]};
   value: ComprobanteLocal | null;
   onChange: (value: ComprobanteLocal | null) => void;
   onValidando: (validando: boolean) => void;
 }
 
-export default function ProofUploader({ value, onChange, onValidando }: Props) {
+export default function ProofUploader({ value, onChange, onValidando, politica }: Props) {
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const peticion = useRef(0);
@@ -34,7 +35,7 @@ export default function ProofUploader({ value, onChange, onValidando }: Props) {
     onValidando(true);
     onChange(null);
     try {
-      const comprobante = await validarComprobante(archivos);
+      const comprobante = await validarComprobante(archivos, politica);
       if (actual === peticion.current) onChange(comprobante);
     } catch (e) {
       if (actual === peticion.current) setError(e instanceof Error ? e.message : "No se pudo leer el archivo.");
@@ -70,7 +71,7 @@ export default function ProofUploader({ value, onChange, onValidando }: Props) {
         <path d="M12 16V3m-5 5 5-5 5 5M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5" />
       </svg>
       <p className="font-semibold text-blue-950">Arrastra aquí tu comprobante</p>
-      <p id={`${id}-ayuda`} className="text-sm text-slate-600">Un archivo JPG, PNG o PDF · máximo 5 MB</p>
+      <p id={`${id}-ayuda`} className="text-sm text-slate-600">Un archivo {politica?.mimes.map(m => m === "image/jpeg" ? "JPG" : m === "image/png" ? "PNG" : "PDF").join(", ") ?? "JPG, PNG o PDF"} · máximo {((politica?.maxBytes ?? 5242880) / 1048576).toLocaleString("es-EC")} MB</p>
       <input ref={input} id={id} type="file" accept={ACCEPT_COMPROBANTE}
         aria-label="Seleccionar comprobante" aria-describedby={`${id}-ayuda ${id}-error`}
         className="sr-only" tabIndex={-1}
