@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { Link, useLocation, useSearchParams } from "react-router";
 import type {
   FiltrosMisViajes,
   MiViaje,
@@ -28,6 +28,7 @@ const control =
 
 /** Vistas 9 y 9.1: Mis viajes con pestañas Próximos e Historial. Solo compras de la sesión. */
 export function MisViajesPage() {
+  const location = useLocation();
   const [params, setParams] = useSearchParams();
   const clave = params.toString();
   const filtros = useMemo(
@@ -260,6 +261,7 @@ export function MisViajesPage() {
                 {lista.status === 401 ? (
                   <Link
                     to="/iniciar-sesion"
+                    state={{ from: location }}
                     className="inline-flex min-h-11 items-center rounded-md bg-red-600 px-4 font-semibold text-white focus-visible:outline-2 focus-visible:outline-blue-600"
                   >
                     Iniciar sesión
