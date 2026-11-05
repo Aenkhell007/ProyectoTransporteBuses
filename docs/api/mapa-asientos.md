@@ -1,31 +1,26 @@
 # Mapa de asientos: cómo leer el mock
 
-Archivo de ejemplo: docs/api/mapa-asientos.mock.json
+Archivo de ejemplo: docs/api/mapa-asientos.mock.json. Imita la respuesta de
+plano_disponible(viaje, origen, destino) para el tramo de la parada 1 a la 3.
 
-## Paradas
-Cada parada se identifica por su `orden` en la ruta (ruta_paradas.orden), que
-empieza en 1. La reserva guarda origen_orden y destino_orden con esos números.
-El nombre de la ciudad no es un identificador.
+## Estructura
+- planoId: el plano del viaje.
+- celdas: la grilla completa. Cada celda tiene id, piso, fila, columna, tipo, codigo,
+  clase y estado.
+- Solo las celdas de tipo ASIENTO se reservan. Su id es el que va en asiento_ids de
+  POST /reservas. PASILLO y BLOQUE no llevan código ni clase.
 
-## Celdas y ocupaciones
-- Cada celda es una posición de la grilla (piso, fila, columna). Solo las de
-  tipo ASIENTO se pueden reservar; PASILLO y BLOQUE son decorativas.
-- Todos los IDs son UUID.
-- `ocupaciones` lista los rangos reservados del asiento en este viaje.
+## Estados
+- DISPONIBLE: libre para el tramo (asientos 1, 3 y 5).
+- RESERVADO: otra persona lo retiene y la retención no ha vencido (asiento 2).
+- OCUPADO: una compra confirmada lo cubre (asiento 4).
+- SELECCIONADO: lo retiene quien consulta (asiento 6).
 
-## Disponibilidad
-Para un recorrido origen o -> destino d, el asiento está ocupado si alguna
-ocupación cumple origen_orden < d y destino_orden > o.
-
-Ejemplo con el asiento 2 (ocupado de la parada 1 a la 2, Ambato -> Latacunga):
-- 1 -> 2 (Ambato -> Latacunga): ocupado.
-- 2 -> 3 (Latacunga -> Quito): libre.
-- 1 -> 3 (Ambato -> Quito): ocupado, porque usa el tramo 1 -> 2.
-
-## Clases de asiento
-El mock usa NORMAL y EJECUTIVO. Los códigos reales de la tabla clases_asiento
-se confirman con el equipo según las vistas aprobadas.
+## El tramo
+Las paradas se identifican por su orden en la ruta (ruta_paradas.orden), que empieza en 1.
+El servidor calcula el estado para el tramo pedido: un asiento reservado de la parada 1 a la
+2 aparece libre si se consulta de la 2 a la 3, y ocupado si se consulta de la 1 a la 3.
 
 ## Pendiente
-- Qué estados de reserva_asientos cuentan como ocupados (hoy solo se conoce RETENIDO).
-- Una retención vencida (expires_at pasado) no cuenta como ocupación.
+- Código HTTP cuando el viaje o el tramo no están disponibles.
+- Si un asiento SELECCIONADO se puede volver a elegir (acordar con KT).
