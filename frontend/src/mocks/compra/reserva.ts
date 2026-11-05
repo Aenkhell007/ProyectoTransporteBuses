@@ -9,6 +9,7 @@ import type {
   ReservaPendiente,
 } from "../../types/compra/reserva";
 import { ErrorCompra } from "../../features/compra/errores";
+import { FOTOS_BUS } from "../../features/compra/fotos";
 import { edadEnFecha, diaEnEcuador } from "../../features/compra/fechas";
 
 // Datos simulados de la reserva de la maqueta (2 asientos Ejecutivo de $28.00, Quito -> Guayaquil).
@@ -49,7 +50,7 @@ const reservaBase: Omit<ReservaPendiente, "reserva_id" | "expires_at"> = {
     grupo: "Ejecutivo",
     plano_id: "00000000-0000-4000-8000-000000000701",
     pisos: 2,
-    foto_url: null,
+    foto_url: FOTOS_BUS.dosPisos.tarjeta,
     servicios: [
       "AIRE",
       "ASIENTO_CAMA",
