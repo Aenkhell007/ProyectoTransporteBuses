@@ -1,22 +1,28 @@
 # Contrato de API: Compra del cliente (KT)
 
-> Estado: propuesta para revisión del equipo. Versión 0.2.0.
+> Estado: propuesta para revisión del equipo. Versión 0.3.0 (03/11/2026, issue #75).
 > Los campos siguen la base real (esquema `transporte`, ver `backend/conexion-bd`)
 > y la convención ya fusionada en `docs/api/flota-endpoints.md`: español y snake_case.
-> Ninguna ruta está implementada: el servidor Express todavía no existe (issue #11).
+> Ninguna ruta de compra está implementada todavía. El servidor Express se propone en
+> el PR #56 (`backend/src/server.ts`); las rutas de compra se montarán en él.
 
 Reemplaza los borradores `booking.contract.json`, `passengers.contract.json` y
 `search-trips.contract.json` de la rama `feature/6-compra-kt`.
 
 ## Convenciones generales
 
-- Rutas sin prefijo `/api`; el prefijo va en `VITE_API_URL`, como en el cliente HTTP de flota.
+- Rutas escritas sin prefijo. El servidor las monta bajo `/api` (como `/api/auth` en
+  `server.ts`) y el frontend lo pone con `VITE_API_URL=/api` en el cliente `http()`.
 - Los IDs son UUID (texto).
 - El usuario, su rol y la cooperativa se toman de la sesión. Ninguna ruta acepta
   `usuario_id`, `cliente_id`, rol ni `cooperativa_id` en el body como autorización.
-- Cada endpoint autenticado trabaja dentro de `conSesion(token, trabajo)` de
-  `backend/conexion-bd/src/db.ts` y llama la función SQL indicada. La lógica de
+- Sesión: cookie `transporte_sesion` (httpOnly), emitida por `/api/auth` (PR #56). El
+  frontend la envía con `credentials: "include"`, como ya hace `http()`.
+- Cada endpoint autenticado abre el contexto con `abrir_contexto(hash del token)` en la
+  misma transacción que sus consultas (`conSesion`; se propone compartirlo desde
+  `backend/src/sesion.ts`) y llama la función SQL indicada. La lógica de
   disponibilidad, tarifas, descuentos e impuestos no se reescribe en TypeScript.
+- Rutas públicas (catálogo, búsqueda, contacto) consultan sin sesión.
 - Importes: enteros en centavos con sufijo `_centavos` (en la base son `BIGINT`;
   se serializan como `number` con `aNumeroSeguro`). Porcentajes en puntos base
   (`3000` = 30 %). El frontend divide entre 100 solo para mostrar.
@@ -51,6 +57,24 @@ Vista 6  (Ángel) recibe reserva_id con la cotización aceptada
   después de editar pasajeros hay que volver a cotizar y aceptar.
 - Si la tarifa cambió entre cotizaciones, el cliente acepta la versión nueva; el
   servidor rechaza aceptar una versión que no es la última.
+
+### Rutas del frontend en el flujo
+
+| Vista | Ruta | Recibe | Responsable |
+|---|---|---|---|
+| 1 y 1.1 | `/` | `origen`, `destino`, `fecha`, `cantidad` (opcionales, para "Editar") | KT |
+| 2 | `/viajes` | `origen`, `destino`, `fecha`, `cantidad` y filtros | KT |
+| 3.1 / 3.2 | `/asientos` | `viaje_id`, `origen_orden`, `destino_orden`, `cantidad`, `plano_id` | Mikel (#47) |
+| 4 | `/pasajeros` | `reserva_id` | KT |
+| 5 | `/resumen` | `reserva_id` | KT |
+| 6 | `/pago` | `reserva_id` | Ángel |
+| 7 | `/pago/comprobante` | estado de navegación de la vista 6 | Ángel |
+| 7.1 | `/pago/seguimiento` | `reserva_id` | Ángel (#69) |
+| 8 | `/pago/confirmacion` | `reserva_id` | Ángel (#70) |
+| 9 y 9.1 | `/mis-viajes` | `seccion`, `estado`, `q`, `desde`, `hasta` | KT |
+| 9.2 | `/mis-viajes/reembolso` | `reserva_id` | Ángel (#71) |
+
+Las rutas de Mikel y Ángel están en PR abiertos; si cambian, se actualiza esta tabla.
 
 ## Catálogo
 
@@ -98,9 +122,15 @@ tarifa vigente. Ordena por `viaje_id` y devuelve como máximo 50.
       "llegada": "2026-10-10T14:30:00-05:00",
       "origen_orden": 1,
       "destino_orden": 3,
+      "tipo_viaje": "DIRECTO",
+      "clases": ["EJECUTIVO"],
+      "origen": { "orden": 1, "ciudad": "Quito", "terminal": "Terminal Quitumbe" },
+      "destino": { "orden": 3, "ciudad": "Guayaquil", "terminal": "Terminal Terrestre" },
       "bus": {
         "id": "uuid", "unidad": "018", "placa": "PAB-1234",
-        "chasis": "Scania", "carroceria": "Marcopolo", "grupo": "Ejecutivo", "plano_id": "uuid"
+        "chasis": "Scania", "carroceria": "Marcopolo", "grupo": "Ejecutivo", "plano_id": "uuid",
+        "pisos": 2, "foto_url": null,
+        "servicios": ["AIRE", "ASIENTO_CAMA", "WIFI", "BANO", "PANTALLAS", "ENCHUFES"]
       },
       "plazas_disponibles": 12,
       "tarifa_desde_centavos": 2800
@@ -114,13 +144,26 @@ tarifa vigente. Ordena por `viaje_id` y devuelve como máximo 50.
 - `tarifa_desde_centavos` es el precio mínimo por pasajero; no es una cotización.
 - La función devuelve `bus.planoId`; la API lo expone como `plano_id`.
 
+Campos que la API agrega a cada fila de `buscar_viajes` (la vista 2 los muestra en
+`TripCard` y la tarjeta no debe pedir el detalle uno por uno):
+
+| Campo | Fuente |
+|---|---|
+| `tipo_viaje` | `frecuencias.tipo_viaje` |
+| `clases` | códigos de `clases_asiento` con tarifa vigente en el tramo |
+| `origen`, `destino` | `ruta_paradas.orden` → `terminales.nombre` → `ciudades.nombre` |
+| `bus.pisos` | `planos.pisos` del `plano_id` del viaje |
+| `bus.foto_url` | `bus_fotos` con menor `orden` → `archivos`; la API entrega una URL propia para servir el archivo privado, o `null` |
+| `bus.servicios` | `bus_equipamiento` → `equipamientos.codigo`; los códigos se acuerdan con los de `ServicioBus` (`frontend/src/types/compra/viajes.ts`) |
+
+Se resuelven con una consulta adicional por página, unida por `viaje_id`, no por fila.
+
 Errores: 422 (parámetros inválidos, origen igual a destino, fecha pasada).
 
 Limitaciones conocidas (ver decisión 6): `buscar_viajes` no filtra por hora de
 salida ni por rango de precio y solo ordena por `viaje_id`. Aplicar esos filtros en
 la API sobre las 50 filas rompe la paginación. Se pedirá el cambio de la función
-mediante solicitud de cambio. Tampoco devuelve terminales, duración, clase ni
-servicios: se completan con `GET /viajes/:id`.
+mediante solicitud de cambio.
 
 ### GET /viajes/:id
 
@@ -242,6 +285,7 @@ Crea una nueva versión de cotización. Éxito: 201. Llama a `cotizar` y lee
   "subtotal_neto_centavos": 4760,
   "iva_centavos": 0,
   "total_centavos": 4760,
+  "impuesto_bp": 0,
   "expires_at": "2026-10-09T10:15:00-05:00",
   "lineas": [
     {
@@ -250,16 +294,32 @@ Crea una nueva versión de cotización. Éxito: 201. Llama a `cotizar` y lee
       "pasajero": "Ángel Matías Galarza",
       "clase": "EJECUTIVO",
       "beneficio_codigo": null,
+      "beneficio_nombre": null,
+      "descuento_bp": null,
       "base_centavos": 2800,
       "descuento_centavos": 0,
       "servicio_centavos": 0,
       "impuesto_bp": 0,
       "impuesto_servicio_bp": 0,
-      "iva_centavos": 0
+      "iva_centavos": 0,
+      "subtotal_neto_centavos": 2800,
+      "total_centavos": 2800
     }
   ]
 }
 ```
+
+Campos que la API agrega a lo que guardan `cotizaciones` y `cotizacion_lineas`, para
+que el frontend muestre sin calcular (`PriceBreakdown`, vista 5; también sirve a las
+vistas 6, 7 y 8 de Ángel y 13 y 14 de Pablo):
+
+| Campo | Cálculo en la API |
+|---|---|
+| `impuesto_bp` (cabecera) | `impuestos.puntos_base` del pasaje; da la etiqueta "IVA (0 %)" |
+| `lineas[].subtotal_neto_centavos` | `base − descuento + servicio` de la línea |
+| `lineas[].total_centavos` | `subtotal_neto + iva` de la línea |
+| `lineas[].beneficio_nombre`, `descuento_bp` | `beneficios.nombre` y `descuento_bp` del `beneficio_id` |
+| `lineas[].asiento_codigo`, `pasajero`, `clase` | `plano_celdas.codigo`, `pasajeros` y `clases_asiento.codigo` |
 
 Reglas que aplica la función:
 - Tarifa por frecuencia, grupo de bus, clase y tramo vigente a la fecha de salida.
@@ -406,17 +466,20 @@ un error de red conserva lo escrito y permite reintentar.
 
 ## Decisiones abiertas
 
-| # | Tema | Situación | Responsable |
-|---|---|---|---|
-| 1 | Servidor Express | No existe en ninguna rama. Hasta entonces, frontend con datos simulados. | Ángel (#11) y equipo |
-| 2 | Autenticación | JWT en `Authorization: Bearer` (PR #29), cookie en el cliente HTTP (PR #34) y `conSesion` espera un token de sesión. Hay que unificarlo. | Matías |
-| 3 | Orden reserva → pasajeros → cotización | Propuesto en este documento, alineado con la base. Reemplaza `passengerIds` en la reserva. | Ángel y KT |
-| 4 | Quién llama `POST /reservas` | Propuesta: la pantalla de asientos de Mikel llama al servicio de reservas de KT al confirmar. | Mikel y KT |
-| 5 | Historial por pasajero | El docente pidió que un pasajero vea los viajes comprados por otro; el maestro prohíbe vincular por cédula sin identidad verificada. Propuesta: mostrarlos solo si Matías marca la identidad como verificada. Mientras tanto, solo compras propias. | Equipo / comité de cambios |
-| 6 | Filtros de `buscar_viajes` | Faltan hora de salida, rango de precio y orden. Solicitud de cambio a la función. | Matías |
-| 7 | Contacto de la reserva | `reservar_asientos` y `guardar_pasajero` no guardan `contacto_email` ni `contacto_telefono`, y el rol de la API no puede actualizar `reservas`. Hace falta una función nueva. | Matías |
-| 8 | "Pago en verificación" en Mis viajes | `v_mis_viajes` solo trae compras. Consultar reservas e intentos de pago aparte o crear una vista. | Ángel |
-| 9 | Nombres de campos | Se sigue español y snake_case como el contrato de flota. | Equipo |
-| 10 | Porcentajes de beneficios | Solo niño 30 % está en la demo. Tercera edad y discapacidad sin porcentaje aprobado: se muestra lo que devuelva `cotizar`. | Benjamín |
-| 11 | Contacto de acompañantes | La vista 4 pide teléfono y correo opcionales por acompañante, pero `pasajeros` no tiene esas columnas. Quitar los campos o agregar columnas. | Matías y equipo |
-| 12 | Código de compra visible | `compras.codigo` es UUID; el diseño muestra `GC-AAAAMMDD-NNNN`. | Ángel |
+Estado al 03/11/2026.
+
+| # | Tema | Situación | Estado | Responsable |
+|---|---|---|---|---|
+| 1 | Servidor Express | `backend/src/server.ts` propuesto en el PR #56 (Express, `/api/auth`, `/api/health`). Las rutas de compra se montarán ahí cuando se fusione. | En curso (#56) | Ángel |
+| 2 | Autenticación | El PR #56 usa la cookie `transporte_sesion` y `abrir_contexto`; coincide con `http()` (`credentials: "include"`, PR #34). Queda por confirmar que reemplaza al JWT del PR #29. | Propuesta: cookie | Matías y Ángel |
+| 3 | Orden reserva → pasajeros → cotización | Aprobado con este contrato (#38) e implementado con datos simulados en las vistas 4 y 5 (#51, #53). | Acordada | Ángel y KT |
+| 4 | Quién llama `POST /reservas` | La pantalla de asientos de Mikel (#47) lo llama al confirmar y navega a `/pasajeros?reserva_id=`. | Acordada (#47) | Mikel y KT |
+| 5 | Historial por pasajero | El docente pidió que un pasajero vea los viajes comprados por otro; el maestro prohíbe vincular por cédula sin identidad verificada. Propuesta: mostrarlos solo si Matías marca la identidad como verificada. Mientras tanto, solo compras propias. | Abierta (comité) | Equipo |
+| 6 | Filtros de `buscar_viajes` | Faltan hora de salida, rango de precio y orden. Solicitud de cambio a la función. | Abierta | Matías |
+| 7 | Contacto de la reserva | `reservar_asientos` y `guardar_pasajero` no guardan `contacto_email` ni `contacto_telefono`, y el rol de la API no puede actualizar `reservas`. Hace falta una función nueva. | Abierta | Matías |
+| 8 | "Pago en verificación" en Mis viajes | `v_mis_viajes` solo trae compras. Consultar reservas e intentos de pago aparte o crear una vista. | Abierta | Ángel |
+| 9 | Nombres de campos | Español y snake_case, como el contrato de flota. | Acordada (#38) | Equipo |
+| 10 | Beneficios | Solo niño 30 % está en la demo y sus edades no están definidas. Tercera edad y discapacidad sin porcentaje aprobado: se muestra lo que devuelva `cotizar`. | Abierta | Benjamín |
+| 11 | Contacto de acompañantes | La vista 4 pide teléfono y correo opcionales por acompañante, pero `pasajeros` no tiene esas columnas. Quitar los campos o agregar columnas. | Abierta | Matías y equipo |
+| 12 | Código de compra visible | `compras.codigo` es UUID; el diseño muestra `GC-AAAAMMDD-NNNN`. | Abierta | Ángel |
+| 13 | Rutas entre módulos | Tabla "Rutas del frontend en el flujo". Falta registrar `/asientos` (#47); las vistas de Ángel leen `reserva_id` (#69, #70, #71). | En curso | Mikel, Ángel y KT |
