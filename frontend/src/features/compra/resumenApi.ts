@@ -7,9 +7,7 @@ import {
   beneficiosDemo,
   cancelarSimulada,
   cotizarSimulado,
-  guardarPasajerosSimulado,
-  pasajerosDemo,
-  perfilDemo,
+  persistirSimuladas,
   reservaSimulada,
 } from "../../mocks/compra/reserva";
 import { ErrorCompra } from "./errores";
@@ -19,21 +17,12 @@ import { copiar, esperar } from "./simulacion";
 // (frontend/src/services/http.ts) contra GET /reservas/:id/resumen,
 // POST /reservas/:id/cotizacion, POST /reservas/:id/aceptar-cotizacion y DELETE /reservas/:id.
 
-/** GET /reservas/:id/resumen. Si se abre directo sin pasajeros, la simulación usa los de la maqueta. */
+/** GET /reservas/:id/resumen. Devuelve la reserva tal como está; no completa pasajeros de ejemplo. */
 export async function obtenerResumen(
   reservaId: string,
 ): Promise<ReservaPendiente> {
   await esperar(450);
-  const reserva = reservaSimulada(reservaId);
-  if (reserva.pasajeros.length === 0) {
-    guardarPasajerosSimulado(reserva, pasajerosDemo);
-    reserva.contacto = {
-      email: perfilDemo.email,
-      telefono: perfilDemo.telefono,
-    };
-    cotizarSimulado(reserva);
-  }
-  return copiar(reserva);
+  return copiar(reservaSimulada(reservaId));
 }
 
 export async function obtenerBeneficiosResumen(): Promise<BeneficioVigente[]> {
@@ -66,6 +55,7 @@ export async function aceptarCotizacion(
     });
   }
   reserva.aceptada_version = version;
+  persistirSimuladas();
 }
 
 /** DELETE /reservas/:id: libera los asientos retenidos. */

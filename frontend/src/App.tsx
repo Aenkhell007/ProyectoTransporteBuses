@@ -1,3 +1,11 @@
+import ActivarCuenta from "./pages/auth/ActivarCuenta";
+import ReenviarActivacion from "./pages/auth/ReenviarActivacion";
+import Login from "./pages/auth/Login";
+import RegistroPage from "./pages/identidad/RegistroPage";
+import MiCuenta from "./pages/auth/MiCuenta";
+import RecuperarContrasena from "./pages/auth/RecuperarContrasena";
+import RestablecerContrasena from "./pages/auth/RestablecerContrasena";
+import { useAuth } from "./features/auth/AuthContext";
 import { Route, Routes, useLocation } from "react-router";
 import { ResultadosPage } from "./pages/compra/ResultadosPage";
 import { PublicLayout, SiteFooter } from "./components/layout";
@@ -9,6 +17,8 @@ import MetodoPago from "./pages/pagos/MetodoPago";
 import { PasajerosPage } from "./pages/compra/PasajerosPage";
 import PasoPagoPendiente from "./pages/pagos/PasoPagoPendiente";
 import SubirComprobante from "./pages/pagos/SubirComprobante";
+import SeguimientoPago from "./pages/pagos/SeguimientoPago";
+import ConfirmacionCompra from "./pages/pagos/ConfirmacionCompra";
 import { ResumenCompraPage } from "./pages/compra/ResumenCompraPage";
 
 const homeSections: Record<
@@ -35,6 +45,7 @@ const homeSections: Record<
 };
 
 export function App() {
+  const { usuario } = useAuth();
   const location = useLocation();
   const section = homeSections[location.hash] ?? homeSections[""];
 
@@ -54,23 +65,31 @@ export function App() {
     <PublicLayout
       header={{
         activeItem: location.pathname === "/" ? section.activeItem : undefined,
+        account: usuario ? {label:usuario.nombres,href:"/mi-cuenta"} : undefined,
       }}
     >
       <Routes>
+        <Route path="/activar-cuenta" element={<ActivarCuenta />} />
+        <Route path="/reenviar-activacion" element={<ReenviarActivacion />} />
         <Route path="/" element={<InicioPage />} />
         <Route
           path="/iniciar-sesion"
-          element={<PlaceholderPage title="Aquí va iniciar sesión" />}
+          element={<Login />}
         />
         <Route path="/pasajeros" element={<PasajerosPage />} />
         <Route
           path="/registrarse"
-          element={<PlaceholderPage title="Aquí va el registro" />}
+          element={<RegistroPage />}
         />
         <Route path="/viajes" element={<ResultadosPage />} />
+        <Route path="/mi-cuenta" element={<MiCuenta />} />
+        <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
+        <Route path="/restablecer-contrasena" element={<RestablecerContrasena />} />
         <Route path="/pago" element={<MetodoPago />} />
         <Route path="/resumen" element={<ResumenCompraPage />} />
         <Route path="/pago/comprobante" element={<SubirComprobante />} />
+        <Route path="/pago/seguimiento" element={<SeguimientoPago />} />
+        <Route path="/pago/confirmacion" element={<ConfirmacionCompra />} />
         <Route path="/mis-viajes" element={<MisViajesPage />} />
 
         <Route

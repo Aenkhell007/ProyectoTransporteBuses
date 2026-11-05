@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import type { Bus, BusFormData, GrupoBus } from '../../types/bus';
 import { validarBus } from '../../utils/validarBus';
 import type { ErroresBus } from '../../utils/validarBus';
+import { botonPrimario, botonSecundario, entrada, etiquetaCampo, textoError } from './estilos';
 
 interface BusFormProps {
   grupos: GrupoBus[];
@@ -52,37 +53,61 @@ export default function BusForm({ grupos, existentes, onGuardar, bus, onCancelar
   };
 
   const campo = (nombre: keyof BusFormData, etiqueta: string) => (
-    <label className="bus-form__campo">
+    <label className={etiquetaCampo}>
       {etiqueta}
-      <input value={datos[nombre]} onChange={(e) => cambiar(nombre, e.target.value)} />
-      {errores[nombre] && <span className="bus-form__error">{errores[nombre]}</span>}
+      <input
+        className={entrada}
+        value={datos[nombre]}
+        aria-invalid={Boolean(errores[nombre])}
+        onChange={(e) => cambiar(nombre, e.target.value)}
+      />
+      {errores[nombre] && (
+        <span className={textoError} role="alert">
+          {errores[nombre]}
+        </span>
+      )}
     </label>
   );
 
   return (
-    <form className="bus-form" onSubmit={enviar} noValidate>
+    <form className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" onSubmit={enviar} noValidate>
       {campo('unidad', 'Unidad *')}
       {campo('placa', 'Placa *')}
       {campo('chasis', 'Chasis *')}
       {campo('carroceria', 'Carrocería *')}
-      <label className="bus-form__campo">
+      <label className={etiquetaCampo}>
         Grupo *
-        <select value={datos.grupo_id} onChange={(e) => cambiar('grupo_id', e.target.value)}>
+        <select
+          className={entrada}
+          value={datos.grupo_id}
+          aria-invalid={Boolean(errores.grupo_id)}
+          onChange={(e) => cambiar('grupo_id', e.target.value)}
+        >
           <option value="">Elige un grupo</option>
           {grupos.map((g) => (
-            <option key={g.id} value={g.id}>{g.nombre}</option>
+            <option key={g.id} value={g.id}>
+              {g.nombre}
+            </option>
           ))}
         </select>
-        {errores.grupo_id && <span className="bus-form__error">{errores.grupo_id}</span>}
+        {errores.grupo_id && (
+          <span className={textoError} role="alert">
+            {errores.grupo_id}
+          </span>
+        )}
       </label>
       {campo('propietario', 'Propietario')}
       {campo('correo_contacto', 'Correo de contacto')}
-      <button type="submit">{bus ? 'Guardar cambios' : 'Agregar bus'}</button>
-      {bus && onCancelar && (
-        <button type="button" onClick={onCancelar}>
-          Cancelar
+      <div className="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-3">
+        <button type="submit" className={botonPrimario}>
+          {bus ? 'Guardar cambios' : 'Agregar bus'}
         </button>
-      )}
+        {bus && onCancelar && (
+          <button type="button" className={botonSecundario} onClick={onCancelar}>
+            Cancelar
+          </button>
+        )}
+      </div>
     </form>
   );
 }

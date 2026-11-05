@@ -7,13 +7,20 @@ Issue padre: #36. Elemento de configuración: pendiente de asignar por el equipo
 
 Vistas del documento maestro V3 que corresponden a este módulo:
 
-| Vista | Pantalla | Ruta propuesta |
-|---|---|---|
-| 1 y 1.1 | Inicio con búsqueda, servicios, destinos, sobre nosotros y contacto | `/` (anclas `#rutas`, `#servicios`, `#sobre-nosotros`, `#contacto`) |
-| 2 | Resultados de búsqueda con filtros, orden y paginación | `/viajes` |
-| 4 | Datos de pasajeros | `/pasajeros` |
-| 5 | Resumen del viaje y descuentos | `/resumen` |
-| 9 y 9.1 | Mis viajes: próximos e historial | `/mis-viajes` |
+| Vista | Pantalla | Ruta | Estado (03/11/2026) |
+|---|---|---|---|
+| 1 y 1.1 | Inicio con búsqueda, servicios, destinos, sobre nosotros y contacto | `/` (anclas `#rutas`, `#servicios`, `#sobre-nosotros`, `#contacto`) | En develop (#40), datos simulados |
+| 2 | Resultados de búsqueda con filtros, orden y paginación | `/viajes` | En develop (#42), datos simulados |
+| 4 | Datos de pasajeros | `/pasajeros` | En develop (#51), datos simulados |
+| 5 | Resumen del viaje y descuentos | `/resumen` | En develop (#53), datos simulados |
+| 9 y 9.1 | Mis viajes: próximos e historial | `/mis-viajes` | En develop (#55), datos simulados |
+
+Contrato de API: en develop (#38) y actualizado en la versión 0.3.0 (#75).
+Backend de compra (catálogo, búsqueda, reserva, pasajeros, cotización, Mis viajes y
+contacto): pendiente del servidor Express del PR #56.
+
+Pruebas: cada PR de vista incluye su prueba en navegador (Chrome headless) a 360,
+390, 768 y 1440 px, descrita en la sección "Pruebas" del PR.
 
 La selección de asientos (vistas 3.1 y 3.2) es de Mikel; el pago, el boleto y el
 reembolso (vistas 6 a 8 y 9.2) son de Ángel.
@@ -21,12 +28,12 @@ reembolso (vistas 6 a 8 y 9.2) son de Ángel.
 ## Flujo
 
 1. Buscar viajes por origen, destino, fecha y cantidad de pasajeros (`buscar_viajes`).
-2. Elegir un viaje y pasar a la selección de asientos con `viaje_id`, `origen_orden`, `destino_orden` y cantidad.
-3. Al confirmar asientos se crea la reserva pendiente y se retienen los asientos (`reservar_asientos`).
+2. Elegir un viaje y pasar a la selección de asientos (`/asientos`, Mikel) con `viaje_id`, `origen_orden`, `destino_orden` y cantidad.
+3. Al confirmar asientos se crea la reserva pendiente y se retienen los asientos (`reservar_asientos`); la pantalla de Mikel navega a `/pasajeros?reserva_id=`.
 4. Registrar un pasajero por asiento (`guardar_pasajero`) y cotizar (`cotizar`).
 5. Revisar el resumen y aceptar la versión de la cotización (`aceptar_cotizacion`).
-6. Continuar al pago (vista 6 de Ángel) con `reserva_id`.
-7. Consultar las compras propias en Mis viajes (`v_mis_viajes`).
+6. Continuar al pago (`/pago`, vista 6 de Ángel) con `reserva_id`.
+7. Consultar las compras propias en Mis viajes (`v_mis_viajes`); desde ahí se abren el seguimiento del pago (`/pago/seguimiento`), la confirmación con el boleto (`/pago/confirmacion`) y el reembolso (`/mis-viajes/reembolso`), todos con `reserva_id`.
 
 El contrato de cada ruta está en [`docs/api/compra-endpoints.md`](../api/compra-endpoints.md).
 
@@ -58,3 +65,4 @@ El contrato de cada ruta está en [`docs/api/compra-endpoints.md`](../api/compra
 
 - 14/10/2026: primera versión (rama `feature/6-compra-kt`, contratos JSON en inglés).
 - 22/10/2026: alineado con la base real y con la convención del contrato de flota (#37).
+- 03/11/2026: estado de cada vista, rutas entre módulos y contrato 0.3.0 (#75).

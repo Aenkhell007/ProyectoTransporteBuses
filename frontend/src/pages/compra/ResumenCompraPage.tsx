@@ -28,7 +28,7 @@ import type { NombreIcono } from "../../components/compra/Icono";
 
 type Carga =
   | { estado: "cargando" }
-  | { estado: "error"; mensaje: string; status: number }
+  | { estado: "error"; mensaje: string; status: number; codigo: string }
   | {
       estado: "listo";
       reserva: ReservaPendiente & {
@@ -75,6 +75,7 @@ export function ResumenCompraPage() {
         estado: "error",
         mensaje: mensajeDeError(e),
         status: e instanceof ErrorCompra ? e.status : 0,
+        codigo: e instanceof ErrorCompra ? e.codigo : "",
       });
     }
   }, [reservaId]);
@@ -122,6 +123,20 @@ export function ResumenCompraPage() {
         <p role="status" className="p-6 text-center text-slate-600">
           Cargando el resumen de tu viaje…
         </p>
+      </Marco>
+    );
+  }
+  if (carga.estado === "error" && carga.codigo === "PASAJEROS_INCOMPLETOS") {
+    return (
+      <Marco>
+        <Vacio
+          titulo="Faltan los datos de los pasajeros"
+          texto="Registra un pasajero por cada asiento reservado para ver el total de tu compra."
+          accion={{
+            texto: "Completar pasajeros",
+            to: `/pasajeros?reserva_id=${encodeURIComponent(reservaId)}`,
+          }}
+        />
       </Marco>
     );
   }
@@ -589,10 +604,12 @@ function Vacio({
   titulo,
   texto,
   reintentar,
+  accion = { texto: "Buscar un viaje", to: "/" },
 }: {
   titulo: string;
   texto: string;
   reintentar?: () => void;
+  accion?: { texto: string; to: string };
 }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 text-center">
@@ -609,10 +626,10 @@ function Vacio({
           </button>
         )}
         <Link
-          to="/"
+          to={accion.to}
           className="inline-flex min-h-11 items-center rounded-md bg-red-600 px-4 font-semibold text-white focus-visible:outline-2 focus-visible:outline-blue-600"
         >
-          Buscar un viaje
+          {accion.texto}
         </Link>
       </div>
     </div>

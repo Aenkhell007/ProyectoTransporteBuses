@@ -1,3 +1,4 @@
+import { FOTOS_BUS } from "../../../features/compra/fotos";
 import { Icono } from "../Icono";
 import type { NombreIcono } from "../Icono";
 import { EncabezadoSeccion } from "./EncabezadoSeccion";
@@ -8,6 +9,7 @@ interface Servicio {
   clase: ClaseServicio;
   nombre: string;
   pisos: string;
+  foto: string;
   icono: NombreIcono;
   descripcion: string;
   caracteristicas: [NombreIcono, string][];
@@ -19,6 +21,7 @@ const servicios: Servicio[] = [
     clase: "EJECUTIVO",
     nombre: "Ejecutivo",
     pisos: "Dos pisos",
+    foto: FOTOS_BUS.dosPisos.tarjeta,
     icono: "corona",
     descripcion:
       "Máximo confort, asientos tipo cama, entretenimiento y un viaje más placentero.",
@@ -35,6 +38,7 @@ const servicios: Servicio[] = [
     clase: "NORMAL",
     nombre: "Confort",
     pisos: "Un piso",
+    foto: FOTOS_BUS.unPiso.tarjeta,
     icono: "bus",
     descripcion:
       "Comodidad y economía para tu viaje, con unidades modernas y seguras.",
@@ -69,9 +73,15 @@ export function ServiciosSeccion({
             className="grid overflow-hidden rounded-lg bg-slate-900 text-white sm:grid-cols-[1.3fr_1fr]"
           >
             <div className="relative flex min-h-48 flex-col justify-between gap-4 p-5">
+              <img
+                src={s.foto}
+                alt=""
+                loading="lazy"
+                className="absolute inset-y-0 right-0 h-full w-4/5 object-cover"
+              />
               <div
                 aria-hidden="true"
-                className="absolute inset-0 bg-linear-to-br from-green-800/60 via-slate-900 to-red-800/60"
+                className="absolute inset-0 bg-linear-to-r from-slate-900 via-slate-900/75 to-slate-900/10"
               />
               <div className="relative">
                 <h3 className="flex items-center gap-3 text-xl font-bold">

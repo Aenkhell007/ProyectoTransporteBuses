@@ -1,5 +1,17 @@
 import { useState, useEffect } from 'react';
 import BusForm from '../../components/flota/BusForm';
+import {
+  botonAlerta,
+  botonSecundario,
+  celdaTabla,
+  encabezadoTabla,
+  insigniaActiva,
+  insigniaInactiva,
+  subtitulo,
+  tabla,
+  tarjeta,
+  titulo,
+} from '../../components/flota/estilos';
 import { gruposMock } from '../../mocks/buses';
 import type { Bus, BusFormData } from '../../types/bus';
 import { listarBuses, crearBus, actualizarBus, desactivarBus as desactivarBusApi } from '../../services/busesApi';
@@ -126,6 +138,7 @@ export default function BusesPage() {
       ) : (
         <div className="mt-3 overflow-x-auto">
           <table className={tabla}>
+<<<<<<< HEAD
             <thead>
               <tr>
                 <th className={encabezadoTabla}>Unidad</th>
@@ -174,3 +187,6 @@ export default function BusesPage() {
     </div>
   );
 }
+=======
+            <thead>
+>>>>>>> d8abe3c83e3eee62774d697913fb26f2597b30ee
