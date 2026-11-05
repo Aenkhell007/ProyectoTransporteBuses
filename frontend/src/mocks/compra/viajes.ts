@@ -4,6 +4,7 @@ import type {
   Cooperativa,
   TipoViaje,
 } from "../../types/compra/viajes";
+import { fotoTarjetaBus } from "../../features/compra/fotos";
 import { CIUDAD } from "./catalogo";
 
 // Datos simulados que imitan las tablas viajes, frecuencias, ruta_paradas, buses y tarifas.
@@ -139,7 +140,7 @@ export const viajesMock: ViajeSimulado[] = [
     tipo_viaje: "CON_PARADAS",
     hora_salida: "08:00",
     paradas: RUTA_SIERRA_COSTA,
-    bus: bus("025", "PAB-5678", "Volvo", "Irizar", "Confort", 1, CONFORT),
+    bus: bus("025", "PAB-5678", "Scania", "Marcopolo", "Confort", 1, CONFORT),
     libres: { NORMAL: 35 },
     tarifa_completa: { NORMAL: 2000 },
   },
@@ -291,3 +292,14 @@ export const viajesMock: ViajeSimulado[] = [
     tarifa_completa: { EJECUTIVO: 2500 },
   },
 ];
+
+// Imita bus_fotos: solo hay fotos de las unidades Scania con carrocería Marcopolo de
+// Gran Continental. Las demás marcas y cooperativas muestran la ilustración neutra.
+for (const v of viajesMock) {
+  if (
+    v.cooperativa_id === COOPERATIVA.granContinental &&
+    v.bus.chasis === "Scania" &&
+    v.bus.carroceria === "Marcopolo"
+  )
+    v.bus.foto_url = fotoTarjetaBus(v.bus.pisos);
+}

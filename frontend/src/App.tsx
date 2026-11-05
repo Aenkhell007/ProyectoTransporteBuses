@@ -17,6 +17,8 @@ import MetodoPago from "./pages/pagos/MetodoPago";
 import { PasajerosPage } from "./pages/compra/PasajerosPage";
 import PasoPagoPendiente from "./pages/pagos/PasoPagoPendiente";
 import SubirComprobante from "./pages/pagos/SubirComprobante";
+import SeguimientoPago from "./pages/pagos/SeguimientoPago";
+import ConfirmacionCompra from "./pages/pagos/ConfirmacionCompra";
 import { ResumenCompraPage } from "./pages/compra/ResumenCompraPage";
 
 const homeSections: Record<
@@ -86,6 +88,8 @@ export function App() {
         <Route path="/pago" element={<MetodoPago />} />
         <Route path="/resumen" element={<ResumenCompraPage />} />
         <Route path="/pago/comprobante" element={<SubirComprobante />} />
+        <Route path="/pago/seguimiento" element={<SeguimientoPago />} />
+        <Route path="/pago/confirmacion" element={<ConfirmacionCompra />} />
         <Route path="/mis-viajes" element={<MisViajesPage />} />
 
         <Route
