@@ -1,4 +1,4 @@
-
+import { filtrarFrecuencias } from "./filtrarFrecuencias";
 import { useState } from "react";
 import { FRECUENCIAS_ANT_MOCK } from "../../mocks/frecuencias.mock";
 import type {
@@ -11,15 +11,14 @@ export default function FrecuenciasPage() {
   const [estado, setEstado] = useState<"TODAS" | EstadoFrecuencia>("TODAS");
   const [tipo, setTipo] = useState<"TODOS" | TipoViajeFrecuencia>("TODOS");
 
-  const frecuencias = FRECUENCIAS_ANT_MOCK.filter((frecuencia) => {
-    const texto = `${frecuencia.origen} ${frecuencia.destino} ${frecuencia.numeroResolucion}`.toLowerCase();
 
-    return (
-  texto.includes(busqueda.toLowerCase().trim()) &&
-  (estado === "TODAS" || frecuencia.estado === estado) &&
-  (tipo === "TODOS" || frecuencia.tipo === tipo)
-);
-  });
+    const frecuencias = filtrarFrecuencias(
+    FRECUENCIAS_ANT_MOCK,
+     busqueda,
+    estado,
+    tipo
+    );
+
 
   return (
     <main className="mx-auto max-w-6xl p-6">
