@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useLocation } from "react-router";
-import BookingProgress from "../../components/pagos/BookingProgress";
+import PaymentLayout from "../../components/pagos/PaymentLayout";
 import BankAccountDetails from "../../components/pagos/BankAccountDetails";
 import ProofUploader from "../../components/pagos/ProofUploader";
 import { cuentasDemo } from "../../mocks/cuentasBancarias";
@@ -36,13 +36,7 @@ export default function SubirComprobante() {
     setSimulado(true);
   }
 
-  return <section className="mx-auto my-4 w-[calc(100%-24px)] max-w-6xl rounded-lg bg-white p-4 sm:my-6 sm:w-[calc(100%-36px)] sm:p-6">
-    <BookingProgress />
-    <header className="mb-6">
-      <h1 className="text-2xl font-bold text-blue-950">Subir comprobante de pago</h1>
-      <p className="mt-2 text-slate-600">Adjunta tu comprobante de transferencia o depósito para que el oficinista pueda revisar el pago.</p>
-    </header>
-
+  return <PaymentLayout title="Subir comprobante de pago" description="Adjunta tu comprobante de transferencia o depósito para que el oficinista pueda revisar el pago.">
     {!cuenta ? <div className="rounded-lg border border-blue-200 bg-blue-50 p-5">
       <h2 className="font-semibold text-blue-950">Primero selecciona una cuenta bancaria</h2>
       <p className="mt-2 text-sm text-blue-900">Vuelve al método de pago y elige Transferencia/Depósito y una cuenta para adjuntar tu comprobante.</p>
@@ -95,7 +89,8 @@ export default function SubirComprobante() {
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
       {simulado && <div role="status" className="rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-900">
         <h2 className="font-semibold">Prueba local completada</h2>
-        <p className="mt-2 break-words">El archivo {comprobante?.archivo.name} está preparado para la cuenta de {cuenta.banco}.{referencia.trim() ? ` Referencia: ${referencia.trim()}.` : ""} No se ha enviado ni registrado ningún pago. La pantalla de seguimiento se conectará cuando exista el endpoint.</p>
+        <p className="mt-2 break-words">El archivo {comprobante?.archivo.name} está preparado para la cuenta de {cuenta.banco}.{referencia.trim() ? ` Referencia: ${referencia.trim()}.` : ""} No se ha enviado ni registrado ningún pago. Puedes continuar al seguimiento de ejemplo.</p>
+        <Link to="/pago/seguimiento" state={{ ...estadoAnterior, nombreArchivo: comprobante?.archivo.name, referencia: referencia.trim() }} className="mt-3 inline-flex min-h-11 items-center font-semibold text-blue-800 underline focus-visible:outline-2 focus-visible:outline-blue-600">Ver seguimiento de ejemplo →</Link>
       </div>}
 
       <nav aria-label="Navegación del comprobante" className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
@@ -105,5 +100,5 @@ export default function SubirComprobante() {
         </button>
       </nav>
     </form>}
-  </section>;
+  </PaymentLayout>;
 }

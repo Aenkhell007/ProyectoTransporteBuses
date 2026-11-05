@@ -1,7 +1,2 @@
-export default function Register() {
-  return (
-    <div className="flex justify-center items-center h-screen">
-      <h1>Registro de Usuario</h1>
-    </div>
-  );
-}
+// Compatibilidad: una sola vista de registro activa.
+export { default } from "../identidad/RegistroPage";

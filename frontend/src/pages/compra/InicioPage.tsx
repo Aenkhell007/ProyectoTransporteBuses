@@ -134,7 +134,7 @@ export function InicioPage() {
     <div className="mx-auto w-full max-w-[1440px] px-3 sm:w-[calc(100%-36px)] sm:px-0">
       <section
         aria-labelledby="inicio-titulo"
-        className="relative overflow-hidden rounded-lg bg-slate-900 bg-[url('/images/fondo-andino.png')] bg-cover bg-center"
+        className="relative overflow-hidden rounded-lg bg-slate-900 bg-[url('/images/compra/bus-un-piso.webp')] bg-[length:auto_440px] bg-[position:78%_0] bg-no-repeat sm:bg-cover sm:bg-[position:75%_center]"
       >
         <div
           className="absolute inset-0 bg-linear-to-r from-slate-950/85 via-slate-900/55 to-slate-900/10"
