@@ -16,19 +16,6 @@ import { gruposMock } from '../../mocks/buses';
 import type { Bus, BusFormData } from '../../types/bus';
 import { listarBuses, crearBus, actualizarBus, desactivarBus as desactivarBusApi } from '../../services/busesApi';
 
-// Constantes de estilo agregadas localmente para solucionar el error de "Cannot find module"
-const tarjeta = "bg-white p-6 shadow rounded-lg border border-slate-200";
-const titulo = "text-2xl font-bold text-blue-900";
-const subtitulo = "text-lg font-semibold text-slate-700 mt-2";
-const tabla = "w-full text-left text-sm text-slate-700";
-const encabezadoTabla = "border-b border-slate-200 bg-slate-50 px-3 py-2 font-semibold";
-const celdaTabla = "border-b border-slate-100 px-3 py-2";
-const insigniaActiva = "rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800";
-const insigniaInactiva = "rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600";
-const botonSecundario = "rounded border border-slate-300 px-2 py-1 text-xs font-medium hover:bg-slate-50 text-blue-600 focus-visible:outline-blue-600";
-const botonAlerta = "rounded border border-red-300 px-2 py-1 text-xs font-medium hover:bg-red-50 text-red-700 focus-visible:outline-red-600";
-
-// Corrección TypeScript: Quitamos el "|| null" porque BusFormData exige que sean string
 const normalizarDatos = (datos: BusFormData) => ({
   unidad: datos.unidad.trim(),
   placa: datos.placa,
@@ -138,7 +125,6 @@ export default function BusesPage() {
       ) : (
         <div className="mt-3 overflow-x-auto">
           <table className={tabla}>
-<<<<<<< HEAD
             <thead>
               <tr>
                 <th className={encabezadoTabla}>Unidad</th>
@@ -187,6 +173,3 @@ export default function BusesPage() {
     </div>
   );
 }
-=======
-            <thead>
->>>>>>> d8abe3c83e3eee62774d697913fb26f2597b30ee
