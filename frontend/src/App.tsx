@@ -21,6 +21,7 @@ import SeguimientoPago from "./pages/pagos/SeguimientoPago";
 import ConfirmacionCompra from "./pages/pagos/ConfirmacionCompra";
 import SolicitarReembolso from "./pages/mis-viajes/SolicitarReembolso";
 import { ResumenCompraPage } from "./pages/compra/ResumenCompraPage";
+import ConfiguracionPagosPage from "./pages/configuracion/ConfiguracionPagosPage";
 
 const homeSections: Record<
   string,
@@ -66,26 +67,25 @@ export function App() {
     <PublicLayout
       header={{
         activeItem: location.pathname === "/" ? section.activeItem : undefined,
-        account: usuario ? {label:usuario.nombres,href:"/mi-cuenta"} : undefined,
+        account: usuario
+          ? { label: usuario.nombres, href: "/mi-cuenta" }
+          : undefined,
       }}
     >
       <Routes>
         <Route path="/activar-cuenta" element={<ActivarCuenta />} />
         <Route path="/reenviar-activacion" element={<ReenviarActivacion />} />
         <Route path="/" element={<InicioPage />} />
-        <Route
-          path="/iniciar-sesion"
-          element={<Login />}
-        />
+        <Route path="/iniciar-sesion" element={<Login />} />
         <Route path="/pasajeros" element={<PasajerosPage />} />
-        <Route
-          path="/registrarse"
-          element={<RegistroPage />}
-        />
+        <Route path="/registrarse" element={<RegistroPage />} />
         <Route path="/viajes" element={<ResultadosPage />} />
         <Route path="/mi-cuenta" element={<MiCuenta />} />
         <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
-        <Route path="/restablecer-contrasena" element={<RestablecerContrasena />} />
+        <Route
+          path="/restablecer-contrasena"
+          element={<RestablecerContrasena />}
+        />
         <Route path="/pago" element={<MetodoPago />} />
         <Route path="/resumen" element={<ResumenCompraPage />} />
         <Route path="/pago/comprobante" element={<SubirComprobante />} />
@@ -93,6 +93,12 @@ export function App() {
         <Route path="/pago/confirmacion" element={<ConfirmacionCompra />} />
         <Route path="/mis-viajes" element={<MisViajesPage />} />
         <Route path="/mis-viajes/reembolso" element={<SolicitarReembolso />} />
+        {import.meta.env.DEV && (
+          <Route
+            path="/vista-previa/configuracion/pagos"
+            element={<ConfiguracionPagosPage />}
+          />
+        )}
 
         <Route
           path="*"
