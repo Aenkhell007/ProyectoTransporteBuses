@@ -23,11 +23,17 @@ export default function GestionCooperativasPage() {
 
     const rucRegex = /^\d{13}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // VALIDACIÓN ESTRICTA DE CÉDULA SOLICITADA EN EL PR 68: Exactamente 10 dígitos numéricos
+    const cedulaRegex = /^[0-9]{10}$/;
 
     if (!rucRegex.test(formData.ruc)) newErrors.ruc = 'El RUC debe tener 13 dígitos numéricos.';
     if (!emailRegex.test(formData.correoContacto)) newErrors.correoContacto = 'Correo inválido.';
     if (!emailRegex.test(formData.correoUser)) newErrors.correoUser = 'Correo inválido.';
-    if (formData.cedula.length < 10) newErrors.cedula = 'Cédula incompleta.';
+    
+    // Aquí reemplazamos la validación anterior por la expresión regular exacta
+    if (!cedulaRegex.test(formData.cedula)) {
+      newErrors.cedula = 'La cédula debe tener exactamente 10 dígitos numéricos.';
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
