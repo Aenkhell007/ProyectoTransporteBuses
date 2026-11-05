@@ -1,17 +1,24 @@
 
 import { useState } from "react";
 import { FRECUENCIAS_ANT_MOCK } from "../../mocks/frecuencias.mock";
-import type { EstadoFrecuencia } from "../../types/frecuencia.types";
+import type {
+  EstadoFrecuencia,
+  TipoViajeFrecuencia,
+} from "../../types/frecuencia.types";
 
 export default function FrecuenciasPage() {
   const [busqueda, setBusqueda] = useState("");
   const [estado, setEstado] = useState<"TODAS" | EstadoFrecuencia>("TODAS");
+  const [tipo, setTipo] = useState<"TODOS" | TipoViajeFrecuencia>("TODOS");
 
   const frecuencias = FRECUENCIAS_ANT_MOCK.filter((frecuencia) => {
     const texto = `${frecuencia.origen} ${frecuencia.destino} ${frecuencia.numeroResolucion}`.toLowerCase();
 
-    return texto.includes(busqueda.toLowerCase().trim()) &&
-      (estado === "TODAS" || frecuencia.estado === estado);
+    return (
+  texto.includes(busqueda.toLowerCase().trim()) &&
+  (estado === "TODAS" || frecuencia.estado === estado) &&
+  (tipo === "TODOS" || frecuencia.tipo === tipo)
+);
   });
 
   return (
@@ -46,6 +53,20 @@ export default function FrecuenciasPage() {
             <option value="ACTIVA">Activas</option>
             <option value="INACTIVA">Inactivas</option>
           </select>
+
+
+          <select
+  value={tipo}
+  onChange={(e) =>
+    setTipo(e.target.value as "TODOS" | TipoViajeFrecuencia)
+  }
+  className="border rounded p-2"
+  aria-label="Filtrar por tipo de viaje"
+>
+  <option value="TODOS">Todos los tipos</option>
+  <option value="DIRECTO">Directos</option>
+  <option value="CON_PARADAS">Con paradas</option>
+</select>
         </div>
 
         <p className="mb-3 text-sm text-gray-600">
