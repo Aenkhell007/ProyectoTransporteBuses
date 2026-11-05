@@ -66,6 +66,20 @@ export default function FrecuenciasPage() {
   <option value="DIRECTO">Directos</option>
   <option value="CON_PARADAS">Con paradas</option>
 </select>
+
+
+<button
+  type="button"
+  onClick={() => {
+    setBusqueda("");
+    setEstado("TODAS");
+    setTipo("TODOS");
+  }}
+  className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
+>
+  Limpiar filtros
+</button>
+
         </div>
 
         <p className="mb-3 text-sm text-gray-600">
