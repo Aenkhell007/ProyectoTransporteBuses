@@ -13,6 +13,7 @@
   },
   "files": [
     "src/server.ts",
+    "src/sesion.test.ts",
     "src/auth/auth.test.ts",
     "src/auth/activacion.test.ts",
     "src/auth/activacion.db.test.ts"
