@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
-import BookingProgress from "../../components/pagos/BookingProgress";
+import PaymentLayout from "../../components/pagos/PaymentLayout";
 import PaymentMethodSelector from "../../components/pagos/PaymentMethodSelector";
 import type { PaymentMethodOption } from "../../components/pagos/PaymentMethodSelector";
 import BankAccountSelector from "../../components/pagos/BankAccountSelector";
@@ -68,17 +68,7 @@ export default function MetodoPago() {
   }
 
   return (
-    <section className="mx-auto my-4 w-[calc(100%-24px)] max-w-360 rounded-lg bg-white p-4 sm:my-6 sm:w-[calc(100%-36px)] sm:p-6">
-      <BookingProgress />
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold text-blue-950">Método de pago</h1>
-
-        <p className="mt-2 text-slate-600">
-          Selecciona la forma de pago que prefieras para completar tu compra.
-        </p>
-      </header>
-
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <PaymentLayout title="Método de pago" description="Selecciona la forma de pago que prefieras para completar tu compra.">
         <div className="space-y-6">
           <section aria-labelledby="titulo-metodos">
             <h2 id="titulo-metodos" className="sr-only">
@@ -184,23 +174,6 @@ export default function MetodoPago() {
           </nav>
           {esTransferencia && !cuentaActual && <p id="cuenta-requerida" role="status" className="text-sm text-red-700">Selecciona una cuenta bancaria para continuar.</p>}
         </div>
-
-        <aside
-          className="rounded-lg border border-slate-200 p-5"
-          aria-labelledby="resumen-viaje"
-        >
-          <h2
-            id="resumen-viaje"
-            className="text-lg font-semibold text-blue-950"
-          >
-            Resumen de tu viaje
-          </h2>
-
-          <p className="mt-2 text-sm text-slate-600">
-            Aquí irá el resumen de la compra.
-          </p>
-        </aside>
-      </div>
-    </section>
+    </PaymentLayout>
   );
 }

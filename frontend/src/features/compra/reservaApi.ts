@@ -3,24 +3,57 @@ import type {
   BeneficioVigente,
   PasajeroDatos,
   PerfilComprador,
+  ReservaCreada,
   ReservaPendiente,
   SolicitudPasajeros,
+  SolicitudReserva,
 } from "../../types/compra/reserva";
 import {
   beneficiosDemo,
   cancelarSimulada,
   cotizarSimulado,
+  crearReservaSimulada,
   guardarPasajerosSimulado,
   perfilDemo,
+  persistirSimuladas,
   reservaSimulada,
 } from "../../mocks/compra/reserva";
 import { ErrorCompra } from "./errores";
 import { copiar, esperar } from "./simulacion";
+import { viajeParaReserva } from "./viajesApi";
 
 // Servicios simulados de la vista 4. Cuando exista el servidor se reemplazan por http()
 // (frontend/src/services/http.ts) contra:
-// GET /reservas/:id/resumen, PUT /reservas/:id/pasajeros, POST /reservas/:id/cotizacion
-// y DELETE /reservas/:id (docs/api/compra-endpoints.md).
+// POST /reservas, GET /reservas/:id/resumen, PUT /reservas/:id/pasajeros,
+// POST /reservas/:id/cotizacion y DELETE /reservas/:id (docs/api/compra-endpoints.md).
+
+/**
+ * POST /reservas: la selección de asientos (vistas 3.1/3.2) crea la reserva pendiente con
+ * el viaje, el tramo y los asientos elegidos, y continúa a /pasajeros?reserva_id=...
+ * Errores: 409 viaje no vendible o asiento ocupado en el tramo; 422 tramo o asientos inválidos.
+ */
+export async function reservarAsientos(
+  solicitud: SolicitudReserva,
+): Promise<ReservaCreada> {
+  await esperar(400);
+  const datos = viajeParaReserva(
+    solicitud.viaje_id,
+    solicitud.origen_orden,
+    solicitud.destino_orden,
+  );
+  const reserva = crearReservaSimulada(solicitud, datos);
+  return copiar({
+    reserva_id: reserva.reserva_id,
+    expires_at: reserva.expires_at,
+    asientos: reserva.asientos.map(
+      ({ reserva_asiento_id, asiento_id, codigo }) => ({
+        reserva_asiento_id,
+        asiento_id,
+        codigo,
+      }),
+    ),
+  });
+}
 
 export async function obtenerReserva(
   reservaId: string,
@@ -59,6 +92,7 @@ export async function guardarPasajeros(
   const reserva = reservaSimulada(reservaId);
   guardarPasajerosSimulado(reserva, solicitud.pasajeros);
   reserva.contacto = copiar(solicitud.contacto);
+  persistirSimuladas();
   return copiar(reserva.pasajeros);
 }
 

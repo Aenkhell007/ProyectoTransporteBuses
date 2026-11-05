@@ -1,4 +1,5 @@
 import type { MiViaje } from "../../types/compra/misViajes";
+import { fotoTarjetaBus } from "../../features/compra/fotos";
 
 // Datos simulados que imitan v_mis_viajes (compras) y reservas con pago en verificación.
 // cliente_id solo existe aquí, del lado del "servidor": la pantalla nunca lo envía.
@@ -52,7 +53,8 @@ function compra(
       monto_reportado_centavos: null,
       boleto_id: esReserva ? null : id(5000),
       estado_documento: esReserva ? null : "LISTO",
-      foto_url: null,
+      // Todas las compras simuladas son de unidades de Gran Continental con foto.
+      foto_url: fotoTarjetaBus(datos.pisos ?? 1),
       ...datos,
     },
   };
