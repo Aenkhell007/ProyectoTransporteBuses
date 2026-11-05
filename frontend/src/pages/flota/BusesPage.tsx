@@ -3,17 +3,28 @@ import BusForm from '../../components/flota/BusForm';
 import { gruposMock } from '../../mocks/buses';
 import type { Bus, BusFormData } from '../../types/bus';
 import { listarBuses, crearBus, actualizarBus, desactivarBus as desactivarBusApi } from '../../services/busesApi';
-import './buses.css';
 
-// Función auxiliar para centralizar la limpieza de datos
+// Constantes de estilo agregadas localmente para solucionar el error de "Cannot find module"
+const tarjeta = "bg-white p-6 shadow rounded-lg border border-slate-200";
+const titulo = "text-2xl font-bold text-blue-900";
+const subtitulo = "text-lg font-semibold text-slate-700 mt-2";
+const tabla = "w-full text-left text-sm text-slate-700";
+const encabezadoTabla = "border-b border-slate-200 bg-slate-50 px-3 py-2 font-semibold";
+const celdaTabla = "border-b border-slate-100 px-3 py-2";
+const insigniaActiva = "rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800";
+const insigniaInactiva = "rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600";
+const botonSecundario = "rounded border border-slate-300 px-2 py-1 text-xs font-medium hover:bg-slate-50 text-blue-600 focus-visible:outline-blue-600";
+const botonAlerta = "rounded border border-red-300 px-2 py-1 text-xs font-medium hover:bg-red-50 text-red-700 focus-visible:outline-red-600";
+
+// Corrección TypeScript: Quitamos el "|| null" porque BusFormData exige que sean string
 const normalizarDatos = (datos: BusFormData) => ({
   unidad: datos.unidad.trim(),
   placa: datos.placa,
   chasis: datos.chasis.trim(),
   carroceria: datos.carroceria.trim(),
   grupo_id: datos.grupo_id,
-  propietario: datos.propietario.trim() || null,
-  correo_contacto: datos.correo_contacto.trim() || null,
+  propietario: datos.propietario.trim(),
+  correo_contacto: datos.correo_contacto.trim(),
 });
 
 export default function BusesPage() {
@@ -21,13 +32,11 @@ export default function BusesPage() {
   const [verInactivos, setVerInactivos] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   
-  // Estados para la carga asíncrona
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const editando = buses.find((b) => b.id === editandoId);
 
-  // Hook para cargar datos al montar el componente
   useEffect(() => {
     cargarBuses();
   }, []);
@@ -35,8 +44,6 @@ export default function BusesPage() {
   const cargarBuses = async () => {
     try {
       setCargando(true);
-      // Hacemos dos peticiones para traer tanto activos como inactivos
-      // y que el filtro local del checkbox funcione correctamente
       const activos = await listarBuses(true);
       const inactivos = await listarBuses(false);
       
@@ -51,7 +58,6 @@ export default function BusesPage() {
 
   const agregar = async (datos: BusFormData) => {
     try {
-      // El backend genera el ID, solo enviamos los datos limpios
       const nuevo = await crearBus(normalizarDatos(datos));
       setBuses((anteriores) => [...anteriores, nuevo]);
     } catch (err) {
@@ -88,69 +94,82 @@ export default function BusesPage() {
   const nombreGrupo = (id: string) => gruposMock.find((g) => g.id === id)?.nombre ?? '—';
 
   return (
-    <div className="buses-page">
-      <h2>Buses de la cooperativa</h2>
-      {editando && <h3>Editando el bus de la unidad {editando.unidad}</h3>}
-      <BusForm
-        key={editando?.id ?? 'nuevo'}
-        grupos={gruposMock}
-        existentes={buses}
-        onGuardar={editando ? guardarEdicion : agregar}
-        bus={editando}
-        onCancelar={() => setEditandoId(null)}
-      />
-      <label>
+    <div className={tarjeta}>
+      <h2 className={titulo}>Buses de la cooperativa</h2>
+      {editando && <h3 className={subtitulo}>Editando el bus de la unidad {editando.unidad}</h3>}
+      
+      <div className="mt-4">
+        <BusForm
+          key={editando?.id ?? 'nuevo'}
+          grupos={gruposMock}
+          existentes={buses}
+          onGuardar={editando ? guardarEdicion : agregar}
+          bus={editando}
+          onCancelar={() => setEditandoId(null)}
+        />
+      </div>
+
+      <label className="mt-6 flex items-center gap-2 text-sm text-slate-800">
         <input
           type="checkbox"
+          className="h-4 w-4"
           checked={verInactivos}
           onChange={(e) => setVerInactivos(e.target.checked)}
-        />{' '}
+        />
         Ver desactivados
       </label>
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
       {cargando ? (
-        <p>Cargando buses...</p>
+        <p className="mt-4 text-sm text-slate-600" role="status">Cargando buses...</p>
       ) : (
-        <table className="buses-page__tabla">
-          <thead>
-            <tr>
-              <th>Unidad</th>
-              <th>Placa</th>
-              <th>Grupo</th>
-              <th>Estado</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibles.map((b) => (
-              <tr key={b.id}>
-                <td>{b.unidad}</td>
-                <td>{b.placa}</td>
-                <td>{nombreGrupo(b.grupo_id)}</td>
-                <td>{b.activo ? 'Activo' : 'Desactivado'}</td>
-                <td>
-                  {b.activo && (
-                    <>
-                      <button type="button" onClick={() => setEditandoId(b.id)}>
-                        Editar
-                      </button>{' '}
-                      <button type="button" onClick={() => desactivar(b.id)}>
-                        Desactivar
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {visibles.length === 0 && (
+        <div className="mt-3 overflow-x-auto">
+          <table className={tabla}>
+            <thead>
               <tr>
-                <td colSpan={5}>No hay buses para mostrar.</td>
+                <th className={encabezadoTabla}>Unidad</th>
+                <th className={encabezadoTabla}>Placa</th>
+                <th className={encabezadoTabla}>Grupo</th>
+                <th className={encabezadoTabla}>Estado</th>
+                <th className={encabezadoTabla}></th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {visibles.map((b) => (
+                <tr key={b.id}>
+                  <td className={celdaTabla}>{b.unidad}</td>
+                  <td className={celdaTabla}>{b.placa}</td>
+                  <td className={celdaTabla}>{nombreGrupo(b.grupo_id)}</td>
+                  <td className={celdaTabla}>
+                    <span className={b.activo ? insigniaActiva : insigniaInactiva}>
+                      {b.activo ? 'Activo' : 'Desactivado'}
+                    </span>
+                  </td>
+                  <td className={celdaTabla}>
+                    {b.activo && (
+                      <div className="flex flex-wrap gap-2">
+                        <button type="button" className={botonSecundario} onClick={() => setEditandoId(b.id)}>
+                          Editar
+                        </button>
+                        <button type="button" className={botonAlerta} onClick={() => desactivar(b.id)}>
+                          Desactivar
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {visibles.length === 0 && (
+                <tr>
+                  <td className={celdaTabla} colSpan={5}>
+                    No hay buses para mostrar.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
