@@ -115,7 +115,7 @@ export default function BankAccountDetails({
           </dl>
 
           <span className="mt-3 inline-block rounded bg-blue-50 px-2 py-1 text-xs text-blue-700">
-            Datos de ejemplo
+            Datos de la cuenta receptora
           </span>
         </div>
 
@@ -124,17 +124,15 @@ export default function BankAccountDetails({
             <>
               <img
                 src={cuenta.qrSrc}
-                alt={`QR de demostración con los datos de ${cuenta.banco}, cuenta terminada en ${cuenta.numero.slice(-4)}`}
+                alt={`QR asociado a ${cuenta.banco}, cuenta terminada en ${cuenta.numero.slice(-4)}`}
                 width="192"
                 height="192"
                 className="h-auto w-full max-w-48 bg-white"
               />
               <figcaption className="text-xs leading-5 text-slate-600">
-                <strong className="block text-blue-950">
-                  QR de demostración
-                </strong>
-                Escanéalo con la cámara de tu celular para leer los datos de
-                esta cuenta. No permite realizar pagos.
+                <strong className="block text-blue-950">QR bancario</strong>
+                Comprueba que los datos mostrados por tu banco coincidan con
+                esta cuenta antes de confirmar una operación.
               </figcaption>
               <a
                 href={cuenta.qrSrc}

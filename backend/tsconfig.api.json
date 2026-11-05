@@ -16,6 +16,8 @@
     "src/sesion.test.ts",
     "src/auth/auth.test.ts",
     "src/auth/activacion.test.ts",
-    "src/auth/activacion.db.test.ts"
+    "src/auth/activacion.db.test.ts",
+    "src/pagos/pagos.test.ts",
+    "src/pagos/pagos.db.test.ts"
   ]
 }

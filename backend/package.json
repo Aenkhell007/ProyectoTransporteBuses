@@ -9,7 +9,9 @@
     "start": "tsx src/server.ts",
     "check:api": "tsc -p tsconfig.api.json",
     "test:auth": "tsx --test src/auth/auth.test.ts src/auth/activacion.test.ts src/sesion.test.ts",
-    "test:activacion:db": "tsx --test src/auth/activacion.db.test.ts"
+    "test:activacion:db": "tsx --test src/auth/activacion.db.test.ts",
+    "test:pagos": "tsx --test src/pagos/pagos.test.ts",
+    "test:pagos:db": "tsx --test src/pagos/pagos.db.test.ts"
   },
   "keywords": [],
   "author": "",
@@ -23,7 +25,9 @@
     "dotenv": "^18.0.9",
     "express": "^5.3.0",
     "jsonwebtoken": "^9.0.3",
-    "pg": "^8.23.1"
+    "pdfkit": "^0.20.2",
+    "pg": "^8.23.1",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
@@ -32,7 +36,9 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.6.5",
+    "@types/pdfkit": "^0.17.7",
     "@types/pg": "^8.23.1",
+    "@types/qrcode": "^1.5.6",
     "prisma": "^7.10.1",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"

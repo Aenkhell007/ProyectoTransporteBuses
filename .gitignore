@@ -12,3 +12,6 @@ dist-verificacion/
 !.env.example
 certs/
 backend/conexion-bd/src/generated/
+
+# Comprobantes y documentos privados del backend
+backend/.data/
