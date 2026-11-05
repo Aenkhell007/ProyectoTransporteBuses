@@ -21,6 +21,24 @@ export interface AsientoReservado {
   tarifa_centavos: number;
 }
 
+/** POST /reservas: viaje, tramo y asientos elegidos en la selección de asientos (vistas 3.1/3.2). */
+export interface SolicitudReserva {
+  viaje_id: string;
+  origen_orden: number;
+  destino_orden: number;
+  asiento_ids: string[];
+}
+
+/** Respuesta 201 de POST /reservas. */
+export interface ReservaCreada {
+  reserva_id: string;
+  expires_at: string;
+  asientos: Pick<
+    AsientoReservado,
+    "reserva_asiento_id" | "asiento_id" | "codigo"
+  >[];
+}
+
 export interface PasajeroDatos {
   reserva_asiento_id: string;
   nombres: string;
