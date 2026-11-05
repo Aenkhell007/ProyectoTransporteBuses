@@ -11,6 +11,7 @@ import type {
 } from "../../types/compra/reserva";
 import type { ClaseAsientoCodigo } from "../../types/compra/viajes";
 import { ErrorCompra } from "../../features/compra/errores";
+import { FOTOS_BUS } from "../../features/compra/fotos";
 import { edadEnFecha, diaEnEcuador } from "../../features/compra/fechas";
 import type { ViajeReservable } from "../../features/compra/viajesApi";
 import { mapaAsientosMock } from "../mapaAsientos";
@@ -53,7 +54,7 @@ const reservaBase: Omit<ReservaPendiente, "reserva_id" | "expires_at"> = {
     grupo: "Ejecutivo",
     plano_id: "00000000-0000-4000-8000-000000000701",
     pisos: 2,
-    foto_url: null,
+    foto_url: FOTOS_BUS.dosPisos.tarjeta,
     servicios: [
       "AIRE",
       "ASIENTO_CAMA",
