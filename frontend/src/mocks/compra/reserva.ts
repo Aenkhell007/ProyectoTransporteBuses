@@ -7,9 +7,13 @@ import type {
   PasajeroDatos,
   PerfilComprador,
   ReservaPendiente,
+  SolicitudReserva,
 } from "../../types/compra/reserva";
+import type { ClaseAsientoCodigo } from "../../types/compra/viajes";
 import { ErrorCompra } from "../../features/compra/errores";
 import { edadEnFecha, diaEnEcuador } from "../../features/compra/fechas";
+import type { ViajeReservable } from "../../features/compra/viajesApi";
+import { mapaAsientosMock } from "../mapaAsientos";
 
 // Datos simulados de la reserva de la maqueta (2 asientos Ejecutivo de $28.00, Quito -> Guayaquil).
 // Este archivo hace de "servidor": aquí sí se calcula la cotización, imitando cotizar().
@@ -93,30 +97,6 @@ export const perfilDemo: PerfilComprador = {
   email: "angel.galarza@example.com",
 };
 
-/** Pasajeros de la maqueta, para abrir la vista 5 directamente. */
-export const pasajerosDemo: PasajeroDatos[] = [
-  {
-    reserva_asiento_id: "00000000-0000-4000-8000-000000000911",
-    nombres: "Ángel Matías",
-    apellidos: "Galarza",
-    tipo_documento: "CEDULA",
-    documento: "1723456784",
-    nacimiento: "1992-03-15",
-    beneficio_codigo: null,
-    respaldo_archivo_id: null,
-  },
-  {
-    reserva_asiento_id: "00000000-0000-4000-8000-000000000912",
-    nombres: "María Fernanda",
-    apellidos: "Galarza",
-    tipo_documento: "CEDULA",
-    documento: "1729876548",
-    nacimiento: "2018-07-22",
-    beneficio_codigo: "NINO",
-    respaldo_archivo_id: null,
-  },
-];
-
 // Según GUIA_COMPLETA.md §10, la demo solo activa niño 30 %; tercera edad y discapacidad
 // no tienen tasa aprobada. Las edades del beneficio niño no están definidas en el repositorio.
 export const beneficiosDemo: BeneficioVigente[] = [
@@ -155,9 +135,135 @@ export const beneficiosDemo: BeneficioVigente[] = [
 /** Impuesto del pasaje terrestre en la demo: 0 %. */
 const IVA_PASAJE_BP = 0;
 
-const almacen = new Map<string, ReservaPendiente>();
+/** config_global: retención de asientos y máximo de pasajeros por reserva. */
+const RETENCION_MINUTOS = 15;
+const LIMITE_PASAJEROS = 10;
 
-/** Devuelve la reserva simulada; se crea con 15 minutos de retención la primera vez. */
+// Las reservas simuladas se guardan en sessionStorage para que viaje, tramo, asientos y
+// pasajeros se conserven al recargar, como lo hará la base. Si no hay almacenamiento,
+// quedan solo en memoria.
+const CLAVE_ALMACEN = "gc.compra.reservas";
+const almacen = cargarAlmacen();
+
+function cargarAlmacen(): Map<string, ReservaPendiente> {
+  try {
+    const guardado = sessionStorage.getItem(CLAVE_ALMACEN);
+    return new Map(guardado ? JSON.parse(guardado) : []);
+  } catch {
+    return new Map();
+  }
+}
+
+/** Guarda los cambios hechos sobre una reserva simulada. */
+export function persistirSimuladas() {
+  try {
+    sessionStorage.setItem(CLAVE_ALMACEN, JSON.stringify([...almacen]));
+  } catch {
+    // Sin almacenamiento la reserva sigue en memoria hasta recargar.
+  }
+}
+
+/**
+ * Imita reservar_asientos(): crea la reserva PENDIENTE con el viaje, el tramo y los asientos
+ * elegidos y los retiene 15 minutos. El plano simulado de flota (mocks/mapaAsientos.ts) es el
+ * mismo para todos los buses; si el viaje no vende la clase del asiento, se usa la del viaje.
+ */
+export function crearReservaSimulada(
+  solicitud: SolicitudReserva,
+  datos: ViajeReservable,
+): ReservaPendiente {
+  const { asiento_ids, origen_orden: o, destino_orden: d } = solicitud;
+  if (
+    asiento_ids.length === 0 ||
+    asiento_ids.length > LIMITE_PASAJEROS ||
+    new Set(asiento_ids).size !== asiento_ids.length
+  ) {
+    throw new ErrorCompra(422, {
+      codigo: "ASIENTOS_INVALIDOS",
+      mensaje: "Cantidad o IDs de asiento inválidos.",
+      errores_campo: [
+        {
+          campo: "asiento_ids",
+          mensaje: `Elige entre 1 y ${LIMITE_PASAJEROS} asientos sin repetir.`,
+        },
+      ],
+    });
+  }
+  const clases = new Map(
+    mapaAsientosMock.clases.map((c) => [c.id, c.codigo as ClaseAsientoCodigo]),
+  );
+  const celdas = asiento_ids.map((id) =>
+    mapaAsientosMock.celdas.find(
+      (c) => c.id === id && c.tipo === "ASIENTO" && c.activa,
+    ),
+  );
+  if (celdas.some((c) => !c)) {
+    throw new ErrorCompra(422, {
+      codigo: "ASIENTOS_INVALIDOS",
+      mensaje: "Cantidad o IDs de asiento inválidos.",
+      errores_campo: [
+        { campo: "asiento_ids", mensaje: "Asiento fuera del plano del bus." },
+      ],
+    });
+  }
+  // Mismo cruce de tramos que la restricción EXCLUDE de reserva_asientos (23P01).
+  const cruza = (a: number, b: number) => a < d && b > o;
+  const retenidos = new Set(
+    [...almacen.values()]
+      .filter(
+        (r) =>
+          r.estado === "PENDIENTE" &&
+          r.viaje.viaje_id === solicitud.viaje_id &&
+          new Date(r.expires_at).getTime() > Date.now() &&
+          cruza(r.viaje.origen.orden, r.viaje.destino.orden),
+      )
+      .flatMap((r) => r.asientos.map((a) => a.asiento_id)),
+  );
+  if (
+    celdas.some(
+      (c) =>
+        retenidos.has(c!.id) ||
+        c!.ocupaciones.some((x) => cruza(x.origen_orden, x.destino_orden)),
+    )
+  ) {
+    throw new ErrorCompra(409, {
+      codigo: "ASIENTO_NO_DISPONIBLE",
+      mensaje:
+        "Uno de los asientos ya no está disponible. Actualiza la disponibilidad y elige otro.",
+    });
+  }
+  const claseViaje = Object.keys(datos.tarifas)[0] as ClaseAsientoCodigo;
+  const reserva: ReservaPendiente = {
+    reserva_id: crypto.randomUUID(),
+    estado: "PENDIENTE",
+    expires_at: new Date(Date.now() + RETENCION_MINUTOS * 60000).toISOString(),
+    cantidad: asiento_ids.length,
+    viaje: datos.viaje,
+    bus: datos.bus,
+    asientos: celdas.map((c) => {
+      const propia = clases.get(c!.clase_id ?? "");
+      const clase =
+        propia && datos.tarifas[propia] !== undefined ? propia : claseViaje;
+      return {
+        reserva_asiento_id: crypto.randomUUID(),
+        asiento_id: c!.id,
+        codigo: c!.codigo ?? "",
+        piso: c!.piso,
+        clase,
+        tarifa_centavos: datos.tarifas[clase]!,
+      };
+    }),
+    contacto: null,
+    pasajeros: [],
+    cotizacion: null,
+    aceptada_version: null,
+  };
+  almacen.set(reserva.reserva_id, reserva);
+  persistirSimuladas();
+  return reserva;
+}
+
+/** Devuelve la reserva simulada. La de la maqueta se crea con 15 minutos de retención la primera vez. */
 export function reservaSimulada(reservaId: string): ReservaPendiente {
   if (reservaId === RESERVA_VENCIDA_ID) {
     throw new ErrorCompra(409, {
@@ -165,13 +271,13 @@ export function reservaSimulada(reservaId: string): ReservaPendiente {
       mensaje: "La reserva venció y los asientos se liberaron.",
     });
   }
-  if (reservaId !== RESERVA_DEMO_ID) {
+  let r = almacen.get(reservaId);
+  if (!r && reservaId !== RESERVA_DEMO_ID) {
     throw new ErrorCompra(404, {
       codigo: "RESERVA_NO_ENCONTRADA",
       mensaje: "Reserva no encontrada",
     });
   }
-  let r = almacen.get(reservaId);
   if (!r) {
     r = {
       ...structuredClone(reservaBase),
@@ -179,6 +285,7 @@ export function reservaSimulada(reservaId: string): ReservaPendiente {
       expires_at: new Date(Date.now() + 15 * 60000).toISOString(),
     };
     almacen.set(reservaId, r);
+    persistirSimuladas();
   }
   if (r.estado !== "PENDIENTE") {
     throw new ErrorCompra(409, {
@@ -193,6 +300,7 @@ export function cancelarSimulada(reservaId: string) {
   const r = almacen.get(reservaId);
   if (r) r.estado = "CANCELADA";
   almacen.delete(reservaId);
+  persistirSimuladas();
 }
 
 /** Imita guardar_pasajero(): guarda o reemplaza cada pasajero y anula la aceptación. */
@@ -234,6 +342,7 @@ export function guardarPasajerosSimulado(
     });
   r.pasajeros = structuredClone(pasajeros);
   r.aceptada_version = null;
+  persistirSimuladas();
 }
 
 /** Imita cotizar(): tarifa por asiento, beneficio a la fecha de salida e IVA redondeado por línea. */
@@ -341,5 +450,6 @@ export function cotizarSimulado(r: ReservaPendiente): Cotizacion {
   };
   r.cotizacion = cotizacion;
   r.aceptada_version = null;
+  persistirSimuladas();
   return cotizacion;
 }
