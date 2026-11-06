@@ -86,11 +86,12 @@ const frecuencias = filtrarFrecuencias(
 
 <button
   type="button"
-  onClick={() => {
-    setBusqueda("");
-    setEstado("TODAS");
-    setTipo("TODOS");
-  }}
+onClick={() => {
+  setBusqueda("");
+  setEstado("TODAS");
+  setTipo("TODOS");
+  setOrden("ASC");
+}}
   className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
 >
   Limpiar filtros
