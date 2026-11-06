@@ -33,12 +33,12 @@ export function TripSummary({ reserva, accion }: TripSummaryProps) {
   return (
     <section
       aria-labelledby="info-viaje"
-      className="rounded-lg border border-slate-200 bg-white p-4"
+      className="rounded-lg border border-indigo-100 bg-white p-4"
     >
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 border-b border-indigo-50 pb-3">
         <h2
           id="info-viaje"
-          className="flex items-center gap-2 text-lg font-bold text-slate-900"
+          className="flex items-center gap-2 text-lg font-bold text-[#08035b]"
         >
           <span className="flex h-8 w-8 items-center justify-center rounded-md bg-green-700 text-white">
             <Icono nombre="bus" className="h-4 w-4" />
@@ -48,10 +48,10 @@ export function TripSummary({ reserva, accion }: TripSummaryProps) {
         {accion}
       </div>
 
-      <div className="mt-3 grid gap-4 md:grid-cols-[220px_1fr]">
+      <div className="mt-3 grid gap-4 md:grid-cols-[200px_1fr]">
         <div>
           <BusImagen
-            src={bus.foto_url}
+            src={bus.foto_url} pisos={bus.pisos}
             alt={`Bus unidad ${bus.unidad}`}
             className="h-32 w-full rounded-md"
           />
@@ -61,15 +61,15 @@ export function TripSummary({ reserva, accion }: TripSummaryProps) {
           >
             {bus.servicios.map((s) => (
               <li key={s} className="flex items-center gap-1.5">
-                <Icono nombre={SERVICIOS_BUS[s][0]} className="h-4 w-4" />
-                {SERVICIOS_BUS[s][1]}
+                <Icono nombre={(SERVICIOS_BUS[s]?.[0] ?? "bus")} className="h-4 w-4" />
+                {(SERVICIOS_BUS[s]?.[1] ?? s)}
               </li>
             ))}
           </ul>
         </div>
         <div className="min-w-0">
           <div className="flex flex-wrap items-start justify-between gap-2">
-            <p className="flex flex-wrap items-center gap-2 text-xl font-bold text-slate-900">
+            <p className="flex flex-wrap items-center gap-2 text-xl font-bold text-[#08035b]">
               {viaje.origen.ciudad}{" "}
               <Icono nombre="flechaDerecha" className="h-4 w-4" />{" "}
               {viaje.destino.ciudad}
@@ -118,7 +118,7 @@ export function TripSummary({ reserva, accion }: TripSummaryProps) {
               {viaje.destino.terminal} ({viaje.destino.ciudad})
             </dd>
             <dt className="text-slate-500">Servicios</dt>
-            <dd>{bus.servicios.map((s) => SERVICIOS_BUS[s][1]).join(", ")}</dd>
+            <dd>{bus.servicios.map((s) => (SERVICIOS_BUS[s]?.[1] ?? s)).join(", ")}</dd>
           </dl>
         </div>
       </div>

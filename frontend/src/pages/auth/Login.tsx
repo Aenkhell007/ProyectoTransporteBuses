@@ -4,6 +4,9 @@ import { Link, Navigate, useLocation } from "react-router";
 import { destinoTrasLogin } from "../../features/auth/destinoTrasLogin";
 import { useAuth } from "../../features/auth/AuthContext";
 
+import { Icono } from "../../components/compra/Icono";
+import { PresentacionAuth, IconoClave, campoAuth, botonAuth } from "../../components/auth/PresentacionAuth";
+
 export default function Login() {
   const { usuario, cargando, login } = useAuth();
   const location = useLocation();
@@ -21,22 +24,33 @@ export default function Login() {
     catch (error) { setError(error instanceof Error ? error.message : "No se pudo iniciar sesión."); }
     finally { setEnviando(false); }
   }
-  return <section className="mx-auto my-8 w-[calc(100%-24px)] max-w-md rounded-lg bg-white p-6 sm:p-8">
-    <h1 className="text-3xl font-bold text-blue-950">Iniciar sesión</h1>
-    <p className="mt-2 text-slate-600">Accede a tu cuenta para gestionar tus viajes.</p>
-    <form onSubmit={enviar} className="mt-6 space-y-5">
-      <label className="block text-sm font-semibold text-blue-950">Correo electrónico
-        <input required type="email" autoComplete="username" maxLength={254} value={email} onChange={(e) => setEmail(e.target.value)} className="mt-2 block min-h-11 w-full rounded border border-slate-300 p-3 font-normal" />
-      </label>
-      <label className="block text-sm font-semibold text-blue-950">Contraseña
-        <input required type={visible ? "text" : "password"} autoComplete="current-password" maxLength={128} value={password} onChange={(e) => setPassword(e.target.value)} className="mt-2 block min-h-11 w-full rounded border border-slate-300 p-3 font-normal" />
-      </label>
-      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={visible} onChange={(e) => setVisible(e.target.checked)} />Mostrar contraseña</label>
-      {error && <p role="alert" className="rounded bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-      <button disabled={enviando || cargando} className="min-h-11 w-full rounded-md bg-[#ff0018] px-5 py-3 font-semibold text-white hover:bg-red-700 disabled:opacity-50">{enviando ? "Iniciando sesión…" : "Iniciar sesión"}</button>
-    </form>
-    <Link to="/reenviar-activacion" className="mt-4 block text-sm text-blue-700 underline">¿No recibiste el correo para activar tu cuenta?</Link>
-    <Link to="/recuperar-contrasena" className="mt-4 block text-sm text-blue-700 underline">¿Olvidaste tu contraseña?</Link>
-    <p className="mt-5 border-t border-slate-100 pt-5 text-sm">¿No tienes cuenta? <Link to="/registrarse" className="font-semibold text-red-600 underline">Regístrate</Link></p>
-  </section>;
+  return (
+    <PresentacionAuth>
+      <header className="text-center">
+        <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl xl:text-[42px]">Iniciar sesión</h1>
+        <p className="mt-3 text-base text-blue-700 sm:text-lg">Accede a tu cuenta para gestionar tus viajes.</p>
+      </header>
+      <form onSubmit={enviar} className="mt-8 space-y-6">
+        <div>
+          <label htmlFor="login-email" className="mb-2 block font-semibold">Correo electrónico</label>
+          <div className="relative"><span className="pointer-events-none absolute left-4 top-4 text-indigo-400"><Icono nombre="correo" className="h-6 w-6" /></span>
+            <input id="login-email" name="email" required type="email" autoComplete="username" maxLength={254} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nombre@correo.com" className={campoAuth} />
+          </div>
+        </div>
+        <div>
+          <label htmlFor="login-password" className="mb-2 block font-semibold">Contraseña</label>
+          <div className="relative"><span className="pointer-events-none absolute left-4 top-4 text-indigo-400"><IconoClave /></span>
+            <input id="login-password" name="password" required type={visible ? "text" : "password"} autoComplete="current-password" maxLength={128} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••••" className={`${campoAuth} pr-14`} />
+            <button type="button" aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"} aria-pressed={visible} onClick={() => setVisible(!visible)} className="absolute right-1 top-1 flex h-12 w-12 items-center justify-center rounded-md text-indigo-500 hover:bg-indigo-50 focus-visible:outline-2 focus-visible:outline-blue-700"><IconoClave ojo visible={visible} /></button>
+          </div>
+        </div>
+        <div className="text-right"><Link to="/recuperar-contrasena" className="text-blue-700 underline-offset-4 hover:underline">¿Olvidaste tu contraseña?</Link></div>
+        {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+        <button type="submit" disabled={enviando || cargando} className={botonAuth}><Icono nombre="persona" className="h-6 w-6" />{enviando ? "Iniciando sesión…" : "Iniciar sesión"}</button>
+      </form>
+      <Link to="/reenviar-activacion" className="mt-5 text-center text-sm text-blue-700 underline">¿No recibiste el correo para activar tu cuenta?</Link>
+      <p className="mt-7 border-t border-indigo-100 pt-7 text-center">¿Aún no tienes una cuenta? <Link to="/registrarse" className="font-semibold text-red-600 underline underline-offset-4">Regístrate</Link></p>
+      <Link to="/" className="mt-9 flex min-h-11 items-center justify-center gap-3 text-blue-700 hover:underline"><Icono nombre="flechaIzquierda" />Volver al inicio</Link>
+    </PresentacionAuth>
+  );
 }

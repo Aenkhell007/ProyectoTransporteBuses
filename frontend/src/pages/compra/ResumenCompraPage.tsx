@@ -61,7 +61,7 @@ export function ResumenCompraPage() {
     try {
       const [reserva, beneficios] = await Promise.all([
         obtenerResumen(reservaId),
-        obtenerBeneficiosResumen(),
+        obtenerBeneficiosResumen(reservaId),
       ]);
       // Si los pasajeros cambiaron después de la última cotización, se pide una nueva al servidor.
       const cotizacion = reserva.cotizacion ?? (await recotizar(reservaId));
@@ -212,7 +212,7 @@ export function ResumenCompraPage() {
   return (
     <Marco>
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
+        <h1 className="text-2xl font-bold text-[#08035b] sm:text-3xl">
           Resumen de tu viaje
         </h1>
         <p className="text-slate-600">
@@ -247,8 +247,8 @@ export function ResumenCompraPage() {
         )}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_330px]">
-        <div className="min-w-0 space-y-4">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 space-y-4 lg:contents">
           <TripSummary
             reserva={reserva}
             accion={
@@ -304,7 +304,7 @@ export function ResumenCompraPage() {
                   key={f.asiento.reserva_asiento_id}
                   className="rounded-md border border-slate-100 p-3 text-sm"
                 >
-                  <p className="flex items-center justify-between gap-2 font-semibold text-slate-900">
+                  <p className="flex items-center justify-between gap-2 font-semibold text-[#08035b]">
                     <span>
                       {i + 1}.{" "}
                       {f.pasajero
@@ -341,12 +341,12 @@ export function ResumenCompraPage() {
               ))}
             </ul>
             <div className="hidden overflow-x-auto sm:block">
-              <table className="w-full min-w-[560px] text-sm">
+              <table className="w-full min-w-[560px] border-collapse text-sm [&_thead]:bg-blue-50/70 [&_th]:border [&_th]:border-indigo-100 [&_td]:border [&_td]:border-indigo-100 [&_th]:px-3 [&_td]:px-3">
                 <caption className="sr-only">
                   Pasajeros, documento, asiento y precio por pasajero
                 </caption>
                 <thead>
-                  <tr className="border-b border-slate-200 text-left text-slate-600">
+                  <tr className="border-b border-indigo-100 text-left text-slate-600">
                     <th scope="col" className="py-1.5 font-medium">
                       #
                     </th>
@@ -423,11 +423,11 @@ export function ResumenCompraPage() {
             </div>
           </Seccion>
 
-          <PriceBreakdown cotizacion={cotizacion} />
+          <div className="lg:col-span-2 lg:row-start-3"><PriceBreakdown cotizacion={cotizacion} /></div>
         </div>
 
         <aside
-          className="space-y-4 lg:sticky lg:top-28 lg:self-start"
+          className="space-y-4 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:self-start"
           aria-label="Descuentos"
         >
           <Seccion
@@ -451,7 +451,7 @@ export function ResumenCompraPage() {
                     key={f.asiento.reserva_asiento_id}
                     className="rounded-md bg-green-50 p-3 text-sm"
                   >
-                    <p className="font-semibold text-slate-900">
+                    <p className="font-semibold text-[#08035b]">
                       {f.pasajero?.nombres} {f.pasajero?.apellidos} -{" "}
                       {f.asiento.codigo}
                     </p>
@@ -515,7 +515,7 @@ export function ResumenCompraPage() {
           onClick={() => void continuar()}
           disabled={aceptando}
           aria-busy={aceptando}
-          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-red-600 px-6 text-lg font-semibold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-wait disabled:bg-red-400"
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-[#ff0018] px-6 text-lg font-semibold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-wait disabled:bg-red-400"
         >
           {aceptando
             ? "Confirmando…"
@@ -557,14 +557,14 @@ function Seccion({
   return (
     <section
       aria-labelledby={`${id}-titulo`}
-      className="rounded-lg border border-slate-200 bg-white p-4"
+      className="rounded-lg border border-indigo-100 bg-white p-4"
     >
       <div className="flex items-center justify-between gap-2">
         <h2
           id={`${id}-titulo`}
-          className="flex items-center gap-2 text-lg font-bold text-slate-900"
+          className="flex items-center gap-2 text-lg font-bold text-[#08035b]"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-red-600 text-white">
+          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-[#ff0018] text-white">
             <Icono nombre={icono} className="h-4 w-4" />
           </span>
           <span>
@@ -612,8 +612,8 @@ function Vacio({
   accion?: { texto: string; to: string };
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 text-center">
-      <h1 className="text-xl font-bold text-slate-900">{titulo}</h1>
+    <div className="rounded-lg border border-indigo-100 bg-slate-50 p-6 text-center">
+      <h1 className="text-xl font-bold text-[#08035b]">{titulo}</h1>
       <p className="mt-1 text-slate-600">{texto}</p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
         {reintentar && (
@@ -627,7 +627,7 @@ function Vacio({
         )}
         <Link
           to={accion.to}
-          className="inline-flex min-h-11 items-center rounded-md bg-red-600 px-4 font-semibold text-white focus-visible:outline-2 focus-visible:outline-blue-600"
+          className="inline-flex min-h-11 items-center rounded-md bg-[#ff0018] px-4 font-semibold text-white focus-visible:outline-2 focus-visible:outline-blue-600"
         >
           {accion.texto}
         </Link>

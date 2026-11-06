@@ -1,13 +1,16 @@
+import { fotoTarjetaBus } from "../../features/compra/fotos";
 import { Icono } from "./Icono";
 
 interface BusImagenProps {
-  /** Foto del bus (bus_fotos). Mientras no haya fotos se muestra una ilustración neutra. */
+  /** Foto del bus (bus_fotos). Sin foto propia se muestra la imagen ilustrativa del servicio. */
   src?: string | null;
+  pisos?: number;
   alt: string;
   className?: string;
 }
 
-export function BusImagen({ src, alt, className = "" }: BusImagenProps) {
+export function BusImagen({ src, pisos, alt, className = "" }: BusImagenProps) {
+  src = src || (pisos ? fotoTarjetaBus(pisos) : null);
   if (src) {
     return (
       <img

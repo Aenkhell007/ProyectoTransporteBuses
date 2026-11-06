@@ -33,7 +33,8 @@ export const NOMBRE_CLASE: Record<ClaseAsientoCodigo, string> = {
 };
 
 export function nombreGrupo(grupo: string, pisos: number) {
-  return `${grupo} (${pisos >= 2 ? "Dos pisos" : "Un piso"})`;
+  const nombre = grupo.replace(/\s*\((?:dos|un) pisos?\)/gi, "").trim();
+  return `${nombre} (${pisos >= 2 ? "Dos pisos" : "Un piso"})`;
 }
 
 interface TripCardProps {
@@ -77,11 +78,11 @@ export function TripCard({
   return (
     <article
       aria-labelledby={`${id}-titulo`}
-      className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm sm:p-4"
+      className="rounded-lg border border-indigo-100 bg-white p-3 shadow-sm sm:p-4"
     >
       <div className="grid gap-3 sm:grid-cols-[150px_1fr] lg:grid-cols-[160px_1fr_190px]">
         <BusImagen
-          src={bus.foto_url}
+          src={bus.foto_url} pisos={bus.pisos}
           alt={`Bus unidad ${bus.unidad}`}
           className="h-28 w-full rounded-md sm:h-full sm:max-h-32"
         />
@@ -96,7 +97,7 @@ export function TripCard({
             </li>
             {viaje.clases.map((c) => (
               <li key={c} className={`${etiqueta} bg-blue-50 text-blue-800`}>
-                {NOMBRE_CLASE[c]}
+                {NOMBRE_CLASE[c] ?? (String(c) === "VIP" ? "VIP" : c)}
               </li>
             ))}
             <li
@@ -107,14 +108,14 @@ export function TripCard({
           </ul>
           <h3
             id={`${id}-titulo`}
-            className="mt-1.5 text-lg font-bold text-slate-900"
+            className="mt-1.5 text-lg font-bold text-[#08035b]"
           >
             {viaje.cooperativa}
             <span className="sr-only">
               , salida {formatearHora(viaje.salida)} desde {viaje.origen.ciudad}
             </span>
           </h3>
-          <p className="flex flex-wrap items-baseline gap-x-3 text-xl font-bold text-slate-900">
+          <p className="flex flex-wrap items-baseline gap-x-3 text-xl font-bold text-[#08035b]">
             <time dateTime={viaje.salida}>{formatearHora(viaje.salida)}</time>
             <Icono
               nombre="flechaDerecha"
@@ -163,7 +164,7 @@ export function TripCard({
         <div className="flex flex-col justify-between gap-3 border-t border-slate-100 pt-3 sm:col-span-2 sm:flex-row sm:items-end lg:col-span-1 lg:flex-col lg:items-stretch lg:border-0 lg:pt-0">
           <p className="text-right">
             <span className="block text-sm text-slate-600">desde</span>
-            <span className="text-2xl font-bold text-slate-900">
+            <span className="text-2xl font-bold text-[#08035b]">
               {formatearCentavos(viaje.tarifa_desde_centavos)}
             </span>
             <span className="block text-xs text-slate-500">por pasajero</span>
@@ -181,7 +182,7 @@ export function TripCard({
             disabled={deshabilitado}
             aria-busy={seleccionando}
             aria-describedby={`${id}-titulo`}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-red-600 px-5 font-semibold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed disabled:bg-red-300"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#ff0018] px-5 font-semibold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed disabled:bg-red-300"
           >
             {seleccionando ? "Verificando…" : "Seleccionar"}
             <Icono nombre="flechaDerecha" className="h-4 w-4" />
@@ -195,8 +196,8 @@ export function TripCard({
       >
         {bus.servicios.map((s) => (
           <li key={s} className="flex items-center gap-1.5">
-            <Icono nombre={SERVICIOS_BUS[s][0]} className="h-4 w-4" />
-            {SERVICIOS_BUS[s][1]}
+            <Icono nombre={(SERVICIOS_BUS[s] ?? ["bus", s])[0] as NombreIcono} className="h-4 w-4" />
+            {(SERVICIOS_BUS[s] ?? ["bus", s])[1]}
           </li>
         ))}
       </ul>
@@ -242,7 +243,7 @@ export function TripCard({
                   return (
                     <li
                       key={parada.orden}
-                      className={`flex gap-2 ${enTramo ? "text-slate-900" : "text-slate-400"}`}
+                      className={`flex gap-2 ${enTramo ? "text-[#08035b]" : "text-slate-400"}`}
                     >
                       <time
                         dateTime={parada.hora}
@@ -273,7 +274,7 @@ function Terminal({ ciudad, terminal }: { ciudad: string; terminal: string }) {
     <span className="flex min-w-0 gap-1.5">
       <Icono nombre="ubicacion" className="mt-0.5 h-4 w-4 text-green-700" />
       <span className="min-w-0">
-        <span className="block font-semibold text-slate-900">{ciudad}</span>
+        <span className="block font-semibold text-[#08035b]">{ciudad}</span>
         <span className="block text-slate-500">{terminal}</span>
       </span>
     </span>
