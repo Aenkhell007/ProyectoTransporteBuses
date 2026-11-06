@@ -27,7 +27,7 @@ export default function Login() {
   return (
     <PresentacionAuth>
       <header className="text-center">
-        <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Iniciar sesión</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl xl:text-[42px]">Iniciar sesión</h1>
         <p className="mt-3 text-base text-blue-700 sm:text-lg">Accede a tu cuenta para gestionar tus viajes.</p>
       </header>
       <form onSubmit={enviar} className="mt-8 space-y-6">

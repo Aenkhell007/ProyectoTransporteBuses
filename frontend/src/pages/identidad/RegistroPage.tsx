@@ -3,6 +3,7 @@ import type { ChangeEvent, FormEvent, ReactNode } from "react";
 import { Link } from "react-router";
 import { authApi } from "../../services/authApi";
 import "./registro.css";
+import { PresentacionAuth } from "../../components/auth/PresentacionAuth";
 
 const estadoInicial = {
   nombres: "", apellidos: "", cedula: "", email: "", telefono: "",
@@ -90,13 +91,8 @@ export default function RegistroPage() {
     finally { ocupado.current = false; setEnviando(false); }
   };
   const campo = { cambiar: handleChange };
-  return <section className="registro" aria-labelledby="registro-titulo">
-    <div className="registro-grid">
-      <aside className="registro-portada" aria-label="Viaja con Gran Continental">
-        <h2>Crea tu cuenta<br/>y viaja con<br/>nosotros</h2>
-        <p><Icono nombre="usuario"/>Guarda tus datos y consulta tus viajes.</p>
-      </aside>
-      <div className="registro-formulario">
+  return <PresentacionAuth registro>
+      <div className="registro-contenido">
         <h1 id="registro-titulo">Crear cuenta</h1>
         <p className="registro-subtitulo">Completa tus datos para registrarte en Gran Continental.</p>
         {mensaje ? <div role="status" className="registro-exito"><p>{mensaje}</p><Link to="/reenviar-activacion">¿No recibiste el correo? Solicitar otro enlace</Link><br/><Link to="/iniciar-sesion">Iniciar sesión después de activar mi cuenta →</Link></div> : <form onSubmit={handleSubmit}>
@@ -125,6 +121,5 @@ export default function RegistroPage() {
         <p className="registro-acceso">¿Ya tienes una cuenta? <Link to="/iniciar-sesion">Inicia sesión</Link></p>
         <Link to="/" className="registro-volver">← <span>Volver al inicio</span></Link>
       </div>
-    </div>
-  </section>;
+  </PresentacionAuth>;
 }
