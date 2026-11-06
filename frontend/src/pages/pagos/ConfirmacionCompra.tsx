@@ -99,7 +99,7 @@ export default function ConfirmacionCompra() {
           >
             <header className="flex items-center justify-between gap-3 border-b border-[#edf0fa] pb-[7px] [&_h2]:text-[24px] [&_h2]:font-bold [&_h2]:tracking-[-.8px] max-[901px]:[&_h2]:text-[20px] max-[601px]:flex-wrap max-[601px]:gap-[5px] max-[601px]:[&_h2]:text-[17px]">
               <h2 id="cc-titulo-boleto">
-                Tu boleto de compra · {compra.pasajeros.length} asientos
+                Tu boleto de compra · {compra.pasajeros.length} {compra.pasajeros.length === 1 ? "asiento" : "asientos"}
               </h2>
               <span className="inline-flex items-center gap-[7px] rounded-[5px] bg-[#e0fce8] px-[9px] py-[6px] text-[13px] whitespace-nowrap text-[#00863c] max-[601px]:px-[7px] max-[601px]:py-1 max-[601px]:text-[11px]">
                 <Icono nombre="checkCirculo" />
@@ -112,7 +112,7 @@ export default function ConfirmacionCompra() {
                 src="/images/Logo G-C.png"
                 alt="Gran Continental"
               />
-              <div className="[&_span]:block [&_span]:text-[14px] [&_strong]:block [&_strong]:text-[23px] [&_strong]:tracking-[-.8px] max-[901px]:[&_strong]:text-[19px] max-[601px]:[&_span]:text-[11px] max-[601px]:[&_strong]:text-[17px]">
+              <div className="[&_span]:block [&_span]:text-[14px] [&_strong]:block [&_strong]:break-all [&_strong]:text-[23px] [&_strong]:tracking-[-.8px] max-[901px]:[&_strong]:text-[19px] max-[601px]:[&_span]:text-[11px] max-[601px]:[&_strong]:text-[17px]">
                 <span>Código de la compra</span>
                 <strong>{compra.codigo}</strong>
               </div>

@@ -11,7 +11,8 @@
     "test:auth": "tsx --test src/auth/auth.test.ts src/auth/activacion.test.ts src/sesion.test.ts",
     "test:activacion:db": "tsx --test src/auth/activacion.db.test.ts",
     "test:pagos": "tsx --test src/pagos/pagos.test.ts",
-    "test:pagos:db": "tsx --test src/pagos/pagos.db.test.ts"
+    "test:pagos:db": "tsx --test src/pagos/pagos.db.test.ts",
+    "test:compra": "tsx --test src/compra/compra.test.ts"
   },
   "keywords": [],
   "author": "",

@@ -35,6 +35,7 @@ import {
 } from "../../features/compra/fechas";
 import { ProgresoCompra } from "../../components/compra/ProgresoCompra";
 import { PassengerForm } from "../../components/compra/PassengerForm";
+import { nombreGrupo } from "../../components/compra/TripCard";
 import { BusImagen } from "../../components/compra/BusImagen";
 import { Icono } from "../../components/compra/Icono";
 import type { NombreIcono } from "../../components/compra/Icono";
@@ -114,7 +115,7 @@ export function PasajerosPage() {
   const cargar = useCallback(() => {
     if (!reservaId) return;
     setCarga({ estado: "cargando" });
-    Promise.all([obtenerReserva(reservaId), obtenerBeneficios()])
+    Promise.all([obtenerReserva(reservaId), obtenerBeneficios(reservaId)])
       .then(([reserva, beneficios]) => {
         const iniciales = reserva.asientos.map((a) => {
           const guardado = reserva.pasajeros.find(
@@ -347,7 +348,7 @@ export function PasajerosPage() {
 
   return (
     <Marco>
-      <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-4">
           <Link
             to={enlaceAsientos}
@@ -357,7 +358,7 @@ export function PasajerosPage() {
             selección de asientos
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
+            <h1 className="text-2xl font-bold text-[#08035b] sm:text-3xl">
               Datos de los pasajeros
             </h1>
             <p className="text-slate-600">
@@ -387,7 +388,7 @@ export function PasajerosPage() {
             className="space-y-4"
           >
             {r.asientos.map((asiento, i) => (
-              <PassengerForm
+              <PassengerForm reservaId={reservaId!}
                 key={asiento.reserva_asiento_id}
                 indice={i}
                 asiento={asiento}
@@ -476,7 +477,7 @@ export function PasajerosPage() {
                 type="submit"
                 disabled={enviando}
                 aria-busy={enviando}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-red-600 px-6 text-lg font-semibold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-wait disabled:bg-red-400"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-[#ff0018] px-6 text-lg font-semibold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-wait disabled:bg-red-400"
               >
                 {enviando ? "Procesando…" : "Continuar al resumen"}{" "}
                 <Icono nombre="flechaDerecha" />
@@ -487,13 +488,13 @@ export function PasajerosPage() {
 
         <aside
           aria-labelledby="resumen-viaje"
-          className="space-y-4 lg:sticky lg:top-28 lg:self-start"
+          className="space-y-4 lg:self-start"
         >
-          <section className="rounded-lg border border-slate-200 bg-white p-4">
+          <section className="rounded-lg border border-indigo-100 bg-white p-4">
             <div className="flex items-center justify-between">
               <h2
                 id="resumen-viaje"
-                className="text-lg font-bold text-slate-900"
+                className="text-lg font-bold text-[#08035b]"
               >
                 Resumen de tu viaje
               </h2>
@@ -537,15 +538,15 @@ export function PasajerosPage() {
             )}
             <div className="mt-3 flex gap-3">
               <BusImagen
-                src={r.bus.foto_url}
+                src={r.bus.foto_url} pisos={r.bus.pisos}
                 alt={`Bus unidad ${r.bus.unidad}`}
                 className="h-20 w-24 shrink-0 rounded-md"
               />
               <div>
                 <span className="rounded-md bg-green-50 px-2 py-0.5 text-xs font-medium text-green-800">
-                  {r.bus.grupo} ({r.bus.pisos >= 2 ? "Dos pisos" : "Un piso"})
+                  {nombreGrupo(r.bus.grupo, r.bus.pisos)}
                 </span>
-                <p className="mt-1 flex flex-wrap items-center gap-1.5 text-lg font-bold text-slate-900">
+                <p className="mt-1 flex flex-wrap items-center gap-1.5 text-lg font-bold text-[#08035b]">
                   {r.viaje.origen.ciudad}{" "}
                   <Icono nombre="flechaDerecha" className="h-4 w-4" />{" "}
                   {r.viaje.destino.ciudad}
@@ -581,7 +582,7 @@ export function PasajerosPage() {
                   <dt className="text-slate-600">
                     Tarifa del asiento {a.codigo}
                   </dt>
-                  <dd className="font-semibold text-slate-900">
+                  <dd className="font-semibold text-[#08035b]">
                     {formatearCentavos(a.tarifa_centavos)}
                   </dd>
                 </div>
@@ -589,10 +590,10 @@ export function PasajerosPage() {
             </dl>
             {r.cotizacion ? (
               <div className="mt-3 flex items-baseline justify-between border-t border-slate-100 pt-3">
-                <span className="font-bold text-slate-900">
+                <span className="font-bold text-[#08035b]">
                   Último total cotizado
                 </span>
-                <span className="text-xl font-bold text-slate-900">
+                <span className="text-xl font-bold text-[#08035b]">
                   {formatearCentavos(r.cotizacion.total_centavos)}
                 </span>
               </div>
@@ -654,8 +655,8 @@ function EstadoVacio({
   reintentar?: () => void;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 text-center">
-      <h1 className="text-xl font-bold text-slate-900">{titulo}</h1>
+    <div className="rounded-lg border border-indigo-100 bg-slate-50 p-6 text-center">
+      <h1 className="text-xl font-bold text-[#08035b]">{titulo}</h1>
       <p className="mt-1 text-slate-600">{texto}</p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
         {reintentar && (
@@ -669,7 +670,7 @@ function EstadoVacio({
         )}
         <Link
           to="/"
-          className="inline-flex min-h-11 items-center rounded-md bg-red-600 px-4 font-semibold text-white focus-visible:outline-2 focus-visible:outline-blue-600"
+          className="inline-flex min-h-11 items-center rounded-md bg-[#ff0018] px-4 font-semibold text-white focus-visible:outline-2 focus-visible:outline-blue-600"
         >
           Buscar un viaje
         </Link>

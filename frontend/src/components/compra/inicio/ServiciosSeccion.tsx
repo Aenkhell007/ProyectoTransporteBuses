@@ -1,4 +1,4 @@
-import { FOTOS_BUS } from "../../../features/compra/fotos";
+import { FOTOS_INICIO } from "../../../features/compra/fotos";
 import { Icono } from "../Icono";
 import type { NombreIcono } from "../Icono";
 import { EncabezadoSeccion } from "./EncabezadoSeccion";
@@ -21,7 +21,7 @@ const servicios: Servicio[] = [
     clase: "EJECUTIVO",
     nombre: "Ejecutivo",
     pisos: "Dos pisos",
-    foto: FOTOS_BUS.dosPisos.tarjeta,
+    foto: FOTOS_INICIO.servicioEjecutivo,
     icono: "corona",
     descripcion:
       "Máximo confort, asientos tipo cama, entretenimiento y un viaje más placentero.",
@@ -38,7 +38,7 @@ const servicios: Servicio[] = [
     clase: "NORMAL",
     nombre: "Confort",
     pisos: "Un piso",
-    foto: FOTOS_BUS.unPiso.tarjeta,
+    foto: FOTOS_INICIO.servicioConfort,
     icono: "bus",
     descripcion:
       "Comodidad y economía para tu viaje, con unidades modernas y seguras.",

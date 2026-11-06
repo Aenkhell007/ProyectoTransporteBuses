@@ -261,12 +261,12 @@ export function ResultadosPage() {
           <aside className="space-y-4" aria-label="Tu búsqueda y filtros">
             <section
               aria-labelledby="tu-busqueda"
-              className="rounded-lg border border-slate-200 bg-white p-4"
+              className="rounded-lg border border-indigo-100 bg-white p-4"
             >
               <div className="flex items-center justify-between">
                 <h2
                   id="tu-busqueda"
-                  className="flex items-center gap-2 font-bold text-slate-900"
+                  className="flex items-center gap-2 font-bold text-[#08035b]"
                 >
                   <span className="flex h-8 w-8 items-center justify-center rounded-md bg-green-700 text-white">
                     <Icono nombre="bus" className="h-4 w-4" />
@@ -280,7 +280,7 @@ export function ResultadosPage() {
                   Editar<span className="sr-only"> la búsqueda</span>
                 </Link>
               </div>
-              <p className="mt-3 flex flex-wrap items-center gap-2 text-lg font-bold text-slate-900">
+              <p className="mt-3 flex flex-wrap items-center gap-2 text-lg font-bold text-[#08035b]">
                 {nombreCiudad(formulario.origen)}{" "}
                 <Icono nombre="flechaDerecha" className="h-4 w-4" />{" "}
                 {nombreCiudad(formulario.destino)}
@@ -323,7 +323,7 @@ export function ResultadosPage() {
             </div>
             <div
               id="panel-orden"
-              className={`${panelMovil === "orden" ? "block" : "hidden"} rounded-lg border border-slate-200 p-3 lg:hidden`}
+              className={`${panelMovil === "orden" ? "block" : "hidden"} rounded-lg border border-indigo-100 p-3 lg:hidden`}
             >
               {selectorOrden("orden-movil")}
             </div>
@@ -346,7 +346,7 @@ export function ResultadosPage() {
               <div>
                 <h1
                   id="titulo-viajes"
-                  className="text-2xl font-bold text-slate-900"
+                  className="text-2xl font-bold text-[#08035b]"
                 >
                   Selecciona tu viaje
                 </h1>
@@ -411,7 +411,7 @@ export function ResultadosPage() {
               ) : lista.estado === "cargando" ? (
                 <p
                   role="status"
-                  className="rounded-lg border border-slate-200 p-6 text-center text-slate-600"
+                  className="rounded-lg border border-indigo-100 p-6 text-center text-slate-600"
                 >
                   Buscando viajes disponibles…
                 </p>
@@ -507,8 +507,8 @@ export function ResultadosPage() {
             aria-label="Ventajas y ayuda"
             className="space-y-4 lg:col-span-2 xl:col-span-1"
           >
-            <section className="rounded-lg border border-slate-200 bg-white p-4">
-              <h2 className="font-bold text-slate-900">
+            <section className="rounded-lg border border-indigo-100 bg-white p-4">
+              <h2 className="font-bold text-[#08035b]">
                 ¿Por qué viajar con Gran Continental?
               </h2>
               <ul className="mt-3 space-y-2 text-sm text-slate-700">
@@ -528,20 +528,22 @@ export function ResultadosPage() {
                 ))}
               </ul>
             </section>
-            <div className="hidden rounded-lg bg-linear-to-b from-blue-900 to-green-800 p-5 text-center font-bold text-white xl:block">
-              <p className="text-lg leading-snug">
+            <div className="relative hidden min-h-80 overflow-hidden rounded-lg bg-blue-900 p-4 text-center font-bold text-white xl:block">
+              <img src="/images/compra/bus-dos-pisos.webp" alt="" className="absolute inset-0 h-full w-full object-cover opacity-60"/>
+              <div className="absolute inset-0 bg-linear-to-b from-blue-950/60 via-blue-900/10 to-blue-950/50"/>
+              <p className="relative text-lg leading-snug">
                 VIAJA SEGURO
                 <br />
                 VIAJA CÓMODO
                 <br />
                 VIAJA CON GRAN CONTINENTAL
               </p>
-              <p className="mt-3 font-serif text-sm font-normal italic">
+              <p className="relative mt-3 font-serif text-sm font-normal italic">
                 El camino merece grandeza
               </p>
             </div>
-            <section className="rounded-lg border border-slate-200 bg-white p-4 text-center">
-              <h2 className="flex items-center justify-center gap-2 font-semibold text-slate-900">
+            <section className="rounded-lg border border-indigo-100 bg-white p-4 text-center">
+              <h2 className="flex items-center justify-center gap-2 font-semibold text-[#08035b]">
                 <Icono nombre="soporte" className="h-5 w-5" /> ¿Necesitas ayuda?
               </h2>
               <p className="text-sm text-slate-600">
@@ -574,8 +576,8 @@ function Estado({
   children?: ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
-      <p className="flex items-center gap-2 font-semibold text-slate-900">
+    <div className="rounded-lg border border-indigo-100 bg-slate-50 p-5">
+      <p className="flex items-center gap-2 font-semibold text-[#08035b]">
         <Icono nombre={icono} className="h-5 w-5 text-red-600" /> {titulo}
       </p>
       <div className="mt-2">{children}</div>

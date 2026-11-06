@@ -13,6 +13,7 @@ import { MisViajesPage } from "./pages/mis-viajes/MisViajesPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { InicioPage } from "./pages/compra/InicioPage";
 
+import SeleccionAsientosPage from "./pages/flota/SeleccionAsientosPage";
 import MetodoPago from "./pages/pagos/MetodoPago";
 import { PasajerosPage } from "./pages/compra/PasajerosPage";
 import PasoPagoPendiente from "./pages/pagos/PasoPagoPendiente";
@@ -77,6 +78,7 @@ export function App() {
         <Route path="/reenviar-activacion" element={<ReenviarActivacion />} />
         <Route path="/" element={<InicioPage />} />
         <Route path="/iniciar-sesion" element={<Login />} />
+        <Route path="/asientos" element={<SeleccionAsientosPage />} />
         <Route path="/pasajeros" element={<PasajerosPage />} />
         <Route path="/registrarse" element={<RegistroPage />} />
         <Route path="/viajes" element={<ResultadosPage />} />

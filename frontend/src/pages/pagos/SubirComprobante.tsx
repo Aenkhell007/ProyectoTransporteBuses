@@ -145,10 +145,10 @@ export default function SubirComprobante() {
           </Link>
         </div>
       ) : (
-        <form onSubmit={enviar} className="space-y-6">
+        <form onSubmit={enviar} className="space-y-4">
           <section
             aria-labelledby="cuenta-destino"
-            className="rounded-lg border border-slate-200 p-4 sm:p-5"
+            className="rounded-lg border border-indigo-100 p-4 sm:p-5"
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -156,35 +156,28 @@ export default function SubirComprobante() {
                   id="cuenta-destino"
                   className="text-lg font-semibold text-blue-950"
                 >
-                  Cuenta bancaria seleccionada
+                  Cuenta receptora seleccionada
                 </h2>
-                <p className="mt-2 text-sm text-blue-900">
-                  {cuenta.banco} · {cuenta.tipo} · ••••{cuenta.numero.slice(-4)}
-                </p>
+
               </div>
               <Link
                 to={enlacePago("/pago", reservaId)}
                 className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-700 underline focus-visible:outline-2 focus-visible:outline-blue-600"
               >
-                Consultar método de pago
+                Cambiar cuenta
               </Link>
             </div>
-            <details className="mt-3">
-              <summary className="cursor-pointer py-2 text-sm text-blue-700 focus-visible:outline-2 focus-visible:outline-blue-600">
-                Ver datos bancarios y QR
-              </summary>
-              <div className="mt-3">
-                <BankAccountDetails key={cuenta.id} cuenta={cuenta} />
-              </div>
-            </details>
-            <p className="mt-3 text-xs text-slate-500">
-              Cuenta receptora registrada para este intento de pago.
-            </p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-[150px_1fr]">
+              <div className="flex items-center gap-3"><span aria-hidden="true" className="flex size-12 items-center justify-center rounded bg-yellow-300 text-xl font-bold text-blue-950">▰</span><strong className="text-blue-950">{cuenta.banco}</strong></div>
+              <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm"><dt className="text-indigo-400">Banco:</dt><dd>{cuenta.banco}</dd><dt className="text-indigo-400">Tipo de cuenta:</dt><dd>{cuenta.tipo==='CORRIENTE'?'Cuenta corriente':cuenta.tipo==='AHORROS'?'Cuenta de ahorros':cuenta.tipo}</dd><dt className="text-indigo-400">Número de cuenta:</dt><dd className="break-all">{cuenta.numero}</dd><dt className="text-indigo-400">Titular:</dt><dd>{cuenta.titular}</dd></dl>
+            </div>
+            {cuenta.qrSrc&&<details className="mt-3"><summary className="cursor-pointer text-sm text-blue-700">Ver QR de la cuenta</summary><BankAccountDetails key={cuenta.id} cuenta={cuenta}/></details>}
+
           </section>
 
           <section
             aria-labelledby="adjuntar-comprobante"
-            className="rounded-lg border border-slate-200 p-4 sm:p-5"
+            className="rounded-lg border border-indigo-100 p-4 sm:p-5"
           >
             <h2
               id="adjuntar-comprobante"
@@ -248,30 +241,7 @@ export default function SubirComprobante() {
             </div>
           </section>
 
-          <section
-            aria-labelledby="antes-de-enviar"
-            className="rounded-md bg-blue-50 p-4 text-sm text-blue-950"
-          >
-            <h2 id="antes-de-enviar" className="font-semibold">
-              Antes de enviar
-            </h2>
-            <ul className="mt-2 list-disc space-y-1 pl-5 leading-6">
-              <li>
-                Comprueba que el archivo esté completo y se pueda leer, sin
-                cortes ni partes borrosas.
-              </li>
-              <li>
-                Verifica que los datos correspondan a la cuenta y al pago de tu
-                reserva.
-              </li>
-              <li>
-                El envío del comprobante no aprueba el pago ni emite el boleto.
-                Primero debe revisarlo el oficinista.
-              </li>
-            </ul>
-          </section>
-
-          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-slate-200 p-4 text-sm text-slate-700">
+          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-indigo-100 p-4 text-sm text-slate-700">
             <input
               type="checkbox"
               checked={confirmado}
@@ -286,8 +256,7 @@ export default function SubirComprobante() {
           </label>
 
           <p className="rounded-md bg-blue-50 p-3 text-sm">
-            El archivo se enviará de forma privada al servidor. Su recepción no
-            aprueba el pago.
+            El envío no confirma tu pago. El oficinista revisará el comprobante antes de emitir el boleto.
           </p>
           {errorConsulta && (
             <p role="alert" className="text-red-700">
@@ -305,7 +274,7 @@ export default function SubirComprobante() {
           >
             <Link
               to={enlacePago("/pago", reservaId)}
-              className="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-200 px-5 py-3 text-sm font-semibold text-blue-900 hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-blue-600"
+              className="inline-flex min-h-11 items-center justify-center rounded-md border border-indigo-100 px-5 py-3 text-sm font-semibold text-blue-900 hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-blue-600"
             >
               ← Volver al método de pago
             </Link>

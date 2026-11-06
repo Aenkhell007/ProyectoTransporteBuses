@@ -104,7 +104,7 @@ export default function SeguimientoPago() {
       <button
         type="button"
         onClick={() => void recargar()}
-        className="mb-3 min-h-11 text-blue-700 underline"
+        className="float-right mb-2 min-h-10 text-xs text-blue-700 underline"
       >
         Actualizar estado
       </button>
@@ -133,7 +133,7 @@ export default function SeguimientoPago() {
           <>
             <div className="">
               <div className="min-w-0">
-                <div className="px-[14px] pt-[5px] pb-5 text-center [&_h2]:text-[29px] [&_h2]:font-bold [&_h2]:leading-[1.3] [&_h2]:tracking-[-.7px] max-[761px]:px-[5px] max-[761px]:pt-[10px] max-[761px]:pb-[14px] max-[761px]:[&_h2]:text-[22px] max-[761px]:[&_h2]:tracking-[-.5px]">
+                <div className="clear-both px-[14px] pt-[5px] pb-5 text-center [&_h2]:text-[29px] [&_h2]:font-bold [&_h2]:leading-[1.3] [&_h2]:tracking-[-.7px] max-[761px]:px-[5px] max-[761px]:pt-[10px] max-[761px]:pb-[14px] max-[761px]:[&_h2]:text-[22px] max-[761px]:[&_h2]:tracking-[-.5px]">
                   <ComprobanteRecibido estado={estado} />
                   <h2>{mensaje.titulo}</h2>
                   <p
@@ -145,7 +145,7 @@ export default function SeguimientoPago() {
                     {mensaje.detalle}
                     <br />
                     {estado === "revision" &&
-                      "Consulta aquí el estado de la revisión; no se confirma el envío de avisos externos."}
+                      "Puedes consultar aquí el estado actualizado de tu pago."}
                   </p>
                 </div>
 
@@ -154,12 +154,12 @@ export default function SeguimientoPago() {
                   aria-labelledby="titulo-datos-reserva"
                 >
                   <h2 id="titulo-datos-reserva">Datos de tu reserva</h2>
-                  <div className="flex items-center gap-[35px] py-2 min-[761px]:max-[1151px]:gap-4 max-[761px]:justify-between max-[761px]:gap-[7px] max-[761px]:pt-[7px] max-[761px]:pb-[9px]">
+                  <div className="flex flex-wrap items-center gap-[35px] py-2 min-[761px]:max-[1151px]:gap-4 max-[761px]:justify-between max-[761px]:gap-[7px] max-[761px]:pt-[7px] max-[761px]:pb-[9px]">
                     <div>
                       <span className="block text-[13px] leading-[1.5] font-normal text-[#6873bd] max-[761px]:text-[11px]">
                         Código de reserva
                       </span>
-                      <strong className="block text-[20px] leading-[1.4] max-[761px]:text-[14px] max-[761px]:whitespace-nowrap max-[351px]:text-[12px]">
+                      <strong className="block break-all text-[20px] leading-[1.4] max-[761px]:text-[14px] max-[351px]:text-[12px]">
                         {detallePago.codigo}
                       </strong>
                     </div>

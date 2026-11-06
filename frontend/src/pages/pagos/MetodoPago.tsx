@@ -117,14 +117,14 @@ export default function MetodoPago() {
           </h2>
 
           <PaymentMethodSelector
-            metodos={datos.metodos}
+            metodos={[...datos.metodos, ...[{id:"OFICINA",nombre:"Pago en oficina",habilitado:false,mensaje:"No habilitado"},{id:"PAYPHONE",nombre:"PayPhone",habilitado:false,mensaje:"Pendiente de conexión"},{id:"TARJETA",nombre:"Tarjeta de crédito/débito",habilitado:false,mensaje:"Próximamente"},{id:"PAYPAL",nombre:"PayPal",habilitado:false,mensaje:"Próximamente"}].filter(m=>!datos.metodos.some(actual=>actual.id===m.id))]}
             seleccionado={metodoSeleccionado}
             onSeleccionar={setMetodoSeleccionado}
           />
         </section>
 
         <section
-          className="min-w-0 rounded-lg border border-slate-200 p-4 sm:p-5"
+          className="min-w-0 rounded-lg border border-indigo-100 p-4 sm:p-5"
           aria-labelledby="titulo-informacion-pago"
         >
           <h2
@@ -245,7 +245,7 @@ export default function MetodoPago() {
         >
           <Link
             to={enlacePago("/resumen", reservaId)}
-            className="inline-flex min-h-11 items-center justify-center gap-3 rounded-md border border-slate-200 px-5 py-3 text-center text-sm font-semibold text-blue-900 hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-blue-600"
+            className="inline-flex min-h-11 items-center justify-center gap-3 rounded-md border border-indigo-100 px-5 py-3 text-center text-sm font-semibold text-blue-900 hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-blue-600"
           >
             <span aria-hidden="true">←</span> Volver al resumen
           </Link>

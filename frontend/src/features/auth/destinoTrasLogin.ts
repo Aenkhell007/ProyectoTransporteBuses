@@ -1,6 +1,6 @@
 // Solo se puede volver a rutas conocidas de esta aplicación, nunca a una URL externa.
 const rutasPermitidas = new Set([
-  '/', '/mi-cuenta', '/viajes', '/pasajeros', '/resumen',
+  '/', '/asientos', '/mi-cuenta', '/viajes', '/pasajeros', '/resumen',
   '/pago', '/pago/comprobante', '/pago/seguimiento', '/pago/confirmacion', '/mis-viajes',
 ]);
 

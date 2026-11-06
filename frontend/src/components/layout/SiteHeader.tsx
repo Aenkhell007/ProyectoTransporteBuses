@@ -90,8 +90,22 @@ export function SiteHeader({
               </li>
             ))}
           </ul>
-          <div className="gc-header__actions" aria-busy={cargando}
-            style={{ visibility: cargando ? 'hidden' : undefined }}>
+          <div className="gc-header__actions" aria-busy={cargando}>
+            {cargando ? <>
+              <span className="gc-button gc-button--login" role="status"
+                style={{ fontSize: '14px' }}>
+                <PersonIcon />
+                <ActionLabel espacio="Iniciar sesión" texto="Consultando…" />
+              </span>
+              <span className="gc-button gc-button--register" aria-hidden="true"
+                style={{ fontSize: '14px' }}>
+                <PersonIcon />
+                <span style={{ position: 'relative', display: 'inline-block' }}>
+                  <span style={{ visibility: 'hidden' }}>Registrarse</span>
+                  <span style={{ position: 'absolute', inset: '5px 0', borderRadius: '4px', background: 'currentColor', opacity: .35 }} />
+                </span>
+              </span>
+            </> : <>
             <HeaderLink className="gc-button gc-button--login"
               href={usuario ? (account?.href ?? '/mi-cuenta') : loginHref}
               title={usuario ? nombreCompleto : undefined}>
@@ -110,6 +124,7 @@ export function SiteHeader({
                 <PersonIcon /> <ActionLabel espacio="Registrarse" texto="Registrarse" />
               </HeaderLink>
             )}
+            </>}
           </div>
         </nav>
       </div>

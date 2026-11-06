@@ -25,6 +25,7 @@ export function nombrePiso(piso: number, pisos: number) {
 }
 
 interface PassengerFormProps {
+  reservaId: string;
   indice: number;
   asiento: AsientoReservado;
   pisosBus: number;
@@ -46,9 +47,10 @@ interface PassengerFormProps {
 }
 
 const entrada = (error?: string) =>
-  `h-11 w-full rounded-md border bg-white px-3 text-[15px] outline-none focus-visible:border-blue-600 focus-visible:ring-2 focus-visible:ring-blue-200 ${error ? "border-red-500" : "border-slate-300"}`;
+  `h-11 w-full rounded-md border bg-white px-3 text-[15px] outline-none focus-visible:border-blue-600 focus-visible:ring-2 focus-visible:ring-blue-200 ${error ? "border-red-500" : "border-indigo-200"}`;
 
 export function PassengerForm({
+  reservaId,
   indice,
   asiento,
   pisosBus,
@@ -97,7 +99,7 @@ export function PassengerForm({
     setErrorRespaldo(null);
     setSubiendo(true);
     try {
-      const { archivo_id } = await subirRespaldo(archivo);
+      const { archivo_id } = await subirRespaldo(archivo,reservaId);
       onCambiar({
         ...ficha,
         respaldo_archivo_id: archivo_id,
@@ -117,7 +119,7 @@ export function PassengerForm({
   return (
     <section
       aria-labelledby={`${id}-titulo`}
-      className="rounded-lg border border-slate-200 bg-white"
+      className="rounded-lg border border-indigo-100 bg-white"
     >
       <header className="flex flex-wrap items-center gap-3 p-4">
         <span
@@ -126,7 +128,7 @@ export function PassengerForm({
         >
           {indice + 1}
         </span>
-        <h2 id={`${id}-titulo`} className="text-lg font-bold text-slate-900">
+        <h2 id={`${id}-titulo`} className="text-lg font-bold text-[#08035b]">
           Pasajero {indice + 1}
           {esComprador && " (Comprador)"}
         </h2>

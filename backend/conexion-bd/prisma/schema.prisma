@@ -859,6 +859,8 @@ model pasajeros {
   nacimiento          DateTime?        @db.Date
   beneficio_codigo    String?
   respaldo_archivo_id String?          @db.Uuid
+  email               String?          @db.VarChar(254)
+  telefono            String?          @db.VarChar(25)
   created_at          DateTime         @default(now()) @db.Timestamptz(6)
   updated_at          DateTime         @default(now()) @db.Timestamptz(6)
   cooperativas        cooperativas     @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)

@@ -18,8 +18,10 @@ export default function ProofUploader({ value, onChange, onValidando, politica }
   const [validando, setValidando] = useState(false);
   const [arrastrando, setArrastrando] = useState(false);
   const [preview, setPreview] = useState("");
+  const [ampliada, setAmpliada] = useState(false);
 
   useEffect(() => {
+    setAmpliada(false);
     if (!value) { setPreview(""); return; }
     const url = URL.createObjectURL(value.archivo);
     setPreview(url);
@@ -65,7 +67,7 @@ export default function ProofUploader({ value, onChange, onValidando, politica }
       onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setArrastrando(false); }}
       onDrop={soltar}
       aria-busy={validando}
-      className={`flex flex-col items-center gap-3 rounded-lg border-2 border-dashed p-5 text-center sm:p-8 ${arrastrando ? "border-blue-600 bg-blue-100" : "border-blue-200 bg-blue-50/50"}`}
+      className={`flex flex-col items-center gap-3 rounded-lg border-2 border-dashed p-5 text-center sm:p-6 ${arrastrando ? "border-blue-600 bg-blue-100" : "border-blue-200 bg-blue-50/50"}`}
     >
       <svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-blue-700">
         <path d="M12 16V3m-5 5 5-5 5 5M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5" />
@@ -81,7 +83,7 @@ export default function ProofUploader({ value, onChange, onValidando, politica }
           if (archivos.length) void seleccionar(archivos);
         }} />
       <button type="button" onClick={() => input.current?.click()} className="min-h-11 rounded-md border border-blue-300 bg-white px-5 py-2 text-sm font-semibold text-blue-800 hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-blue-600">
-        {value ? "Cambiar comprobante" : "Seleccionar archivo"}
+        {value ? "Cambiar archivo" : "Seleccionar archivo"}
       </button>
       <p role="status" className="text-sm text-blue-800">{validando ? "Validando archivo…" : ""}</p>
     </div>
@@ -94,14 +96,13 @@ export default function ProofUploader({ value, onChange, onValidando, politica }
         </div>
         <button type="button" onClick={quitar} className="min-h-11 rounded-md border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-red-600">Quitar archivo</button>
       </div>
-      {preview && (value.mime === "application/pdf" ? (
-        <div className="p-4">
-          <object data={preview} type="application/pdf" aria-label="Vista previa del comprobante PDF" className="h-80 w-full rounded border border-slate-200"><p className="p-4 text-sm text-slate-600">Tu navegador no muestra la vista previa del PDF. Puedes abrirlo con el enlace inferior.</p></object>
-          <a href={preview} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex min-h-11 items-center text-sm text-blue-700 underline">Abrir PDF en otra pestaña</a>
-        </div>
-      ) : (
-        <img src={preview} alt="Vista previa del comprobante seleccionado" className="mx-auto max-h-96 w-full bg-white object-contain p-4" onError={() => { quitar(); setError("No se puede mostrar la imagen. Elige un archivo que no esté dañado."); }} />
-      ))}
+      {preview && <div className="border-t border-indigo-50 p-3">
+        <button type="button" aria-expanded={ampliada} onClick={()=>setAmpliada(!ampliada)} className="flex min-h-10 items-center gap-3 text-sm text-blue-700 underline">
+          {value.mime!=="application/pdf"&&<img src={preview} alt="Miniatura del comprobante" className="size-12 rounded border border-indigo-100 object-cover"/>}
+          {ampliada?"Ocultar vista previa":"Ver comprobante seleccionado"}
+        </button>
+        {ampliada&&(value.mime==="application/pdf"?<div className="mt-3"><object data={preview} type="application/pdf" aria-label="Vista previa del comprobante PDF" className="h-64 w-full"><p>Abre el PDF con el enlace inferior.</p></object><a href={preview} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-sm text-blue-700 underline">Abrir PDF en otra pestaña</a></div>:<img src={preview} alt="Vista previa del comprobante seleccionado" className="mx-auto mt-3 max-h-64 max-w-full object-contain" onError={()=>{quitar();setError("No se puede mostrar la imagen. Elige un archivo que no esté dañado.");}}/>)}
+      </div>}
       <p className="border-t border-slate-100 p-3 text-xs text-slate-500">Vista previa local. El archivo todavía no se ha enviado.</p>
     </section>}
   </div>;

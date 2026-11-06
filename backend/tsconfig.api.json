@@ -18,6 +18,7 @@
     "src/auth/activacion.test.ts",
     "src/auth/activacion.db.test.ts",
     "src/pagos/pagos.test.ts",
-    "src/pagos/pagos.db.test.ts"
+    "src/pagos/pagos.db.test.ts",
+    "src/compra/compra.test.ts"
   ]
 }

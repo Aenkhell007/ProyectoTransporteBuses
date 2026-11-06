@@ -54,6 +54,8 @@ test(
           .replace(/^BEGIN;\s*/, "")
           .replace(/COMMIT;\s*$/, ""),
       );
+      const compraSql=readFileSync(resolve(carpeta,"prisma/migrations/20261105_compra_cliente/migration.sql"),"utf8");
+      await db.query(compraSql.replace(/CREATE FUNCTION/g,"CREATE OR REPLACE FUNCTION").replace(/ADD COLUMN /g,"ADD COLUMN IF NOT EXISTS ").replace(/^BEGIN;\s*/, "").replace(/COMMIT;\s*$/, ""));
       await db.query("GRANT transporte_runtime TO CURRENT_USER"); // Solo en esta transacción; ROLLBACK restaura la membresía.
       const marca = randomUUID();
       const insertar = async (
@@ -170,6 +172,7 @@ test(
         "cooperativa_id,plano_id,piso,fila,columna,tipo,codigo,clase_id",
         [coop, plano, 1, 1, 2, "ASIENTO", "1B", clase],
       );
+      const asiento3 = await insertar("plano_celdas","cooperativa_id,plano_id,piso,fila,columna,tipo,codigo,clase_id",[coop,plano,1,1,3,"ASIENTO","1C",clase]);
       await db.query(
         "UPDATE transporte.planos SET publicado=true WHERE id=$1",
         [plano],
@@ -439,10 +442,14 @@ test(
         },
         release: () => {},
       })) as typeof apiPool.connect;
+      const queryOriginal=apiPool.query;
+      apiPool.query=((sql: string, params?: unknown[])=>db.query(sql,params)) as typeof apiPool.query;
+      const { compraRouter } = await import("../compra/router.js");
       const { pagosRouter } = await import("./router.js");
       const app = express();
       app.use(express.json());
       app.use(cookieParser());
+      app.use("/api", compraRouter);
       app.use("/api", pagosRouter);
       const servidor = app.listen(0, "127.0.0.1");
       await new Promise<void>((r) => servidor.once("listening", r));
@@ -463,6 +470,25 @@ test(
         });
       }
       try {
+        const ciudadesRespuesta=await peticion("/catalogos/ciudades",cliente.token);
+        assert.equal(ciudadesRespuesta.status,200);
+        assert.ok((await ciudadesRespuesta.json()).data.some((x:{id:string})=>x.id===ciudad1));
+        const detalle=await peticion(`/viajes/${viaje}?origen_orden=1&destino_orden=2`,cliente.token);
+        assert.equal(detalle.status,200);assert.equal((await detalle.json()).mapa.celdas.length,3);
+        const dia=(await db.query("SELECT (salida AT TIME ZONE 'America/Guayaquil')::date::text fecha FROM transporte.viajes WHERE id=$1",[viaje])).rows[0].fecha;
+        const busqueda=await peticion(`/viajes?origen_ciudad_id=${ciudad1}&destino_ciudad_id=${ciudad2}&fecha=${dia}&cantidad=1`,cliente.token);
+        assert.equal(busqueda.status,200);assert.ok((await busqueda.json()).data.some((x:{viaje_id:string})=>x.viaje_id===viaje));
+        assert.equal((await peticion("/reservas", "",{viaje_id:viaje,origen_orden:1,destino_orden:2,asiento_ids:[asiento3]})).status,401);
+        const reservada=await peticion("/reservas",cliente.token,{viaje_id:viaje,origen_orden:1,destino_orden:2,asiento_ids:[asiento3],cliente_id:otro.id});
+        assert.equal(reservada.status,201);const nueva=await reservada.json();assert.equal(nueva.asientos[0].codigo,"1C");
+        assert.equal((await peticion(`/reservas/${nueva.reserva_id}/resumen`,otro.token)).status,404);
+        const datosPasajero={contacto:{email:"prueba@example.com",telefono:"+593990000000"},pasajeros:[{reserva_asiento_id:nueva.asientos[0].reserva_asiento_id,nombres:"Prueba",apellidos:"Real",tipo_documento:"OTRO",documento:"PRUEBA",nacimiento:"1990-01-01",beneficio_codigo:null,respaldo_archivo_id:null,email:"acompanante@example.com",telefono:"+593990000001"}]};
+        const guardado=await fetch(base+`/reservas/${nueva.reserva_id}/pasajeros`,{method:"PUT",headers:{cookie:`transporte_sesion=${cliente.token}`,origin:process.env.FRONTEND_URL??"http://127.0.0.1:5173","content-type":"application/json"},body:JSON.stringify(datosPasajero)});
+        assert.equal(guardado.status,200);assert.equal((await guardado.json()).data[0].email,"acompanante@example.com");
+        const cotizada=await peticion(`/reservas/${nueva.reserva_id}/cotizacion`,cliente.token,{});assert.equal(cotizada.status,201);const cot=await cotizada.json();assert.equal(cot.total_centavos,2345);assert.equal(cot.lineas[0].total_centavos,2345);
+        assert.equal((await peticion(`/reservas/${nueva.reserva_id}/aceptar-cotizacion`,cliente.token,{version:cot.version})).status,204);
+        const paraPago=await peticion(`/reservas/${nueva.reserva_id}/pago`,cliente.token);assert.equal(paraPago.status,200);assert.equal((await paraPago.json()).reserva.aceptada_version,cot.version);
+
         assert.equal(
           (await peticion(`/reservas/${rid}/pago`, otro.token)).status,
           404,
@@ -502,6 +528,14 @@ test(
           cid,
           "reintentar la misma carga no crea otro comprobante",
         );
+        assert.equal((await fetch(`${base}/mis-viajes`)).status,401);
+        const listaRevision=await peticion('/mis-viajes?seccion=proximos',cliente.token);
+        assert.equal(listaRevision.status,200,JSON.stringify(await listaRevision.clone().json()));
+        assert.ok((await listaRevision.json()).data.some((v:{reserva_id:string;estado:string})=>v.reserva_id===rid&&v.estado==='PAGO_EN_VERIFICACION'));
+        const listaAjena=await peticion('/mis-viajes?seccion=proximos',otro.token);
+        assert.equal((await listaAjena.json()).data.length,0);
+        assert.equal((await peticion(`/mis-viajes/${rid}`,otro.token)).status,404);
+        assert.equal((await peticion('/mis-viajes?seccion=incorrecta',cliente.token)).status,422);
         assert.equal(
           (await peticion(`/reservas/${rid}/boleto/qr`, cliente.token)).status,
           409,
@@ -531,6 +565,8 @@ test(
           await peticion(`/reservas/${rid}/pago`, cliente.token)
         ).json();
         assert.equal(datos.documento.estado, "LISTO");
+        const listaConfirmada=await peticion('/mis-viajes?seccion=proximos&estado=CONFIRMADA',cliente.token);
+        assert.ok((await listaConfirmada.json()).data.some((v:{reserva_id:string;archivo_id:string})=>v.reserva_id===rid&&v.archivo_id===datos.documento.archivoId));
         const documento = await peticion(
           `/reservas/${rid}/archivos/${datos.documento.archivoId}`,
           cliente.token,
@@ -571,6 +607,7 @@ test(
           servidor.close((err) => (err ? e(err) : r())),
         );
         apiPool.connect = original;
+        apiPool.query = queryOriginal;
         await apiPool.end();
         assert.ok(temporal.startsWith(resolve(tmpdir(), "pagos-http-")));
         await rm(temporal, { recursive: true, force: true });
