@@ -10,14 +10,19 @@ export default function FrecuenciasPage() {
   const [busqueda, setBusqueda] = useState("");
   const [estado, setEstado] = useState<"TODAS" | EstadoFrecuencia>("TODAS");
   const [tipo, setTipo] = useState<"TODOS" | TipoViajeFrecuencia>("TODOS");
+  const [orden, setOrden] = useState<"ASC" | "DESC">("ASC");
 
+const frecuencias = filtrarFrecuencias(
+  FRECUENCIAS_ANT_MOCK,
+  busqueda,
+  estado,
+  tipo
+).sort((a, b) =>
+  orden === "ASC"
+    ? a.horaSalida.localeCompare(b.horaSalida)
+    : b.horaSalida.localeCompare(a.horaSalida)
+);
 
-    const frecuencias = filtrarFrecuencias(
-    FRECUENCIAS_ANT_MOCK,
-     busqueda,
-    estado,
-    tipo
-    );
 
 
   return (
@@ -65,6 +70,17 @@ export default function FrecuenciasPage() {
   <option value="TODOS">Todos los tipos</option>
   <option value="DIRECTO">Directos</option>
   <option value="CON_PARADAS">Con paradas</option>
+</select>
+
+
+<select
+  value={orden}
+  onChange={(e) => setOrden(e.target.value as "ASC" | "DESC")}
+  className="border rounded p-2"
+  aria-label="Ordenar por horario"
+>
+  <option value="ASC">Salida más temprana</option>
+  <option value="DESC">Salida más tardía</option>
 </select>
 
 
