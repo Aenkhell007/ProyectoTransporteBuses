@@ -3,9 +3,10 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import SelectorAsientos from "../../components/flota/SelectorAsientos";
 import { ProgresoCompra } from "../../components/compra/ProgresoCompra";
 import { apiCompra } from "../../features/compra/cliente";
-import { reservarAsientos } from "../../features/compra/reservaApi";
+import { obtenerReserva, cambiarAsientos, reservarAsientos } from "../../features/compra/reservaApi";
 import { ErrorCompra, mensajeDeError } from "../../features/compra/errores";
 import { useAuth } from "../../features/auth/AuthContext";
+import type { ReservaPendiente } from "../../types/compra/reserva";
 import type { MapaViaje } from "../../types/mapaViaje";
 import type { DetalleViaje } from "../../types/compra/viajes";
 import {
@@ -27,6 +28,10 @@ export default function SeleccionAsientosPage() {
     o = Number(p.get("origen_orden")),
     d = Number(p.get("destino_orden")),
     cantidad = Number(p.get("cantidad"));
+  const reservaId = p.get("reserva_id");
+  const claveRetorno = usuario && id ? `gc.compra.retorno.${usuario.id}.${id}.${o}.${d}.${cantidad}` : null;
+  const [reserva, setReserva] = useState<ReservaPendiente | null>(null);
+  const [confirmandoCambio, setConfirmandoCambio] = useState(false);
   const valido =
     !!id &&
     p.has("origen_orden") &&
@@ -49,6 +54,9 @@ export default function SeleccionAsientosPage() {
   const cambiar = useCallback((ids: string[]) => setSeleccion(ids), []);
   useEffect(() => {
     let vigente = true;
+    if (sesionCargando) return;
+    setReserva(null);
+    setConfirmandoCambio(false);
     setSeleccion([]);
     setViaje(null);
     setCargando(true);
@@ -58,12 +66,25 @@ export default function SeleccionAsientosPage() {
       setCargando(false);
       return;
     }
-    apiCompra<DetalleViaje & { mapa: MapaViaje }>(
-      `/viajes/${encodeURIComponent(id!)}?origen_orden=${o}&destino_orden=${d}`,
-    )
-      .then((v) => {
-        if (vigente) setViaje(v);
-      })
+    let retorno = reservaId;
+    if (!retorno && claveRetorno) {
+      try { retorno = sessionStorage.getItem(claveRetorno); } catch { /* La URL conserva la reserva cuando el almacenamiento no está disponible. */ }
+    }
+    Promise.all([
+      apiCompra<DetalleViaje & { mapa: MapaViaje }>(`/viajes/${encodeURIComponent(id!)}?origen_orden=${o}&destino_orden=${d}`),
+      retorno ? obtenerReserva(retorno) : Promise.resolve(null),
+    ]).then(([v, r]) => {
+      if (!vigente) return;
+      if (r && (r.viaje.viaje_id !== id || r.viaje.origen.orden !== o || r.viaje.destino.orden !== d || r.cantidad !== cantidad))
+        throw new ErrorCompra(409, { mensaje: "La reserva no corresponde a este viaje. Vuelve a los resultados." });
+      if (r && (r.estado === "VENCIDA" || r.estado === "CANCELADA" || (r.estado === "PENDIENTE" && Date.parse(r.expires_at) <= Date.now()))) {
+        if (claveRetorno) { try { sessionStorage.removeItem(claveRetorno); } catch { /* Sin almacenamiento. */ } }
+        throw new ErrorCompra(409, { mensaje: "La retención terminó. Vuelve a los resultados para elegir nuevamente." });
+      }
+      setReserva(r);
+      setSeleccion(r?.asientos.map(a => a.asiento_id) ?? []);
+      setViaje(v);
+    })
       .catch((e) => {
         if (vigente) setError(mensajeDeError(e));
       })
@@ -73,7 +94,7 @@ export default function SeleccionAsientosPage() {
     return () => {
       vigente = false;
     };
-  }, [id, o, d, valido, version]);
+  }, [id, o, d, cantidad, valido, version, reservaId, claveRetorno, sesionCargando]);
   async function confirmar() {
     if (!id || !viaje || enviando || seleccion.length !== cantidad) return;
     if (!usuario) {
@@ -83,12 +104,26 @@ export default function SeleccionAsientosPage() {
     setEnviando(true);
     setError(null);
     try {
+      if (reserva) {
+        if (!reserva.asientos_editables) {
+          navegar(`/pago/seguimiento?reserva_id=${reserva.reserva_id}`);
+          return;
+        }
+        if (hayCambios && !confirmandoCambio) { setConfirmandoCambio(true); return; }
+        if (hayCambios) await cambiarAsientos(reserva.reserva_id, reserva.edicion_asientos_version, seleccion);
+        navegar(`/pasajeros?reserva_id=${reserva.reserva_id}`);
+        return;
+      }
       const r = await reservarAsientos({
         viaje_id: id,
         origen_orden: o,
         destino_orden: d,
         asiento_ids: seleccion,
       });
+      if (claveRetorno) { try { sessionStorage.setItem(claveRetorno, r.reserva_id); } catch { /* El enlace explícito de volver conserva el ID. */ } }
+      // Conserva también el ID en el historial del navegador antes de pasar al formulario.
+      const regreso = new URLSearchParams(p); regreso.set("reserva_id", r.reserva_id);
+      navegar(`/asientos?${regreso}`, { replace: true });
       navegar(`/pasajeros?reserva_id=${r.reserva_id}`);
     } catch (e) {
       setError(mensajeDeError(e));
@@ -96,13 +131,19 @@ export default function SeleccionAsientosPage() {
         setVersion((v) => v + 1);
         setSeleccion([]);
         setError(
-          "La disponibilidad cambió. Consulta el mapa actualizado y selecciona nuevamente.",
+          reserva ? "No se guardó el cambio. Conservamos los asientos anteriores; recuperamos la reserva y el mapa actualizado." : "La disponibilidad cambió. Consulta el mapa actualizado y selecciona nuevamente.",
         );
       }
     } finally {
       setEnviando(false);
     }
   }
+  const hayCambios = !!reserva && (seleccion.length !== reserva.asientos.length || reserva.asientos.some(a => !seleccion.includes(a.asiento_id)));
+  const bloqueada = !!reserva && !reserva.asientos_editables;
+  // Solo los asientos de la reserva autenticada son liberados para edición visual.
+  const mapaEditable: MapaViaje | null = viaje ? { ...viaje.mapa, celdas: viaje.mapa.celdas.map(c =>
+    reserva?.asientos_editables && reserva.asientos.some(a => a.asiento_id === c.id) ? { ...c, estado: "DISPONIBLE" as const } : c,
+  ) } : null;
   const elegidos=viaje?.mapa.celdas.filter(c=>seleccion.includes(c.id)) ?? [];
   const origen=viaje?.paradas.find(x=>x.orden===o),destino=viaje?.paradas.find(x=>x.orden===d);
 
@@ -134,18 +175,43 @@ export default function SeleccionAsientosPage() {
       <div className="min-w-0 rounded-lg border border-indigo-100 p-3 sm:p-4">
         <h1 className="text-2xl font-bold">Selecciona tus asientos</h1>
         <p className="mb-5 mt-1 text-sm text-slate-600">Selecciona un asiento por pasajero. {cantidad===1?'Completa tu selección para continuar.':`Completa los ${cantidad} para continuar.`}</p>
-        <SelectorAsientos key={`${id}-${version}`} mapa={viaje.mapa} cantidad={cantidad} seleccion={seleccion} onChange={cambiar}/>
+        {reserva && <p role="status" className="mb-4 rounded bg-blue-50 p-3 text-sm">{bloqueada ? "Esta reserva ya no admite cambios de asientos. Consulta su estado de pago." : "Recuperamos tus asientos y los datos de pasajeros. Puedes continuar o cambiar tu selección antes de enviar el comprobante. El plazo de retención se mantiene."}</p>}
+        <fieldset disabled={bloqueada || enviando || confirmandoCambio}>
+          <legend className="sr-only">Selección de asientos</legend>
+          <SelectorAsientos key={`${id}-${version}`} mapa={mapaEditable!} cantidad={cantidad} seleccion={seleccion} onChange={cambiar}/>
+        </fieldset>
       </div>
       <aside className="rounded-lg border border-indigo-100 bg-white p-4 lg:sticky lg:top-4">
         <h2 className="border-b border-indigo-100 pb-3 text-lg font-bold">Resumen de tu selección</h2>
         <div className="my-3 flex items-center gap-3"><BusImagen src={viaje.bus.foto_url} pisos={viaje.bus.pisos} alt="Ilustración del bus seleccionado" className="h-20 w-20 rounded-md"/><div className="min-w-0 text-sm"><strong>{origen?.ciudad} → {destino?.ciudad}</strong><p className="mt-1 text-slate-600">{formatearHora(viaje.salida)} → {formatearHora(viaje.llegada)}</p></div></div>
         <p aria-live="polite" className="rounded bg-blue-50 p-3 text-sm font-semibold">{seleccion.length} de {cantidad} asientos seleccionados</p>
         <h3 className="mt-5 font-bold">Asientos seleccionados</h3>
-        <ul className="my-3 space-y-3 text-sm">{elegidos.map(c=><li key={c.id} className="flex items-center justify-between gap-2"><span><strong>{c.codigo}</strong><small className="ml-2 text-slate-500">{c.piso===1?'Piso inferior':'Piso superior'}</small></span><button type="button" aria-label={`Quitar asiento ${c.codigo}`} onClick={()=>cambiar(seleccion.filter(x=>x!==c.id))} className="min-h-10 min-w-10 text-red-600">✕</button></li>)}{!elegidos.length&&<li className="text-slate-500">Selecciona tus asientos en el plano.</li>}</ul>
+        <ul className="my-3 space-y-3 text-sm">{elegidos.map(c=><li key={c.id} className="flex items-center justify-between gap-2"><span><strong>{c.codigo}</strong><small className="ml-2 text-slate-500">{c.piso===1?'Piso inferior':'Piso superior'}</small></span><button type="button" aria-label={`Quitar asiento ${c.codigo}`} disabled={bloqueada||enviando||confirmandoCambio} onClick={()=>cambiar(seleccion.filter(x=>x!==c.id))} className="min-h-10 min-w-10 text-red-600">✕</button></li>)}{!elegidos.length&&<li className="text-slate-500">Selecciona tus asientos en el plano.</li>}</ul>
         <dl className="space-y-3 border-t border-indigo-100 pt-4 text-sm"><div className="flex justify-between gap-2"><dt>Tarifa desde</dt><dd>{formatearCentavos(viaje.tarifa_desde_centavos)} / asiento</dd></div><div className="flex justify-between rounded bg-blue-50 p-3 text-lg font-bold"><dt>Estimado desde</dt><dd>{formatearCentavos(viaje.tarifa_desde_centavos*seleccion.length)}</dd></div></dl>
         <p className="my-4 flex gap-2 rounded-md bg-blue-50 p-3 text-xs leading-5 text-blue-800"><Icono nombre="info"/>Los valores definitivos y descuentos se calculan al completar los pasajeros y cotizar en el servidor.</p>
-        <button type="button" disabled={enviando||sesionCargando||seleccion.length!==cantidad} onClick={()=>void confirmar()} className="flex min-h-12 w-full items-center justify-center gap-3 rounded-md bg-[#ff0018] px-4 font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50">{enviando?'Reservando…':usuario?'Continuar':'Iniciar sesión y continuar'}<Icono nombre="flechaDerecha"/></button>
+        <button type="button" disabled={enviando||sesionCargando||cargando||(!bloqueada&&seleccion.length!==cantidad)||confirmandoCambio} onClick={()=>void confirmar()} className="flex min-h-12 w-full items-center justify-center gap-3 rounded-md bg-[#ff0018] px-4 font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50">{enviando?'Guardando…':bloqueada?'Consultar estado':hayCambios?'Revisar cambio de asientos':usuario?'Continuar':'Iniciar sesión y continuar'}<Icono nombre="flechaDerecha"/></button>
       </aside>
+    </div>}
+    {confirmandoCambio && reserva && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="presentation">
+      <section role="dialog" aria-modal="true" aria-labelledby="confirmar-asientos" onKeyDown={e => {
+        if (e.key === "Escape" && !enviando) { e.preventDefault(); setConfirmandoCambio(false); }
+        if (e.key === "Tab") {
+          const botones = [...e.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)")];
+          const primero = botones[0], ultimo = botones[botones.length - 1];
+          if (!primero) { e.preventDefault(); return; }
+          if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus(); }
+          else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
+        }
+      }} className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
+        <h2 id="confirmar-asientos" className="text-xl font-bold">Confirmar cambio de asientos</h2>
+        <p className="mt-4">Actuales: {reserva.asientos.map(a => a.codigo).join(", ")}</p>
+        <p className="mt-2">Nueva selección: {elegidos.map(a => a.codigo).join(", ")}</p>
+        <p className="mt-4 text-sm text-slate-600">Conservaremos los pasajeros y el plazo de retención. Tendrás que revisar y aceptar nuevamente el precio en el resumen. Si un asiento dejó de estar disponible, conservaremos tu reserva anterior.</p>
+        <div className="mt-6 flex flex-wrap justify-end gap-3">
+          <button autoFocus type="button" disabled={enviando} onClick={() => setConfirmandoCambio(false)} className="min-h-11 rounded border px-4">Seguir revisando</button>
+          <button type="button" disabled={enviando} onClick={() => void confirmar()} className="min-h-11 rounded bg-red-600 px-4 text-white disabled:opacity-50">{enviando ? "Guardando…" : "Confirmar cambio"}</button>
+        </div>
+      </section>
     </div>}
   </section>;
 }

@@ -1,9 +1,10 @@
 // Cotización devuelta por POST /reservas/:id/cotizacion (cotizar()). Importes en centavos.
 // La pantalla solo la muestra: todos los totales vienen calculados por el servidor.
 import type { ClaseAsientoCodigo } from "./viajes";
-import type { BeneficioCodigo } from "./reserva";
+import type { TipoPasajero, BeneficioCodigo } from "./reserva";
 
 export interface LineaCotizacion {
+  tipo_pasajero?: TipoPasajero;
   reserva_asiento_id: string;
   asiento_codigo: string;
   pasajero: string;

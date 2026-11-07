@@ -857,6 +857,7 @@ model pasajeros {
   tipo_documento      String
   documento           String           @db.VarChar(30)
   nacimiento          DateTime?        @db.Date
+  tipo_pasajero       String           @default("ADULTO")
   beneficio_codigo    String?
   respaldo_archivo_id String?          @db.Uuid
   email               String?          @db.VarChar(254)
@@ -1071,6 +1072,7 @@ model reservas {
   expires_at         DateTime           @db.Timestamptz(6)
   contacto_email     String?            @db.VarChar(254)
   contacto_telefono  String?            @db.VarChar(25)
+  edicion_asientos_version Int           @default(1)
   cotizacion_version Int                @default(0)
   aceptada_version   Int?
   total_centavos     BigInt             @default(0)

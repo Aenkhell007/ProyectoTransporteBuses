@@ -358,6 +358,17 @@ compraRouter.get(
     }),
   ),
 );
+compraRouter.put("/reservas/:id/asientos", ruta(async (req, res) => {
+  const asientos = req.body?.asiento_ids;
+  if (!Array.isArray(asientos) || asientos.length < 1 || asientos.length > 10 || new Set(asientos).size !== asientos.length)
+    throw new ErrorCompraServidor(422, "Selecciona un asiento distinto por pasajero.", "asiento_ids");
+  asientos.forEach(a => id(a, "asiento_ids"));
+  const version = entero(req.body.version, 1, 2147483647, "version");
+  res.json(await conSesion(token(req), async db => (await db.query(
+    "SELECT transporte.compra_cambiar_asientos($1,$2,$3::uuid[]) datos",
+    [id(req.params.id), version, asientos],
+  )).rows[0].datos));
+}));
 export function validarPasajeros(p: any) {
   if (
     !p ||
@@ -416,6 +427,8 @@ export function validarPasajeros(p: any) {
         "La cédula debe tener 10 dígitos.",
         `pasajeros[${i}].documento`,
       );
+    if (x.tipo_pasajero !== undefined && !["ADULTO", "NINO", "TERCERA_EDAD", "DISCAPACIDAD"].includes(x.tipo_pasajero))
+      throw new ErrorCompraServidor(422, "Tipo de pasajero no válido.", `pasajeros[${i}].tipo_pasajero`);
     if (x.nacimiento) fecha(x.nacimiento);
     if (
       x.beneficio_codigo !== null &&

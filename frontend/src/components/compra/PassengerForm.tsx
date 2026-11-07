@@ -315,38 +315,18 @@ export function PassengerForm({
               </span>
             </legend>
             <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2">
-              <Opcion
-                nombre={`${id}-beneficio`}
-                valor=""
-                actual={ficha.beneficio ?? ""}
-                onElegir={() => onCambiar({ ...ficha, beneficio: "" })}
-              >
-                Adulto
-              </Opcion>
-              {beneficios.map((b) => (
-                <Opcion
-                  key={b.codigo}
-                  nombre={`${id}-beneficio`}
-                  valor={b.codigo}
-                  actual={ficha.beneficio ?? ""}
-                  deshabilitada={!b.activo}
-                  onElegir={() => onCambiar({ ...ficha, beneficio: b.codigo })}
-                >
-                  {b.nombre}
-                  {!b.activo && (
-                    <span className="block text-xs text-slate-500">
-                      Sin regla vigente
-                    </span>
-                  )}
-                  {b.activo && b.descuento_bp !== null && (
-                    <span className="block text-xs text-slate-500">
-                      Descuento vigente: {formatearPuntosBase(b.descuento_bp)}
-                    </span>
-                  )}
-                </Opcion>
-              ))}
+              {([['ADULTO', 'Adulto'], ['NINO', 'Niño'], ['TERCERA_EDAD', 'Tercera edad'], ['DISCAPACIDAD', 'Persona con discapacidad']] as const).map(([codigo, nombre]) => {
+                const beneficio = beneficios.find(b => b.codigo === codigo && b.activo);
+                return <Opcion key={codigo} nombre={`${id}-tipo-pasajero`} valor={codigo}
+                  actual={ficha.tipo_pasajero || ficha.beneficio || "ADULTO"}
+                  onElegir={() => onCambiar({ ...ficha, tipo_pasajero: codigo, beneficio: beneficio?.codigo ?? "", respaldo_archivo_id: null, respaldo_nombre: "" })}>
+                  {nombre}
+                  {beneficio?.descuento_bp != null && <span className="block text-xs text-slate-500">Descuento vigente: {formatearPuntosBase(beneficio.descuento_bp)}</span>}
+                </Opcion>;
+              })}
             </div>
             {ayuda("beneficio")}
+            {ficha.tipo_pasajero && ficha.tipo_pasajero !== "ADULTO" && !regla?.activo && <p className="mt-2 text-xs text-slate-600">No hay un beneficio vigente configurado para esta categoría. El servidor calculará la tarifa general; seleccionar el tipo no crea un descuento.</p>}
             {regla?.activo && (
               <p className="mt-2 text-xs text-slate-600">
                 {regla.condiciones ??
