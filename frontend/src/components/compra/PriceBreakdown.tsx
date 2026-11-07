@@ -1,3 +1,4 @@
+import { NOMBRES_TIPO_PASAJERO } from "../../features/compra/pasajeros";
 import type {
   Cotizacion,
   LineaCotizacion,
@@ -22,7 +23,7 @@ interface PriceBreakdownProps {
 }
 
 export function etiquetaPorDefecto(linea: LineaCotizacion) {
-  return `Tarifa de asiento (${linea.beneficio_nombre ?? "Adulto"}) · ${linea.asiento_codigo}`;
+  return `Tarifa de asiento (${NOMBRES_TIPO_PASAJERO[linea.tipo_pasajero ?? linea.beneficio_codigo ?? "ADULTO"]}) · ${linea.asiento_codigo}`;
 }
 
 const descuento = (centavos: number) =>

@@ -1,3 +1,4 @@
+import { recuperarFichas } from "../../features/compra/pasajeros";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
@@ -133,14 +134,7 @@ export function PasajerosPage() {
           };
         }
         const borrador = leerBorrador(reserva.reserva_id);
-        const fichasIniciales =
-          borrador &&
-          borrador.length === iniciales.length &&
-          borrador.every(
-            (f, i) => f.reserva_asiento_id === iniciales[i].reserva_asiento_id,
-          )
-            ? borrador
-            : iniciales;
+        const fichasIniciales = recuperarFichas(iniciales, borrador);
         setFichas(fichasIniciales);
         setAbiertas(fichasIniciales.map(() => true));
         setErrores(fichasIniciales.map(() => ({})));

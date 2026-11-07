@@ -2,6 +2,7 @@ import type {
   BeneficioVigente,
   PasajeroDatos,
   TipoDocumento,
+  TipoPasajero,
 } from "../../types/compra/reserva";
 import { esFechaValida } from "./fechas";
 
@@ -21,8 +22,9 @@ export const TIPOS_DOCUMENTO: { valor: TipoDocumento; nombre: string }[] = [
   { valor: "OTRO", nombre: "Otro" },
 ];
 
-/** Valores de una ficha tal como se escriben. beneficio "" = adulto. */
+/** Categoría del pasajero y beneficio vigente son datos independientes. */
 export interface FichaPasajero {
+  tipo_pasajero?: TipoPasajero;
   reserva_asiento_id: string;
   nombres: string;
   apellidos: string;
@@ -51,6 +53,7 @@ export function fichaVacia(reservaAsientoId: string): FichaPasajero {
     nacimiento: "",
     telefono: "",
     email: "",
+    tipo_pasajero: "ADULTO",
     beneficio: "",
     respaldo_nombre: "",
     respaldo_archivo_id: null,
@@ -178,6 +181,7 @@ export function fichaAPasajero(f: FichaPasajero): PasajeroDatos {
     tipo_documento: f.tipo_documento,
     documento: f.documento.trim(),
     nacimiento: f.nacimiento || null,
+    tipo_pasajero: f.tipo_pasajero || f.beneficio || "ADULTO",
     beneficio_codigo: f.beneficio || null,
     respaldo_archivo_id: f.beneficio ? f.respaldo_archivo_id : null,
     telefono: f.telefono.trim() || null,
@@ -193,10 +197,20 @@ export function pasajeroAFicha(p: PasajeroDatos): FichaPasajero {
     tipo_documento: p.tipo_documento,
     documento: p.documento,
     nacimiento: p.nacimiento ?? "",
+    tipo_pasajero: p.tipo_pasajero ?? p.beneficio_codigo ?? "ADULTO",
     telefono: p.telefono ?? "",
     email: p.email ?? "",
     beneficio: p.beneficio_codigo ?? "",
     respaldo_nombre: "",
     respaldo_archivo_id: p.respaldo_archivo_id,
   };
+}
+
+export const NOMBRES_TIPO_PASAJERO = { ADULTO: "Adulto", NINO: "Niño", TERCERA_EDAD: "Tercera edad", DISCAPACIDAD: "Persona con discapacidad" } as const;
+
+export function recuperarFichas(iniciales: FichaPasajero[], borrador: FichaPasajero[] | null): FichaPasajero[] {
+  if (!borrador || borrador.length !== iniciales.length ||
+      new Set(borrador.map(f => f.reserva_asiento_id)).size !== borrador.length ||
+      !iniciales.every(f => borrador.some(b => b.reserva_asiento_id === f.reserva_asiento_id))) return iniciales;
+  return iniciales.map(f => borrador.find(b => b.reserva_asiento_id === f.reserva_asiento_id)!);
 }

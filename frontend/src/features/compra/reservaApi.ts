@@ -55,3 +55,8 @@ export const subirRespaldo = (archivo: File, reservaId: string) =>
       body: archivo,
     },
   );
+
+export const cambiarAsientos = (id: string, version: number, asiento_ids: string[]) =>
+  apiCompra<ReservaPendiente>(`/reservas/${encodeURIComponent(id)}/asientos`, {
+    method: "PUT", body: JSON.stringify({ version, asiento_ids }),
+  });

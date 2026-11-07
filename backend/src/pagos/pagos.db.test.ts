@@ -56,6 +56,8 @@ test(
       );
       const compraSql=readFileSync(resolve(carpeta,"prisma/migrations/20261105_compra_cliente/migration.sql"),"utf8");
       await db.query(compraSql.replace(/CREATE FUNCTION/g,"CREATE OR REPLACE FUNCTION").replace(/ADD COLUMN /g,"ADD COLUMN IF NOT EXISTS ").replace(/^BEGIN;\s*/, "").replace(/COMMIT;\s*$/, ""));
+      const edicionSql=readFileSync(resolve(carpeta,"prisma/migrations/20261106_edicion_asientos_pasajeros/migration.sql"),"utf8");
+      await db.query(edicionSql.replace(/CREATE FUNCTION/g,"CREATE OR REPLACE FUNCTION").replace(/ADD COLUMN /g,"ADD COLUMN IF NOT EXISTS ").replace(/^BEGIN;\s*/, "").replace(/COMMIT;\s*$/, ""));
       await db.query("GRANT transporte_runtime TO CURRENT_USER"); // Solo en esta transacción; ROLLBACK restaura la membresía.
       const marca = randomUUID();
       const insertar = async (
@@ -172,7 +174,10 @@ test(
         "cooperativa_id,plano_id,piso,fila,columna,tipo,codigo,clase_id",
         [coop, plano, 1, 1, 2, "ASIENTO", "1B", clase],
       );
+      const asiento4 = await insertar("plano_celdas","cooperativa_id,plano_id,piso,fila,columna,tipo,codigo,clase_id",[coop,plano,1,1,4,"ASIENTO","1D",clase]);
       const asiento3 = await insertar("plano_celdas","cooperativa_id,plano_id,piso,fila,columna,tipo,codigo,clase_id",[coop,plano,1,1,3,"ASIENTO","1C",clase]);
+      const adicionales: string[]=[];
+      for (let columna=1;columna<=4;columna++) adicionales.push(await insertar("plano_celdas","cooperativa_id,plano_id,piso,fila,columna,tipo,codigo,clase_id",[coop,plano,1,2,columna,"ASIENTO",`2${columna}`,clase]));
       await db.query(
         "UPDATE transporte.planos SET publicado=true WHERE id=$1",
         [plano],
@@ -456,9 +461,9 @@ test(
       const direccion = servidor.address();
       assert.ok(direccion && typeof direccion !== "string");
       const base = `http://127.0.0.1:${direccion.port}/api`;
-      async function peticion(path: string, token: string, body?: unknown) {
+      async function peticion(path: string, token: string, body?: unknown, method?: string) {
         return fetch(base + path, {
-          method: body === undefined ? "GET" : "POST",
+          method: method ?? (body === undefined ? "GET" : "POST"),
           headers: {
             cookie: `transporte_sesion=${token}`,
             origin: process.env.FRONTEND_URL ?? "http://127.0.0.1:5173",
@@ -474,7 +479,7 @@ test(
         assert.equal(ciudadesRespuesta.status,200);
         assert.ok((await ciudadesRespuesta.json()).data.some((x:{id:string})=>x.id===ciudad1));
         const detalle=await peticion(`/viajes/${viaje}?origen_orden=1&destino_orden=2`,cliente.token);
-        assert.equal(detalle.status,200);assert.equal((await detalle.json()).mapa.celdas.length,3);
+        assert.equal(detalle.status,200);assert.equal((await detalle.json()).mapa.celdas.length,8);
         const dia=(await db.query("SELECT (salida AT TIME ZONE 'America/Guayaquil')::date::text fecha FROM transporte.viajes WHERE id=$1",[viaje])).rows[0].fecha;
         const busqueda=await peticion(`/viajes?origen_ciudad_id=${ciudad1}&destino_ciudad_id=${ciudad2}&fecha=${dia}&cantidad=1`,cliente.token);
         assert.equal(busqueda.status,200);assert.ok((await busqueda.json()).data.some((x:{viaje_id:string})=>x.viaje_id===viaje));
@@ -482,12 +487,57 @@ test(
         const reservada=await peticion("/reservas",cliente.token,{viaje_id:viaje,origen_orden:1,destino_orden:2,asiento_ids:[asiento3],cliente_id:otro.id});
         assert.equal(reservada.status,201);const nueva=await reservada.json();assert.equal(nueva.asientos[0].codigo,"1C");
         assert.equal((await peticion(`/reservas/${nueva.reserva_id}/resumen`,otro.token)).status,404);
+        // Caso original: tres fichas, cambiar solo un asiento y conservar los otros dos.
+        const tresRespuesta=await peticion("/reservas",cliente.token,{viaje_id:viaje,origen_orden:1,destino_orden:2,asiento_ids:adicionales.slice(0,3)});
+        assert.equal(tresRespuesta.status,201);const tres=await tresRespuesta.json();
+        const tresAntes=await (await peticion(`/reservas/${tres.reserva_id}/resumen`,cliente.token)).json();
+        const tresCambio=await peticion(`/reservas/${tres.reserva_id}/asientos`,cliente.token,{version:tresAntes.edicion_asientos_version,asiento_ids:[adicionales[0],adicionales[2],adicionales[3]]},"PUT");
+        assert.equal(tresCambio.status,200);const tresDespues=await tresCambio.json();
+        assert.deepEqual(tresDespues.asientos.map((a:any)=>a.reserva_asiento_id).sort(),tresAntes.asientos.map((a:any)=>a.reserva_asiento_id).sort());
+        for (const propio of [adicionales[0],adicionales[2]]) assert.equal(tresDespues.asientos.find((a:any)=>a.asiento_id===propio).reserva_asiento_id,tresAntes.asientos.find((a:any)=>a.asiento_id===propio).reserva_asiento_id);
+        assert.equal(tresDespues.expires_at,tresAntes.expires_at);
+        assert.equal((await peticion(`/reservas/${tres.reserva_id}/asientos`,cliente.token,{version:tresDespues.edicion_asientos_version,asiento_ids:[adicionales[0],adicionales[2],adicionales[2]]},"PUT")).status,422);
+        // No se amplía una reserva vencida ni se recupera mediante una edición.
+        await db.query("RESET ROLE");
+        await db.query("UPDATE transporte.reservas SET expires_at=now()-interval '1 minute' WHERE id=$1",[tres.reserva_id]);
+        assert.equal((await peticion(`/reservas/${tres.reserva_id}/asientos`,cliente.token,{version:tresDespues.edicion_asientos_version,asiento_ids:[adicionales[0],adicionales[2],adicionales[1]]},"PUT")).status,409);
         const datosPasajero={contacto:{email:"prueba@example.com",telefono:"+593990000000"},pasajeros:[{reserva_asiento_id:nueva.asientos[0].reserva_asiento_id,nombres:"Prueba",apellidos:"Real",tipo_documento:"OTRO",documento:"PRUEBA",nacimiento:"1990-01-01",beneficio_codigo:null,respaldo_archivo_id:null,email:"acompanante@example.com",telefono:"+593990000001"}]};
         const guardado=await fetch(base+`/reservas/${nueva.reserva_id}/pasajeros`,{method:"PUT",headers:{cookie:`transporte_sesion=${cliente.token}`,origin:process.env.FRONTEND_URL??"http://127.0.0.1:5173","content-type":"application/json"},body:JSON.stringify(datosPasajero)});
         assert.equal(guardado.status,200);assert.equal((await guardado.json()).data[0].email,"acompanante@example.com");
         const cotizada=await peticion(`/reservas/${nueva.reserva_id}/cotizacion`,cliente.token,{});assert.equal(cotizada.status,201);const cot=await cotizada.json();assert.equal(cot.total_centavos,2345);assert.equal(cot.lineas[0].total_centavos,2345);
         assert.equal((await peticion(`/reservas/${nueva.reserva_id}/aceptar-cotizacion`,cliente.token,{version:cot.version})).status,204);
         const paraPago=await peticion(`/reservas/${nueva.reserva_id}/pago`,cliente.token);assert.equal(paraPago.status,200);assert.equal((await paraPago.json()).reserva.aceptada_version,cot.version);
+        // Edición: mismo ID de reserva/ficha, retención intacta, cotización invalidada.
+        const vigenteAntes=await (await peticion(`/reservas/${nueva.reserva_id}/resumen`,cliente.token)).json();
+        const intentoSinComprobante=await peticion(`/reservas/${nueva.reserva_id}/intentos-pago`,cliente.token,{cuentaId:cuenta,clave:randomUUID()});
+        assert.equal(intentoSinComprobante.status,201);const intentoPrevio=(await intentoSinComprobante.json()).id;
+        const cambiar={version:vigenteAntes.edicion_asientos_version,asiento_ids:[asiento4]};
+        assert.equal((await peticion(`/reservas/${nueva.reserva_id}/asientos`,otro.token,cambiar,"PUT")).status,404);
+        const cambio=await peticion(`/reservas/${nueva.reserva_id}/asientos`,cliente.token,cambiar,"PUT");
+        assert.equal(cambio.status,200);const despues=await cambio.json();
+        assert.equal(despues.reserva_id,nueva.reserva_id); assert.equal(despues.expires_at,vigenteAntes.expires_at);
+        assert.equal(despues.asientos[0].reserva_asiento_id,nueva.asientos[0].reserva_asiento_id);
+        assert.equal(despues.asientos[0].asiento_id,asiento4);assert.equal(despues.pasajeros[0].documento,"PRUEBA");
+        assert.equal(despues.aceptada_version,null);assert.equal(despues.cotizacion,null);
+        assert.equal((await db.query("SELECT estado FROM transporte.intentos_pago WHERE id=$1",[intentoPrevio])).rows[0].estado,"ANULADO");
+        assert.equal((await peticion(`/reservas/${nueva.reserva_id}/aceptar-cotizacion`,cliente.token,{version:cot.version})).status,409);
+        assert.equal((await peticion(`/reservas/${nueva.reserva_id}/asientos`,cliente.token,cambiar,"PUT")).status,409);
+        assert.equal((await peticion(`/reservas/${nueva.reserva_id}/asientos`,cliente.token,{version:despues.edicion_asientos_version,asiento_ids:[asiento]},"PUT")).status,409);
+        const sinCambios=await peticion(`/reservas/${nueva.reserva_id}/asientos`,cliente.token,{version:despues.edicion_asientos_version,asiento_ids:[asiento4]},"PUT");
+        assert.equal(sinCambios.status,200);assert.equal((await sinCambios.json()).edicion_asientos_version,despues.edicion_asientos_version);
+        const retenida=await (await peticion(`/reservas/${nueva.reserva_id}/resumen`,cliente.token)).json();
+        assert.equal(retenida.asientos[0].asiento_id,asiento4);
+        assert.equal((await db.query("SELECT estado FROM transporte.reserva_asientos WHERE reserva_id=$1",[reserva])).rows[0].estado,"CONFIRMADO");
+        // Categoría sin beneficio configurado: sigue siendo niño, sin descuento inventado.
+        const menor={...datosPasajero,pasajeros:datosPasajero.pasajeros.map(p=>({...p,tipo_pasajero:"NINO",nacimiento:"2020-06-12"}))};
+        const menorRespuesta=await peticion(`/reservas/${nueva.reserva_id}/pasajeros`,cliente.token,menor,"PUT");
+        assert.equal(menorRespuesta.status,200);const menorDatos=(await menorRespuesta.json()).data[0];
+        assert.equal(menorDatos.tipo_pasajero,"NINO");assert.equal(menorDatos.beneficio_codigo,null);
+        const cotMenor=await (await peticion(`/reservas/${nueva.reserva_id}/cotizacion`,cliente.token,{})).json();
+        assert.equal(cotMenor.descuento_centavos,0);assert.equal(cotMenor.lineas[0].tipo_pasajero,"NINO");
+        const pagoMenor=await (await peticion(`/reservas/${nueva.reserva_id}/pago`,cliente.token)).json();
+        assert.equal(pagoMenor.pasajeros[0].categoria,"Niño");
+
 
         assert.equal(
           (await peticion(`/reservas/${rid}/pago`, otro.token)).status,
@@ -523,6 +573,12 @@ test(
         const carga = await subir();
         assert.equal(carga.status, 201);
         const cid = (await carga.json()).id;
+        const reservaEnRevision=await (await peticion(`/reservas/${rid}/resumen`,cliente.token)).json();
+        assert.equal(reservaEnRevision.asientos_editables,false);
+        assert.equal((await peticion(`/reservas/${rid}/asientos`,cliente.token,{version:reservaEnRevision.edicion_asientos_version,asiento_ids:[asiento2]},"PUT")).status,409);
+        const reservaConfirmada=await (await peticion(`/reservas/${reserva}/resumen`,cliente.token)).json();
+        assert.equal(reservaConfirmada.asientos_editables,false);
+        assert.equal((await peticion(`/reservas/${reserva}/asientos`,cliente.token,{version:reservaConfirmada.edicion_asientos_version,asiento_ids:[asiento]},"PUT")).status,409);
         assert.equal(
           (await (await subir()).json()).id,
           cid,
