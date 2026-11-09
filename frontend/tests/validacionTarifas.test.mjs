@@ -65,3 +65,25 @@ test("excluye tarifas inactivas", () => {
     obtenerTarifasValidas(paradas, [{ ...tarifa, vigente: false }]).length, 0
   );
 });
+
+test("rechaza ciudades de origen y destino inconsistentes", () => {
+  assert.equal(obtenerTarifasValidas(paradas, [
+    { ...tarifa, ciudadOrigen: "Ambato" }
+  ]).length, 0);
+  assert.equal(obtenerTarifasValidas(paradas, [
+    { ...tarifa, ciudadDestino: "Cuenca" }
+  ]).length, 0);
+});
+
+test("rechaza una tarifa con orden de destino incorrecto", () => {
+  assert.equal(obtenerTarifasValidas(paradas, [
+    { ...tarifa, ordenDestino: 5 }
+  ]).length, 0);
+});
+
+test("no modifica las tarifas originales", () => {
+  const originales = [tarifa, { ...tarifa, vigente: false }];
+  const copia = structuredClone(originales);
+  obtenerTarifasValidas(paradas, originales);
+  assert.deepEqual(originales, copia);
+});
