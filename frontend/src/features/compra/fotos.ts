@@ -17,3 +17,27 @@ export const FOTOS_BUS = {
 export function fotoTarjetaBus(pisos: number): string {
   return pisos >= 2 ? FOTOS_BUS.dosPisos.tarjeta : FOTOS_BUS.unPiso.tarjeta;
 }
+
+// Recursos comerciales del inicio. Los archivos permanecen organizados por uso.
+export const FOTOS_INICIO = {
+  portada: "/images/home/hero-gran-continental.png",
+  servicioEjecutivo: "/images/home/servicio-premium.png",
+  servicioConfort: "/images/home/servicio-confort.png",
+  sobreNosotros: "/images/home/sobre-nosotros.png",
+} as const;
+
+export const FOTOS_DESTINOS: Readonly<Record<string, string>> = {
+  quito: "/images/destinos/destino-quito.png",
+  guayaquil: "/images/destinos/destino-guayaquil.png",
+  cuenca: "/images/destinos/destino-cuenca.png",
+  ambato: "/images/destinos/destino-ambato.png",
+  loja: "/images/destinos/destino-loja.png",
+};
+
+/** Los IDs dependen de la base; la ilustración se asocia al nombre de la ciudad. */
+export function fotoDestino(nombre: string): string | undefined {
+  const clave = nombre.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return Object.prototype.hasOwnProperty.call(FOTOS_DESTINOS, clave)
+    ? FOTOS_DESTINOS[clave]
+    : undefined;
+}

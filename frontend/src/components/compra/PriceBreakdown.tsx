@@ -39,11 +39,11 @@ export function PriceBreakdown({
   return (
     <section
       aria-labelledby="detalle-precios"
-      className="rounded-lg border border-slate-200 bg-white p-4"
+      className="rounded-lg border border-indigo-100 bg-white p-4"
     >
       <h2
         id="detalle-precios"
-        className="flex items-center gap-2 text-lg font-bold text-slate-900"
+        className="flex items-center gap-2 text-lg font-bold text-[#08035b]"
       >
         <span className="flex h-8 w-8 items-center justify-center rounded-md bg-red-600 text-white">
           <Icono nombre="calculadora" className="h-4 w-4" />
@@ -51,13 +51,13 @@ export function PriceBreakdown({
         {titulo}
       </h2>
 
-      <table className="mt-3 hidden w-full text-sm sm:table">
+      <table className="mt-3 hidden w-full border-collapse text-sm sm:table [&_thead]:bg-blue-50/70 [&_th]:border [&_th]:border-indigo-100 [&_td]:border [&_td]:border-indigo-100 [&_th]:px-3 [&_td]:px-3">
         <caption className="sr-only">
           {titulo}, versión {cotizacion.version}, importes en{" "}
           {cotizacion.moneda}
         </caption>
         <thead>
-          <tr className="border-b border-slate-200 text-left text-slate-600">
+          <tr className="border-b border-indigo-100 text-left text-slate-600">
             <th scope="col" className="py-1.5 font-medium">
               Concepto
             </th>
@@ -127,7 +127,7 @@ export function PriceBreakdown({
             valor={formatearCentavos(cotizacion.iva_centavos)}
             fuerte
           />
-          <tr className="bg-green-50 text-lg font-bold text-slate-900">
+          <tr className="bg-green-50 text-lg font-bold text-[#08035b]">
             <th scope="row" colSpan={4} className="px-2 py-2 text-left">
               Total a pagar
             </th>

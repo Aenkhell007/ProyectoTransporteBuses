@@ -57,7 +57,7 @@ export default function BankAccountDetails({
   const datos = [
     {
       etiqueta: "Tipo de cuenta",
-      valor: cuenta.tipo,
+      valor: cuenta.tipo === "CORRIENTE" ? "Corriente" : cuenta.tipo === "AHORROS" ? "Ahorros" : cuenta.tipo,
       permiteCopiar: false,
     },
     {
@@ -79,8 +79,8 @@ export default function BankAccountDetails({
 
   return (
     <section aria-label={`Datos bancarios de ${cuenta.banco}`}>
-      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_224px]">
-        <div className="rounded-md border border-slate-200 p-4">
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_170px]">
+        <div className="rounded-md border border-indigo-100 p-4">
           <h3 className="mb-4 font-bold text-blue-950">{cuenta.banco}</h3>
 
           <dl className="space-y-3">
@@ -115,26 +115,24 @@ export default function BankAccountDetails({
           </dl>
 
           <span className="mt-3 inline-block rounded bg-blue-50 px-2 py-1 text-xs text-blue-700">
-            Datos de ejemplo
+            Datos de la cuenta receptora
           </span>
         </div>
 
-        <figure className="flex min-w-0 flex-col items-center justify-center gap-3 rounded-md border border-slate-200 bg-slate-50 p-4 text-center">
+        <figure className="flex min-w-0 flex-col items-center justify-center gap-3 rounded-md border border-indigo-100 bg-slate-50 p-4 text-center">
           {cuenta.qrSrc ? (
             <>
               <img
                 src={cuenta.qrSrc}
-                alt={`QR de demostración con los datos de ${cuenta.banco}, cuenta terminada en ${cuenta.numero.slice(-4)}`}
+                alt={`QR asociado a ${cuenta.banco}, cuenta terminada en ${cuenta.numero.slice(-4)}`}
                 width="192"
                 height="192"
                 className="h-auto w-full max-w-48 bg-white"
               />
               <figcaption className="text-xs leading-5 text-slate-600">
-                <strong className="block text-blue-950">
-                  QR de demostración
-                </strong>
-                Escanéalo con la cámara de tu celular para leer los datos de
-                esta cuenta. No permite realizar pagos.
+                <strong className="block text-blue-950">QR bancario</strong>
+                Comprueba que los datos mostrados por tu banco coincidan con
+                esta cuenta antes de confirmar una operación.
               </figcaption>
               <a
                 href={cuenta.qrSrc}

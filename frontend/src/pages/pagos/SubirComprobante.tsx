@@ -1,104 +1,303 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { Link, useLocation } from "react-router";
+import { Link, useNavigate } from "react-router";
+import { useFlujoPago } from "../../features/pagos/useFlujoPago";
 import PaymentLayout from "../../components/pagos/PaymentLayout";
 import BankAccountDetails from "../../components/pagos/BankAccountDetails";
 import ProofUploader from "../../components/pagos/ProofUploader";
-import { cuentasDemo } from "../../mocks/cuentasBancarias";
 import type { ComprobanteLocal } from "../../features/pagos/validarComprobante";
+import EstadoConsultaPago from "../../components/pagos/EstadoConsultaPago";
+import { pagosApi, enlacePago } from "../../features/pagos/pagosApi";
 
 export default function SubirComprobante() {
-  const location = useLocation();
-  const cuenta = cuentasDemo.find((item) => location.state?.metodo === "transferencia" && item.id === location.state?.cuenta);
+  const navigate = useNavigate();
+  const {
+    reservaId,
+    datos,
+    flujo,
+    cuentas,
+    cargando,
+    error: errorConsulta,
+    status,
+    recargar,
+  } = useFlujoPago();
+  const cuenta = cuentas.find((c) => c.id === flujo?.cuentaId);
   const [comprobante, setComprobante] = useState<ComprobanteLocal | null>(null);
   const [referencia, setReferencia] = useState("");
   const [confirmado, setConfirmado] = useState(false);
-  const [validando, setValidando] = useState(false);
-  const [simulado, setSimulado] = useState(false);
-  const [error, setError] = useState("");
-  const estadoAnterior = cuenta ? { metodo: "transferencia", cuenta: cuenta.id } : undefined;
-
+  const [validando, setValidando] = useState(false),
+    [enviando, setEnviando] = useState(false),
+    [error, setError] = useState("");
+  const bloqueo = useRef(false);
+  useEffect(() => {
+    setComprobante(null);
+    setReferencia("");
+    setConfirmado(false);
+    setError("");
+  }, [reservaId]);
   function cambiarArchivo(archivo: ComprobanteLocal | null) {
     setComprobante(archivo);
     setConfirmado(false);
-    setSimulado(false);
     setError("");
   }
-
-  function enviar(event: FormEvent<HTMLFormElement>) {
+  async function enviar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!cuenta || !comprobante || validando || !confirmado) {
-      setError("Selecciona un comprobante válido y confirma que sus datos son legibles.");
+    if (bloqueo.current) return;
+    if (
+      !reservaId ||
+      !datos?.intento ||
+      !cuenta ||
+      !comprobante ||
+      validando ||
+      !confirmado
+    ) {
+      setError("Selecciona un comprobante válido y confirma sus datos.");
       return;
     }
-    // Solo demostración: no se registra un pago ni se simula una respuesta de API.
+    if (
+      !datos.politica ||
+      comprobante.archivo.size > datos.politica.maxBytes ||
+      !datos.politica.mimes.includes(comprobante.mime)
+    ) {
+      setError("El archivo no cumple la política de la cooperativa.");
+      return;
+    }
+    if (datos.politica.referenciaObligatoria && !referencia.trim()) {
+      setError("La referencia es obligatoria para esta cooperativa.");
+      return;
+    }
+    bloqueo.current = true;
+    setEnviando(true);
     setError("");
-    setSimulado(true);
+    try {
+      await pagosApi.enviar(
+        reservaId,
+        datos.intento.id,
+        comprobante.archivo,
+        comprobante.mime,
+        referencia.trim(),
+      );
+      navigate(enlacePago("/pago/seguimiento", reservaId));
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "No se pudo enviar el archivo.",
+      );
+      void recargar();
+    } finally {
+      bloqueo.current = false;
+      setEnviando(false);
+    }
   }
-
-  return <PaymentLayout title="Subir comprobante de pago" description="Adjunta tu comprobante de transferencia o depósito para que el oficinista pueda revisar el pago.">
-    {!cuenta ? <div className="rounded-lg border border-blue-200 bg-blue-50 p-5">
-      <h2 className="font-semibold text-blue-950">Primero selecciona una cuenta bancaria</h2>
-      <p className="mt-2 text-sm text-blue-900">Vuelve al método de pago y elige Transferencia/Depósito y una cuenta para adjuntar tu comprobante.</p>
-      <Link to="/pago" className="mt-4 inline-flex min-h-11 items-center rounded-md bg-[#ff0018] px-5 py-3 text-sm font-semibold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-red-600">Ir al método de pago →</Link>
-    </div> : <form onSubmit={enviar} className="space-y-6">
-      <section aria-labelledby="cuenta-destino" className="rounded-lg border border-slate-200 p-4 sm:p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 id="cuenta-destino" className="text-lg font-semibold text-blue-950">Cuenta bancaria seleccionada</h2>
-            <p className="mt-2 text-sm text-blue-900">{cuenta.banco} · {cuenta.tipo} · ••••{cuenta.numero.slice(-4)}</p>
-          </div>
-          <Link to="/pago" state={estadoAnterior} className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-700 underline focus-visible:outline-2 focus-visible:outline-blue-600">Cambiar cuenta</Link>
+  if (!datos || !reservaId || !flujo)
+    return (
+      <EstadoConsultaPago
+        cargando={cargando}
+        error={errorConsulta}
+        status={status}
+        recargar={recargar}
+      />
+    );
+  if (
+    flujo.estado !== "seleccion" ||
+    !datos.intento ||
+    datos.intento.estado !== "PENDIENTE"
+  )
+    return (
+      <PaymentLayout datos={datos} title="Subir comprobante de pago">
+        <p>
+          {flujo.estado === "rechazado"
+            ? "El comprobante fue rechazado. Inicia un nuevo intento desde el método de pago."
+            : "Consulta el estado de tu intento antes de enviar otro comprobante."}
+        </p>
+        <Link
+          to={enlacePago(
+            flujo.estado === "rechazado" || !datos.intento
+              ? "/pago"
+              : "/pago/seguimiento",
+            reservaId,
+          )}
+          className="inline-flex min-h-11 text-blue-800 underline"
+        >
+          Continuar →
+        </Link>
+      </PaymentLayout>
+    );
+  return (
+    <PaymentLayout
+      datos={datos}
+      title="Subir comprobante de pago"
+      description="Adjunta tu comprobante de transferencia o depósito para que el oficinista pueda revisar el pago."
+    >
+      {!cuenta ? (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-5">
+          <h2 className="font-semibold text-blue-950">
+            Primero selecciona una cuenta bancaria
+          </h2>
+          <p className="mt-2 text-sm text-blue-900">
+            Vuelve al método de pago y elige Transferencia/Depósito y una cuenta
+            para adjuntar tu comprobante.
+          </p>
+          <Link
+            to={enlacePago("/pago", reservaId)}
+            className="mt-4 inline-flex min-h-11 items-center rounded-md bg-[#ff0018] px-5 py-3 text-sm font-semibold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-red-600"
+          >
+            Ir al método de pago →
+          </Link>
         </div>
-        <details className="mt-3">
-          <summary className="cursor-pointer py-2 text-sm text-blue-700 focus-visible:outline-2 focus-visible:outline-blue-600">Ver datos bancarios y QR</summary>
-          <div className="mt-3"><BankAccountDetails key={cuenta.id} cuenta={cuenta} /></div>
-        </details>
-        <p className="mt-3 text-xs text-slate-500">Cuenta de demostración. No realices transferencias a estos datos.</p>
-      </section>
+      ) : (
+        <form onSubmit={enviar} className="space-y-4">
+          <section
+            aria-labelledby="cuenta-destino"
+            className="rounded-lg border border-indigo-100 p-4 sm:p-5"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2
+                  id="cuenta-destino"
+                  className="text-lg font-semibold text-blue-950"
+                >
+                  Cuenta receptora seleccionada
+                </h2>
 
-      <section aria-labelledby="adjuntar-comprobante" className="rounded-lg border border-slate-200 p-4 sm:p-5">
-        <h2 id="adjuntar-comprobante" className="text-lg font-semibold text-blue-950">Adjunta tu comprobante</h2>
-        <p className="mt-2 mb-4 text-sm text-slate-600">La imagen o el PDF debe mostrar claramente el banco, la fecha, el valor y la referencia de la operación.</p>
-        <ProofUploader value={comprobante} onChange={cambiarArchivo} onValidando={setValidando} />
-        <div className="mt-5">
-          <label htmlFor="referencia-comprobante" className="block text-sm font-semibold text-blue-950">Número de referencia u operación <span className="font-normal text-slate-500">(opcional)</span></label>
-          <input id="referencia-comprobante" name="referencia" type="text" maxLength={120} autoComplete="off" value={referencia}
-            onChange={(event) => { setReferencia(event.target.value); setSimulado(false); }}
-            aria-describedby="referencia-ayuda" placeholder="Escribe la referencia que aparece en tu comprobante"
-            className="mt-2 min-h-11 w-full rounded-md border border-slate-300 p-3 text-sm focus:border-blue-600 focus:outline-2 focus:outline-blue-600" />
-          <p id="referencia-ayuda" className="mt-2 text-xs text-slate-500">Hasta 120 caracteres. Inclúyela si está disponible en tu comprobante.</p>
-        </div>
-      </section>
+              </div>
+              <Link
+                to={enlacePago("/pago", reservaId)}
+                className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-700 underline focus-visible:outline-2 focus-visible:outline-blue-600"
+              >
+                Cambiar cuenta
+              </Link>
+            </div>
+            <div className="mt-4 grid gap-4 sm:grid-cols-[150px_1fr]">
+              <div className="flex items-center gap-3"><span aria-hidden="true" className="flex size-12 items-center justify-center rounded bg-yellow-300 text-xl font-bold text-blue-950">▰</span><strong className="text-blue-950">{cuenta.banco}</strong></div>
+              <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm"><dt className="text-indigo-400">Banco:</dt><dd>{cuenta.banco}</dd><dt className="text-indigo-400">Tipo de cuenta:</dt><dd>{cuenta.tipo==='CORRIENTE'?'Cuenta corriente':cuenta.tipo==='AHORROS'?'Cuenta de ahorros':cuenta.tipo}</dd><dt className="text-indigo-400">Número de cuenta:</dt><dd className="break-all">{cuenta.numero}</dd><dt className="text-indigo-400">Titular:</dt><dd>{cuenta.titular}</dd></dl>
+            </div>
+            {cuenta.qrSrc&&<details className="mt-3"><summary className="cursor-pointer text-sm text-blue-700">Ver QR de la cuenta</summary><BankAccountDetails key={cuenta.id} cuenta={cuenta}/></details>}
 
-      <section aria-labelledby="antes-de-enviar" className="rounded-md bg-blue-50 p-4 text-sm text-blue-950">
-        <h2 id="antes-de-enviar" className="font-semibold">Antes de enviar</h2>
-        <ul className="mt-2 list-disc space-y-1 pl-5 leading-6">
-          <li>Comprueba que el archivo esté completo y se pueda leer, sin cortes ni partes borrosas.</li>
-          <li>Verifica que los datos correspondan a la cuenta y al pago de tu reserva.</li>
-          <li>El envío del comprobante no aprueba el pago ni emite el boleto. Primero debe revisarlo el oficinista.</li>
-        </ul>
-      </section>
+          </section>
 
-      <label className="flex cursor-pointer items-start gap-3 rounded-md border border-slate-200 p-4 text-sm text-slate-700">
-        <input type="checkbox" checked={confirmado} onChange={(event) => { setConfirmado(event.target.checked); setSimulado(false); setError(""); }} className="mt-0.5 h-5 w-5 shrink-0 accent-blue-700" />
-        Confirmo que el archivo corresponde a este pago y que sus datos son legibles.
-      </label>
+          <section
+            aria-labelledby="adjuntar-comprobante"
+            className="rounded-lg border border-indigo-100 p-4 sm:p-5"
+          >
+            <h2
+              id="adjuntar-comprobante"
+              className="text-lg font-semibold text-blue-950"
+            >
+              Adjunta tu comprobante
+            </h2>
+            <p className="mt-2 mb-4 text-sm text-slate-600">
+              La imagen o el PDF debe mostrar claramente el banco, la fecha, el
+              valor y la referencia de la operación.
+            </p>
+            {flujo.comprobante && (
+              <p className="mb-3 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
+                Comprobante anterior: {flujo.comprobante.nombre}. Selecciona el
+                archivo corregido para volver a enviarlo.
+              </p>
+            )}
+            <ProofUploader
+              politica={datos.politica ?? undefined}
+              value={comprobante}
+              onChange={cambiarArchivo}
+              onValidando={setValidando}
+            />
+            <div className="mt-5">
+              <p className="mt-3 font-semibold">
+                Importe de la cotización aceptada: ${" "}
+                {(datos.reserva.total_centavos / 100).toFixed(2)}
+              </p>
+            </div>
+            <div className="mt-5">
+              <label
+                htmlFor="referencia-comprobante"
+                className="block text-sm font-semibold text-blue-950"
+              >
+                Número de referencia u operación{" "}
+                <span className="font-normal text-slate-500">
+                  {datos.politica?.referenciaObligatoria
+                    ? "(obligatoria)"
+                    : "(opcional)"}
+                </span>
+              </label>
+              <input
+                id="referencia-comprobante"
+                name="referencia"
+                type="text"
+                maxLength={120}
+                required={datos.politica?.referenciaObligatoria}
+                autoComplete="off"
+                value={referencia}
+                onChange={(event) => {
+                  setReferencia(event.target.value);
+                }}
+                aria-describedby="referencia-ayuda"
+                placeholder="Escribe la referencia que aparece en tu comprobante"
+                className="mt-2 min-h-11 w-full rounded-md border border-slate-300 p-3 text-sm focus:border-blue-600 focus:outline-2 focus:outline-blue-600"
+              />
+              <p id="referencia-ayuda" className="mt-2 text-xs text-slate-500">
+                Hasta 120 caracteres. Inclúyela si está disponible en tu
+                comprobante.
+              </p>
+            </div>
+          </section>
 
-      <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Modo de demostración: puedes validar el archivo y probar este paso. El envío real al backend está pendiente; al salir o recargar tendrás que seleccionarlo de nuevo.</p>
-      {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-      {simulado && <div role="status" className="rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-900">
-        <h2 className="font-semibold">Prueba local completada</h2>
-        <p className="mt-2 break-words">El archivo {comprobante?.archivo.name} está preparado para la cuenta de {cuenta.banco}.{referencia.trim() ? ` Referencia: ${referencia.trim()}.` : ""} No se ha enviado ni registrado ningún pago. Puedes continuar al seguimiento de ejemplo.</p>
-        <Link to="/pago/seguimiento" state={{ ...estadoAnterior, nombreArchivo: comprobante?.archivo.name, referencia: referencia.trim() }} className="mt-3 inline-flex min-h-11 items-center font-semibold text-blue-800 underline focus-visible:outline-2 focus-visible:outline-blue-600">Ver seguimiento de ejemplo →</Link>
-      </div>}
+          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-indigo-100 p-4 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={confirmado}
+              onChange={(event) => {
+                setConfirmado(event.target.checked);
+                setError("");
+              }}
+              className="mt-0.5 h-5 w-5 shrink-0 accent-blue-700"
+            />
+            Confirmo que el archivo corresponde a este pago y que sus datos son
+            legibles.
+          </label>
 
-      <nav aria-label="Navegación del comprobante" className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-        <Link to="/pago" state={estadoAnterior} className="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-200 px-5 py-3 text-sm font-semibold text-blue-900 hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-blue-600">← Volver al método de pago</Link>
-        <button type="submit" disabled={!comprobante || !confirmado || validando || simulado} className="inline-flex min-h-11 items-center justify-center rounded-md bg-[#ff0018] px-5 py-3 text-sm font-semibold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-red-600 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600">
-          {validando ? "Validando archivo…" : simulado ? "Prueba completada" : "Simular envío a revisión →"}
-        </button>
-      </nav>
-    </form>}
-  </PaymentLayout>;
+          <p className="rounded-md bg-blue-50 p-3 text-sm">
+            El envío no confirma tu pago. El oficinista revisará el comprobante antes de emitir el boleto.
+          </p>
+          {errorConsulta && (
+            <p role="alert" className="text-red-700">
+              {errorConsulta}
+            </p>
+          )}
+          {error && (
+            <p role="alert" className="text-sm text-red-700">
+              {error}
+            </p>
+          )}
+          <nav
+            aria-label="Navegación del comprobante"
+            className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between"
+          >
+            <Link
+              to={enlacePago("/pago", reservaId)}
+              className="inline-flex min-h-11 items-center justify-center rounded-md border border-indigo-100 px-5 py-3 text-sm font-semibold text-blue-900 hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-blue-600"
+            >
+              ← Volver al método de pago
+            </Link>
+            <button
+              type="submit"
+              disabled={
+                !comprobante ||
+                !confirmado ||
+                validando ||
+                enviando ||
+                !!errorConsulta
+              }
+              className="inline-flex min-h-11 items-center justify-center rounded-md bg-[#ff0018] px-5 py-3 text-sm font-semibold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-red-600 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
+            >
+              {validando
+                ? "Validando archivo…"
+                : enviando
+                  ? "Enviando comprobante…"
+                  : "Enviar comprobante →"}
+            </button>
+          </nav>
+        </form>
+      )}
+    </PaymentLayout>
+  );
 }

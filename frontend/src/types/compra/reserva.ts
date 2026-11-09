@@ -48,7 +48,7 @@ export interface PasajeroDatos {
   nacimiento: string | null;
   beneficio_codigo: BeneficioCodigo | null;
   respaldo_archivo_id: string | null;
-  /** Pendiente (decisión 11): la tabla pasajeros no tiene teléfono ni correo. */
+  /** Contactos opcionales del pasajero; no crean una cuenta de usuario. */
   telefono?: string | null;
   email?: string | null;
 }

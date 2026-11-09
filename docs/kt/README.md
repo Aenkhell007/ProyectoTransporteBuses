@@ -1,6 +1,8 @@
 # Módulo de compra del cliente (KT)
 
-Responsable: Kevin Balseca (KT). Estado: en desarrollo con datos simulados.
+Responsable: Kevin Balseca (KT).
+
+Estado actualizado (06/11/2026): compra y Mis viajes consumen la API real. Consulta [la guía de integración](../integracion-compra-real.md). La tabla siguiente conserva la entrega histórica del 03/11/2026.
 Issue padre: #36. Elemento de configuración: pendiente de asignar por el equipo.
 
 ## Alcance
@@ -59,7 +61,7 @@ El contrato de cada ruta está en [`docs/api/compra-endpoints.md`](../api/compra
 - `frontend/src/components/compra/`: componentes reutilizables (búsqueda, tarjeta de viaje, ficha de pasajero, resumen, desglose de precios, pestañas).
 - `frontend/src/features/compra/`: servicios de API y reglas puras (validaciones, formato de dinero y fechas).
 - `frontend/src/types/compra/`: tipos del contrato.
-- `frontend/src/mocks/compra/`: datos simulados mientras no exista el servidor.
+- Los antiguos mocks de compra se retiraron el 06/11/2026 tras conectar estos servicios a la API.
 
 ## Historial del documento
 

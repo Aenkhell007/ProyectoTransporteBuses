@@ -16,7 +16,7 @@ existe, así que las pantallas no llaman a ninguna API.
 | Editor de plano | types/plano.ts, mocks/clasesAsiento.ts, utils/plano.ts, components/flota/PlanoEditor.tsx, pages/flota/PlanoEditorPage.tsx |
 | Versiones de plano | types/versionesPlano.ts, mocks/versionesPlano.ts, utils/versionesPlano.ts, pages/flota/PlanosBusPage.tsx |
 | Mapa de asientos | types/flota.ts, mocks/mapaAsientos.ts, utils/disponibilidad.ts, components/flota/SeatMap.tsx |
-| Selección de asientos | types/mapaViaje.ts, mocks/mapaViaje.ts, mocks/reservaAsientos.ts, components/flota/SelectorAsientos.tsx, pages/flota/SeleccionAsientosPage.tsx |
+| Selección de asientos | types/mapaViaje.ts, services/mapaApi.ts, features/compra/reservaApi.ts, components/flota/SelectorAsientos.tsx, pages/flota/SeleccionAsientosPage.tsx |
 | Servicios de API | services/http.ts, services/mapaApi.ts, services/busesApi.ts, services/planosApi.ts, services/disponibilidadApi.ts |
 
 Algunas piezas están en pull requests en revisión y pueden no estar todavía en develop.

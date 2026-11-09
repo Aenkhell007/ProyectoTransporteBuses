@@ -1,7 +1,7 @@
 // Solo se puede volver a rutas conocidas de esta aplicación, nunca a una URL externa.
 const rutasPermitidas = new Set([
-  '/', '/mi-cuenta', '/viajes', '/pasajeros', '/resumen',
-  '/pago', '/pago/comprobante', '/mis-viajes',
+  '/', '/asientos', '/mi-cuenta', '/viajes', '/pasajeros', '/resumen',
+  '/pago', '/pago/comprobante', '/pago/seguimiento', '/pago/confirmacion', '/mis-viajes',
 ]);
 
 export function destinoTrasLogin(origen: unknown) {
