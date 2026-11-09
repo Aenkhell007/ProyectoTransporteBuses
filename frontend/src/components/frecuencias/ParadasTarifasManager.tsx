@@ -38,7 +38,7 @@ export const ParadasTarifasManager: React.FC<ParadasTarifasManagerProps> = ({
         <div className="bg-white p-4 rounded-md shadow-sm border border-gray-200">
           <h3 className="font-semibold text-[#1A1A1A] mb-3">Tarifas Vigentes por Tramo</h3>
           <ul className="space-y-2">
-            {tarifas.map((t) => (
+            {tarifas.filter((t) => t.vigente).map((t) => (
               <li key={t.id} className="text-sm border-b pb-2 flex justify-between items-center">
                 <span>
                   {t.ciudadOrigen} → {t.ciudadDestino} ({t.clase})
