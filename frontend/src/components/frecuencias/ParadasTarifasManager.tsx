@@ -45,6 +45,9 @@ export const ParadasTarifasManager: React.FC<ParadasTarifasManagerProps> = ({
         {/* Tabla de Tarifas por Tramo */}
         <div className="bg-white p-4 rounded-md shadow-sm border border-gray-200">
           <h3 className="font-semibold text-[#1A1A1A] mb-3">Tarifas Vigentes por Tramo</h3>
+          <p className="mb-3 text-sm text-gray-600" aria-live="polite">
+            Tarifas validas disponibles: {tarifasValidas.length}
+          </p>
           <ul className="space-y-2">
             {tarifasValidas.length === 0 && (
     <li className="text-sm text-gray-500">
