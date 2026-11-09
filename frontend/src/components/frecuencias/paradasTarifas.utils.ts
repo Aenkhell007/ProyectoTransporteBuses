@@ -25,6 +25,8 @@ export function obtenerTarifasValidas(
       tarifa.precioBase > 0 &&
       origen.frecuenciaId === tarifa.frecuenciaId &&
       destino.frecuenciaId === tarifa.frecuenciaId &&
+      origen.ciudad === tarifa.ciudadOrigen &&
+      destino.ciudad === tarifa.ciudadDestino &&
       origen.orden === tarifa.ordenOrigen &&
       destino.orden === tarifa.ordenDestino &&
       origen.orden < destino.orden &&

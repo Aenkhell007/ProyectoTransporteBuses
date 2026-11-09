@@ -4,11 +4,11 @@ import { obtenerTarifasValidas } from "../src/components/frecuencias/paradasTari
 
 const paradas = [
   {
-    id: "p1", frecuenciaId: "f1", orden: 1,
+    id: "p1", ciudad: "Quito", frecuenciaId: "f1", orden: 1,
     habilitadaEmbarque: true, habilitadaDesembarque: false
   },
   {
-    id: "p2", frecuenciaId: "f1", orden: 2,
+    id: "p2", ciudad: "Loja", frecuenciaId: "f1", orden: 2,
     habilitadaEmbarque: false, habilitadaDesembarque: true
   }
 ];
@@ -17,7 +17,9 @@ const tarifa = {
   id: "t1",
   frecuenciaId: "f1",
   paradaOrigenId: "p1",
+  ciudadOrigen: "Quito",
   paradaDestinoId: "p2",
+  ciudadDestino: "Loja",
   ordenOrigen: 1,
   ordenDestino: 2,
   precioBase: 12,
