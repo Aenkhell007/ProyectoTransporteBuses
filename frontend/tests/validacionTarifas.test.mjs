@@ -87,3 +87,23 @@ test("no modifica las tarifas originales", () => {
   obtenerTarifasValidas(paradas, originales);
   assert.deepEqual(originales, copia);
 });
+
+test("rechaza destino sin permiso de desembarque", () => {
+  const modificadas = paradas.map(p =>
+    p.id === "p2"
+      ? { ...p, habilitadaDesembarque: false }
+      : p
+  );
+  assert.equal(obtenerTarifasValidas(modificadas, [tarifa]).length, 0);
+});
+
+test("conserva solo tarifas validas entre datos mixtos", () => {
+  const mezcla = [
+    { ...tarifa, id: "t1" },
+    { ...tarifa, id: "t2", precioBase: 0 },
+    { ...tarifa, id: "t3", clase: "VIP", precioBase: 18 }
+  ];
+
+  const resultado = obtenerTarifasValidas(paradas, mezcla);
+  assert.deepEqual(resultado.map(t => t.id), ["t1", "t3"]);
+});
