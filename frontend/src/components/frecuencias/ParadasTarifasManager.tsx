@@ -1,4 +1,4 @@
-import { ordenarParadas, obtenerTarifasVigentes } from "./paradasTarifas.utils";
+import { ordenarParadas, obtenerTarifasValidas } from "./paradasTarifas.utils";
 import React from 'react';
 import { ParadaOrdenada, TarifaTramo } from '../../types/paradasTramos';
 
@@ -44,12 +44,12 @@ export const ParadasTarifasManager: React.FC<ParadasTarifasManagerProps> = ({
         <div className="bg-white p-4 rounded-md shadow-sm border border-gray-200">
           <h3 className="font-semibold text-[#1A1A1A] mb-3">Tarifas Vigentes por Tramo</h3>
           <ul className="space-y-2">
-            {obtenerTarifasVigentes(tarifas).length === 0 && (
+            {obtenerTarifasValidas(paradas, tarifas).length === 0 && (
     <li className="text-sm text-gray-500">
-      No hay tarifas vigentes disponibles.
+      No hay tarifas vigentes con tramos validos.
     </li>
   )}
-  {obtenerTarifasVigentes(tarifas).map((t) => (
+  {obtenerTarifasValidas(paradas, tarifas).map((t) => (
               <li key={t.id} className="text-sm border-b pb-2 flex justify-between items-center">
                 <span>
                   {t.ciudadOrigen} → {t.ciudadDestino} ({t.clase})
