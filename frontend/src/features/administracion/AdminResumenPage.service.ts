@@ -1,7 +1,5 @@
 import { AdminResumenResponse } from './AdminResumenPage.types';
-
-// ruta base definida para el proxy o entorno de Vite (/api)
-const API_BASE_URL = '/api/admin';
+import { http } from '../../services/http';
 
 export const fetchAdminResumenData = async (
   desde?: string,
@@ -10,18 +8,15 @@ export const fetchAdminResumenData = async (
   const queryParams = new URLSearchParams();
   if (desde) queryParams.append('desde', desde);
   if (hasta) queryParams.append('hasta', hasta);
+  const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
 
-  const response = await fetch(`${API_BASE_URL}/resumen?${queryParams.toString()}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    // credentials: 'include' asegura que se envíen las cookies de sesión del login actual
-    credentials: 'include',
-  });
+  try {
+    const data = await http<AdminResumenResponse>(`/admin/resumen${query}`);
+    return data;
+  } catch (error: any) {
+    const status = error.response?.status || error.status;
 
-  if (!response.ok) {
-    switch (response.status) {
+    switch (status) {
       case 401:
         throw new Error('401: Sesión expirada. Por favor, vuelve a iniciar sesión.');
       case 403:
@@ -31,9 +26,7 @@ export const fetchAdminResumenData = async (
       case 422:
         throw new Error('422: Parámetros de fecha inválidos.');
       default:
-        throw new Error(`Error de red o servidor (${response.status})`);
+        throw new Error(error.message || `Error de red o servidor (${status || 'desconocido'})`);
     }
   }
-
-  return await response.json();
 };
