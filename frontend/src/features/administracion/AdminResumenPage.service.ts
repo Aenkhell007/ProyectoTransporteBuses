@@ -1,6 +1,7 @@
 import { AdminResumenResponse } from './AdminResumenPage.types';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || '/api/admin';
+// ruta base definida para el proxy o entorno de Vite (/api)
+const API_BASE_URL = '/api/admin';
 
 export const fetchAdminResumenData = async (
   desde?: string,
@@ -14,8 +15,9 @@ export const fetchAdminResumenData = async (
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
     },
+    // credentials: 'include' asegura que se envíen las cookies de sesión del login actual
+    credentials: 'include',
   });
 
   if (!response.ok) {
