@@ -34,7 +34,7 @@ export default function GestionCooperativasPage() {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      return; 
+      return;
     }
 
     setIsLoading(true);
@@ -50,7 +50,7 @@ export default function GestionCooperativasPage() {
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         <h1 className="text-3xl font-bold text-blue-900 mb-6">Cooperativas, usuarios y roles</h1>
-        
+
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white rounded-lg shadow-sm border p-6 space-y-4">
             <h2 className="text-xl font-bold text-blue-900 flex items-center mb-4"><span className="mr-2">🏢</span> Datos de la cooperativa</h2>
@@ -97,7 +97,7 @@ export default function GestionCooperativasPage() {
                 <input type="email" id="correoUser" name="correoUser" value={formData.correoUser} onChange={handleChange} disabled={isLoading} className={`w-full border rounded p-2 disabled:bg-gray-100 ${errors.correoUser ? 'border-red-500 bg-red-50' : ''}`} required />
                 {errors.correoUser && <p className="text-xs text-red-600 mt-1">{errors.correoUser}</p>}
               </div>
-              
+
               <div className="col-span-2 p-4 bg-blue-50 border border-blue-100 rounded-lg flex justify-between items-center mt-2">
                 <div>
                   <p className="font-bold text-blue-900">Accesos del sistema</p>
@@ -108,16 +108,16 @@ export default function GestionCooperativasPage() {
                 </button>
               </div>
             </div>
-            
+
             <button type="submit" disabled={isLoading} className="w-full mt-4 bg-red-600 text-white font-bold py-2 rounded hover:bg-red-700 disabled:bg-red-400 flex justify-center items-center">
               {isLoading ? '⏳ Procesando...' : '👤 Guardar usuario y validar'}
             </button>
           </div>
         </form>
 
-        <ModalPermisos 
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)} 
+        <ModalPermisos
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
           userName={`${formData.nombres} ${formData.apellidos}`}
           initialPermisos={permisosUsuario}
           onSave={(permisos: Permisos) => setPermisosUsuario(permisos)}
