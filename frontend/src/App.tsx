@@ -10,6 +10,7 @@ import { matchPath, Navigate, Route, Routes, useLocation } from "react-router";
 import { ResultadosPage } from "./pages/compra/ResultadosPage";
 import { PublicLayout } from "./components/layout";
 import AdminLayout from "./layouts/AdminLayout";
+import AdminResumenPage from "./features/administracion/AdminResumenPage";
 import { MisViajesPage } from "./pages/mis-viajes/MisViajesPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { InicioPage } from "./pages/compra/InicioPage";
@@ -79,7 +80,7 @@ export function App() {
     return (
       <Routes>
         <Route path="/vista-previa/panel" element={<AdminLayout panelFijo />}>
-          <Route index element={<SeccionAdminPendiente titulo="Resumen" />} />
+          <Route index element={<AdminResumenPage />} />
           <Route
             path="cooperativas"
             element={<SeccionAdminPendiente titulo="Cooperativas" />}

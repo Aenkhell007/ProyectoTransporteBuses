@@ -1,32 +1,42 @@
-import { AdminResumenResponse } from './AdminResumenPage.types';
-import { http } from '../../services/http';
+import { ApiError, http } from "../../services/http";
+import type { AdminResumenResponse } from "./AdminResumenPage.types";
 
-export const fetchAdminResumenData = async (
+export async function fetchAdminResumenData(
   desde?: string,
-  hasta?: string
-): Promise<AdminResumenResponse> => {
-  const queryParams = new URLSearchParams();
-  if (desde) queryParams.append('desde', desde);
-  if (hasta) queryParams.append('hasta', hasta);
-  const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+  hasta?: string,
+  signal?: AbortSignal,
+): Promise<AdminResumenResponse> {
+  const params = new URLSearchParams();
+  if (desde) params.set("desde", desde);
+  if (hasta) params.set("hasta", hasta);
+  const query = params.size ? "?" + params : "";
 
-  try {
-    const data = await http<AdminResumenResponse>(`/admin/resumen${query}`);
-    return data;
-  } catch (error: any) {
-    const status = error.response?.status || error.status;
+  const data = await http<AdminResumenResponse>("/admin/resumen" + query, { signal });
+  if (
+    !data?.kpis ||
+    !Array.isArray(data.cooperativas) ||
+    !Array.isArray(data.usuariosPorRol) ||
+    !Array.isArray(data.tendenciaUsuarios)
+  ) {
+    throw new Error("Respuesta inválida del resumen");
+  }
+  return data;
+}
 
-    switch (status) {
+export function mensajeErrorResumen(error: unknown): string {
+  if (error instanceof ApiError) {
+    switch (error.status) {
       case 401:
-        throw new Error('401: Sesión expirada. Por favor, vuelve a iniciar sesión.');
+        return "Inicia sesión para consultar el resumen.";
       case 403:
-        throw new Error('403: No tienes permisos suficientes para acceder a este panel.');
+        return "No tienes permiso para consultar el resumen.";
+      case 404:
+        return "El resumen administrativo aún no está disponible en la API.";
       case 409:
-        throw new Error('409: Conflicto en los datos. Intenta actualizar la página.');
+        return "Los datos cambiaron. Vuelve a intentar la consulta.";
       case 422:
-        throw new Error('422: Parámetros de fecha inválidos.');
-      default:
-        throw new Error(error.message || `Error de red o servidor (${status || 'desconocido'})`);
+        return "Los parámetros de la consulta no son válidos.";
     }
   }
-};
+  return "No se pudo consultar el resumen administrativo. Inténtalo de nuevo.";
+}
