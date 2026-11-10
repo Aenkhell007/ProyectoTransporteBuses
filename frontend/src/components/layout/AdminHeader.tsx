@@ -9,17 +9,19 @@ const fechaDelPanel = new Intl.DateTimeFormat("es-EC", {
 });
 
 interface AdminHeaderProps {
+  titulo: string;
+  descripcion: string;
   nombreUsuario?: string;
   cargando: boolean;
 }
 
-export function AdminHeader({ nombreUsuario, cargando }: AdminHeaderProps) {
+export function AdminHeader({ titulo, descripcion, nombreUsuario, cargando }: AdminHeaderProps) {
   const hoy = new Date();
   return (
     <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 bg-white px-4 pt-2 pb-4 text-[#08064e] sm:px-5 lg:min-h-24 lg:py-4">
       <div>
-        <h1 className="text-2xl leading-tight font-bold lg:text-4xl">Panel de administración</h1>
-        <p className="mt-1 text-sm text-indigo-900">Gestiona cooperativas, usuarios y accesos al sistema.</p>
+        <h1 className="text-2xl leading-tight font-bold lg:text-4xl">{titulo}</h1>
+        <p className="mt-1 text-sm text-indigo-900">{descripcion}</p>
       </div>
       <div className="flex items-center gap-4">
         <time dateTime={hoy.toISOString()} className="flex items-center gap-2 rounded-lg border border-indigo-100 px-3 py-2 text-sm">

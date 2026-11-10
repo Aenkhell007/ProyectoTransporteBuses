@@ -2,24 +2,41 @@ import { useId, useRef, useState } from "react";
 import { Link, NavLink } from "react-router";
 import { Icono } from "../compra/Icono";
 
-const secciones = [
-  { ruta: ".", nombre: "Resumen", icono: <path d="m3 11 9-8 9 8M5 10v11h5v-6h4v6h5V10" /> },
+const resumen = {
+  ruta: ".",
+  nombre: "Resumen",
+  icono: <path d="m3 11 9-8 9 8M5 10v11h5v-6h4v6h5V10" />,
+};
+
+const seccionesAdmin = [
+  resumen,
   { ruta: "cooperativas", nombre: "Cooperativas", icono: null },
   { ruta: "usuarios", nombre: "Usuarios y roles", icono: null },
   { ruta: "reportes", nombre: "Reportes", icono: <path d="M4 20v-5h4v5M10 20V9h4v11M16 20V4h4v16" /> },
   { ruta: "configuracion", nombre: "Configuración", icono: <><circle cx="12" cy="12" r="3" /><path d="m10 3-.7 2.5-2.2 1L4.6 6l-1.5 2.6 1.8 2v2.8l-1.8 2L4.6 18l2.5-.5 2.2 1L10 21h4l.7-2.5 2.2-1 2.5.5 1.5-2.6-1.8-2v-2.8l1.8-2L19.4 6l-2.5.5-2.2-1L14 3Z" /></> },
 ];
 
+const seccionesOficina = [
+  resumen,
+  { ruta: "ventas", nombre: "Ventas", icono: <path d="M2 3h3l2.5 12h11l2.5-8H6M9 20h.01M17 20h.01" /> },
+  { ruta: "reservas", nombre: "Reservas", icono: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4m8-4v4m-8 8 2 2 4-4" /></> },
+  { ruta: "comprobantes", nombre: "Comprobantes", icono: <path d="M6 3h8l4 4v14H6V3Zm8 0v4h4m-9 5h6m-6 4h6" /> },
+  { ruta: "reembolsos", nombre: "Reembolsos", icono: <path d="M3 4v6h6M3.5 10A8.5 8.5 0 1 1 4 16m8-9v10m2.5-8H11a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3H9.5" /> },
+];
+
 interface AdminSidebarProps {
+  variant: "admin" | "oficina";
   puedeSalir: boolean;
   saliendo: boolean;
   onSalir: () => void;
 }
 
-export function AdminSidebar({ puedeSalir, saliendo, onSalir }: AdminSidebarProps) {
+export function AdminSidebar({ variant, puedeSalir, saliendo, onSalir }: AdminSidebarProps) {
   const [abierto, setAbierto] = useState(false);
   const menuId = useId();
   const botonMenu = useRef<HTMLButtonElement>(null);
+  const oficina = variant === "oficina";
+  const secciones = oficina ? seccionesOficina : seccionesAdmin;
 
   return (
     <aside
@@ -32,7 +49,7 @@ export function AdminSidebar({ puedeSalir, saliendo, onSalir }: AdminSidebarProp
       }}
     >
       <div className="grid min-h-20 grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-2 bg-white px-3 lg:min-h-24 lg:grid-cols-1 lg:justify-items-center">
-        <Link to="." onClick={() => setAbierto(false)} aria-label="Gran Continental, resumen de administración" className="col-start-2 row-start-1 justify-self-center lg:col-start-1">
+        <Link to="." onClick={() => setAbierto(false)} aria-label={oficina ? "Gran Continental, resumen de oficina" : "Gran Continental, resumen de administración"} className="col-start-2 row-start-1 justify-self-center lg:col-start-1">
           <img src="/images/Logo G-C.png" alt="Gran Continental" width="160" height="64" className="h-16 w-40 object-contain" />
         </Link>
         <button
@@ -49,8 +66,10 @@ export function AdminSidebar({ puedeSalir, saliendo, onSalir }: AdminSidebarProp
       </div>
 
       <div id={menuId} className={`${abierto ? "flex" : "hidden"} flex-1 flex-col px-3 py-4 lg:flex`}>
-        <nav aria-label="Administración">
-          <p className="px-3 pb-3 text-xs uppercase text-indigo-200">Administración</p>
+        <nav aria-label={oficina ? "Oficina" : "Administración"}>
+          {!oficina && (
+            <p className="px-3 pb-3 text-xs uppercase text-indigo-200">Administración</p>
+          )}
           <ul className="space-y-1">
             {secciones.map(({ ruta, nombre, icono }) => (
               <li key={ruta}>
