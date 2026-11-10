@@ -63,22 +63,49 @@ export function App() {
   ) {
     return (
       <Routes>
-        <Route path="/vista-previa/configuracion/pagos" element={<AdminLayout cooperativa />}>
+        <Route
+          path="/vista-previa/configuracion/pagos"
+          element={<AdminLayout cooperativa />}
+        >
           <Route index element={<ConfiguracionPagosPage />} />
         </Route>
       </Routes>
     );
   }
 
-  if (import.meta.env.DEV && matchPath("/vista-previa/panel/*", location.pathname)) {
+  if (
+    import.meta.env.DEV &&
+    (matchPath("/vista-previa/panel/*", location.pathname) ||
+      matchPath("/vista-previa/oficinista/*", location.pathname))
+  ) {
     return (
       <Routes>
-        <Route path="/vista-previa/panel" element={<AdminLayout />}>
+        <Route path="/vista-previa/panel" element={<AdminLayout panelFijo />}>
           <Route index element={<SeccionAdminPendiente titulo="Resumen" />} />
-          <Route path="cooperativas" element={<SeccionAdminPendiente titulo="Cooperativas" />} />
-          <Route path="usuarios" element={<SeccionAdminPendiente titulo="Usuarios y roles" />} />
-          <Route path="reportes" element={<SeccionAdminPendiente titulo="Reportes" />} />
-          <Route path="configuracion" element={<SeccionAdminPendiente titulo="Configuración" />} />
+          <Route
+            path="cooperativas"
+            element={<SeccionAdminPendiente titulo="Cooperativas" />}
+          />
+          <Route
+            path="usuarios"
+            element={<SeccionAdminPendiente titulo="Usuarios y roles" />}
+          />
+          <Route
+            path="reportes"
+            element={<SeccionAdminPendiente titulo="Reportes" />}
+          />
+          <Route
+            path="configuracion"
+            element={<SeccionAdminPendiente titulo="Configuración" />}
+          />
+          <Route path="*" element={<p>Sección no encontrada.</p>} />
+        </Route>
+        <Route path="/vista-previa/oficinista" element={<AdminLayout oficina panelFijo />}>
+          <Route index element={<SeccionAdminPendiente titulo="Resumen" />} />
+          <Route path="ventas" element={<SeccionAdminPendiente titulo="Ventas" />} />
+          <Route path="reservas" element={<SeccionAdminPendiente titulo="Reservas" />} />
+          <Route path="comprobantes" element={<SeccionAdminPendiente titulo="Comprobantes" />} />
+          <Route path="reembolsos" element={<SeccionAdminPendiente titulo="Reembolsos" />} />
           <Route path="*" element={<p>Sección no encontrada.</p>} />
         </Route>
       </Routes>
@@ -104,7 +131,10 @@ export function App() {
         <Route path="/registrarse" element={<RegistroPage />} />
         <Route path="/viajes" element={<ResultadosPage />} />
         {import.meta.env.DEV && (
-          <Route path="/vista-previa/frecuencias" element={<FrecuenciasPage />} />
+          <Route
+            path="/vista-previa/frecuencias"
+            element={<FrecuenciasPage />}
+          />
         )}
         <Route path="/mi-cuenta" element={<MiCuenta />} />
         <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
@@ -123,7 +153,10 @@ export function App() {
           <Route path="/vista-previa/hoja-ruta" element={<HojaRutaPage />} />
         )}
         {import.meta.env.DEV && (
-          <Route path="/vista-previa/paradas-tarifas" element={<ParadasTarifasPage />} />
+          <Route
+            path="/vista-previa/paradas-tarifas"
+            element={<ParadasTarifasPage />}
+          />
         )}
         <Route
           path="*"
@@ -135,7 +168,5 @@ export function App() {
 }
 
 function SeccionAdminPendiente({ titulo }: { titulo: string }) {
-  return (
-    <h2 className="sr-only">{titulo}</h2>
-  );
+  return <h2 className="sr-only">{titulo}</h2>;
 }

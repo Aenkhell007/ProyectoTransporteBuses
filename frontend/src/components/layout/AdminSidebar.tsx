@@ -22,7 +22,17 @@ const seccionesCooperativa: ReadonlyArray<{ nombre: string; icono: NombreIcono }
   { nombre: "Personal", icono: "persona" },
 ];
 
+const seccionesOficina = [
+  secciones[0],
+  { ruta: "ventas", nombre: "Ventas", icono: <path d="M2 3h3l2.5 12h11l2.5-8H6M9 20h.01M17 20h.01" /> },
+  { ruta: "reservas", nombre: "Reservas", icono: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4m8-4v4m-8 8 2 2 4-4" /></> },
+  { ruta: "comprobantes", nombre: "Comprobantes", icono: <path d="M6 3h8l4 4v14H6V3Zm8 0v4h4m-9 5h6m-6 4h6" /> },
+  { ruta: "reembolsos", nombre: "Reembolsos", icono: <path d="M3 4v6h6M3.5 10A8.5 8.5 0 1 1 4 16m8-9v10m2.5-8H11a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3H9.5" /> },
+];
+
 interface AdminSidebarProps {
+  oficina?: boolean;
+  sinLogo?: boolean;
   cooperativa?: boolean;
   puedeSalir: boolean;
   saliendo: boolean;
@@ -30,12 +40,15 @@ interface AdminSidebarProps {
 }
 
 export function AdminSidebar({
+  sinLogo = false,
   cooperativa = false,
+  oficina = false,
   puedeSalir,
   saliendo,
   onSalir,
 }: AdminSidebarProps) {
   const enlaces = cooperativa ? [enlaceConfiguracion] : secciones;
+  const opciones = oficina ? seccionesOficina : enlaces;
   const [abierto, setAbierto] = useState(false);
   const menuId = useId();
   const botonMenu = useRef<HTMLButtonElement>(null);
@@ -50,10 +63,10 @@ export function AdminSidebar({
         }
       }}
     >
-      <div className="grid min-h-20 grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-2 bg-white px-3 lg:min-h-24 lg:grid-cols-1 lg:justify-items-center">
-        <Link to="." onClick={() => setAbierto(false)} aria-label={cooperativa ? "Gran Continental, configuración de la cooperativa" : "Gran Continental, resumen de administración"} className="col-start-2 row-start-1 justify-self-center lg:col-start-1">
+      <div className={sinLogo ? "grid min-h-12 items-center bg-white px-3 lg:hidden" : "grid min-h-20 grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-2 bg-white px-3 lg:min-h-24 lg:grid-cols-1 lg:justify-items-center"}>
+        {!sinLogo && <Link to="." onClick={() => setAbierto(false)} aria-label={cooperativa ? "Gran Continental, configuración de la cooperativa" : "Gran Continental, resumen de administración"} className="col-start-2 row-start-1 justify-self-center lg:col-start-1">
           <img src="/images/Logo G-C.png" alt="Gran Continental" width="160" height="64" className="h-16 w-40 object-contain" />
-        </Link>
+        </Link>}
         <button
           ref={botonMenu}
           type="button"
@@ -68,8 +81,8 @@ export function AdminSidebar({
       </div>
 
       <div id={menuId} className={`${abierto ? "flex" : "hidden"} flex-1 flex-col px-3 py-4 lg:flex`}>
-        <nav aria-label={cooperativa ? "Cooperativa" : "Administración"}>
-          {!cooperativa && (
+        <nav aria-label={oficina ? "Oficina" : cooperativa ? "Cooperativa" : "Administración"}>
+          {!cooperativa && !oficina && (
             <p className="px-3 pb-3 text-xs uppercase text-indigo-200">Administración</p>
           )}
           <ul className="space-y-1">
@@ -81,7 +94,7 @@ export function AdminSidebar({
                 </span>
               </li>
             ))}
-            {enlaces.map(({ ruta, nombre, icono }) => (
+            {opciones.map(({ ruta, nombre, icono }) => (
               <li key={ruta}>
                 <NavLink
                   to={cooperativa ? "." : ruta}
