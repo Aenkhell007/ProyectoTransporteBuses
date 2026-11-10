@@ -1,3 +1,4 @@
+import { FOTOS_INICIO } from "../../../features/compra/fotos";
 import { BusImagen } from "../BusImagen";
 import { Icono } from "../Icono";
 import type { NombreIcono } from "../Icono";
@@ -45,7 +46,8 @@ export function SobreNosotrosSeccion() {
       />
       <div className="grid items-center gap-5 md:grid-cols-[1.1fr_1fr]">
         <BusImagen
-          alt="Bus de Gran Continental en carretera andina"
+          src={FOTOS_INICIO.sobreNosotros}
+          alt="Bus de dos pisos de Gran Continental frente a un volcán de los Andes"
           className="aspect-[16/9] w-full rounded-lg"
         />
         <div className="space-y-4 text-slate-600 md:text-lg">

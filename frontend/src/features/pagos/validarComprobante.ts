@@ -8,15 +8,15 @@ export interface ComprobanteLocal {
   mime: "image/jpeg" | "image/png" | "application/pdf";
 }
 
-export async function validarComprobante(archivos: readonly File[]): Promise<ComprobanteLocal> {
+export async function validarComprobante(archivos: readonly File[], politica?: {maxBytes:number;mimes:string[]}): Promise<ComprobanteLocal> {
   if (archivos.length !== 1) throw new Error("Selecciona un solo comprobante a la vez.");
   const archivo = archivos[0];
   if (archivo.size === 0) throw new Error("El archivo está vacío. Selecciona otro comprobante.");
-  if (archivo.size > MAX_COMPROBANTE_BYTES) throw new Error("El comprobante supera los 5 MB permitidos.");
+  if (archivo.size > (politica?.maxBytes ?? MAX_COMPROBANTE_BYTES)) throw new Error("El comprobante supera el tamaño permitido por la cooperativa.");
   const extension = archivo.name.split(".").pop()?.toLowerCase();
   const esperado = extension === "jpg" || extension === "jpeg" ? "image/jpeg"
     : extension === "png" ? "image/png" : extension === "pdf" ? "application/pdf" : null;
-  if (!esperado) throw new Error("Formato no permitido. Usa JPG, PNG o PDF.");
+  if (!esperado || (politica && !politica.mimes.includes(esperado))) throw new Error("Formato no permitido. Usa JPG, PNG o PDF.");
   if (archivo.type && archivo.type !== esperado && archivo.type !== "application/octet-stream") {
     throw new Error("El tipo del archivo no coincide con su extensión. Selecciona el comprobante original.");
   }

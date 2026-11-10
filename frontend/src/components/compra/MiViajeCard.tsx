@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId } from "react";
 import { Link } from "react-router";
 import type { EstadoMiViaje, MiViaje } from "../../types/compra/misViajes";
 import { formatearCentavos } from "../../features/compra/dinero";
@@ -14,10 +14,27 @@ import { Icono } from "./Icono";
 import type { NombreIcono } from "./Icono";
 import { nombreGrupo } from "./TripCard";
 
+import { enlaceArchivo } from "../../features/pagos/pagosApi";
+
 const ESTADOS: Record<
   EstadoMiViaje,
   { nombre: string; icono: NombreIcono; clase: string }
 > = {
+  PENDIENTE_PAGO: {
+    nombre: "Pendiente de pago",
+    icono: "reloj",
+    clase: "bg-blue-50 text-blue-800",
+  },
+  RECHAZADA: {
+    nombre: "Comprobante rechazado",
+    icono: "alerta",
+    clase: "bg-red-50 text-red-800",
+  },
+  VENCIDA: {
+    nombre: "Reserva vencida",
+    icono: "reloj",
+    clase: "bg-slate-100 text-slate-700",
+  },
   CONFIRMADA: {
     nombre: "Confirmada",
     icono: "checkCirculo",
@@ -46,7 +63,9 @@ const ESTADOS: Record<
 };
 
 const boton =
-  "inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md border px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600";
+  "inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md border px-4 " +
+  "text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 " +
+  "focus-visible:outline-blue-600";
 
 function piso(pisos: number, lista: number[]) {
   if (pisos < 2) return null;
@@ -58,16 +77,21 @@ function piso(pisos: number, lista: number[]) {
 /** Tarjeta de una compra o reserva en Mis viajes. Las acciones abren las vistas de Ángel. */
 export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
   const id = useId();
-  const [avisoDescarga, setAvisoDescarga] = useState(false);
+
   const estado = ESTADOS[viaje.estado];
   const enVerificacion = viaje.estado === "PAGO_EN_VERIFICACION";
   const conBoleto =
     viaje.tipo === "COMPRA" &&
     (viaje.estado === "CONFIRMADA" || viaje.estado === "FINALIZADO");
-  const listo = viaje.estado_documento === "LISTO";
+  const listo = viaje.estado_documento === "LISTO" && !!viaje.archivo_id;
   const ubicacion = piso(viaje.pisos, viaje.pisos_asientos);
   const fecha = formatearFechaLarga(diaEnEcuador(viaje.salida));
-  const mensajeWhatsApp = `Mi viaje con Gran Continental: ${viaje.origen.ciudad} → ${viaje.destino.ciudad}, ${fecha}, salida ${formatearHora(viaje.salida)}. Código de compra ${viaje.codigo}.`;
+  // Vistas de Ángel: 8 (confirmación y boleto) y 9.2 (reembolso); ambas leen reserva_id.
+  const reservaParam = `reserva_id=${encodeURIComponent(viaje.reserva_id)}`;
+  const enlaceConfirmacion = `/pago/confirmacion?${reservaParam}`;
+  const mensajeWhatsApp =
+    `Mi viaje con Gran Continental: ${viaje.origen.ciudad} → ${viaje.destino.ciudad}, ` +
+    `${fecha}, salida ${formatearHora(viaje.salida)}. Código de compra ${viaje.codigo}.`;
 
   return (
     <article
@@ -76,7 +100,9 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
     >
       <header className="flex flex-wrap items-center gap-x-6 gap-y-2">
         <span
-          className={`inline-flex min-w-40 items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium ${estado.clase}`}
+          className={`inline-flex min-w-40 items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium ${
+            estado.clase
+          }`}
         >
           <Icono nombre={estado.icono} className="h-5 w-5" /> {estado.nombre}
         </span>
@@ -84,7 +110,7 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
           <span className="block text-xs text-slate-600">
             {enVerificacion ? "Código de la reserva" : "Código de la compra"}
           </span>
-          <span className="text-xl font-bold text-slate-900">
+          <span className="break-all text-lg font-bold text-[#08035b]">
             {viaje.codigo}
           </span>
         </h3>
@@ -96,7 +122,7 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
 
       <div className="mt-3 grid gap-4 md:grid-cols-[220px_1fr] lg:grid-cols-[220px_1fr_220px]">
         <BusImagen
-          src={viaje.foto_url}
+          src={viaje.foto_url} pisos={viaje.pisos}
           alt=""
           className="h-32 w-full rounded-md"
         />
@@ -165,52 +191,67 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
         <div className="md:col-span-2 lg:col-span-1">
           {enVerificacion ? (
             <div className="rounded-md bg-amber-50 p-3 text-center">
-              <p className="text-sm text-slate-700">Monto reportado</p>
+              <p className="text-sm text-slate-700">Importe por verificar</p>
               <p className="text-2xl font-bold text-slate-900">
-                {formatearCentavos(viaje.monto_reportado_centavos ?? 0)}
+                {formatearCentavos(viaje.monto_esperado_centavos ?? 0)}
               </p>
               <p className="mt-1 text-xs text-slate-700">
-                Comprobante recibido. Te avisaremos cuando se valide tu pago;
-                aún no es un pago confirmado.
+                Comprobante recibido. Consulta el seguimiento; todavía no es un pago confirmado.
               </p>
             </div>
           ) : (
             <div
-              className={`rounded-md p-3 text-center ${viaje.estado === "CANCELADA" || viaje.estado === "REEMBOLSADA" ? "bg-slate-100" : "bg-green-50"}`}
+              className={`rounded-md p-3 text-center ${
+                viaje.estado === "CANCELADA" || viaje.estado === "REEMBOLSADA"
+                  ? "bg-slate-100"
+                  : "bg-green-50"
+              }`}
             >
               <p className="text-sm text-slate-700">
                 {viaje.estado === "CANCELADA" || viaje.estado === "REEMBOLSADA"
                   ? "Monto pagado"
-                  : "Total pagado"}
+                  : viaje.tipo === "RESERVA" ? "Importe esperado" : "Total pagado"}
               </p>
               <p className="text-2xl font-bold text-slate-900">
-                {formatearCentavos(viaje.total_pagado_centavos ?? 0)}
+                {viaje.total_pagado_centavos !== null
+                  ? formatearCentavos(viaje.total_pagado_centavos)
+                  : viaje.monto_esperado_centavos != null
+                    ? formatearCentavos(viaje.monto_esperado_centavos)
+                    : "Por cotizar"}
               </p>
             </div>
           )}
         </div>
       </div>
 
-      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         {conBoleto && (
           <>
             <Link
-              to={`/boleto?compra_id=${encodeURIComponent(viaje.compra_id ?? "")}`}
+              to={enlaceConfirmacion}
               className={`${boton} border-red-600 bg-red-600 text-white hover:bg-red-700`}
             >
               <Icono nombre="boleto" /> Ver boleto
               <span className="sr-only"> {viaje.codigo}</span>
             </Link>
-            <button
-              type="button"
-              disabled={!listo}
-              onClick={() => setAvisoDescarga(true)}
-              aria-describedby={!listo ? `${id}-emision` : undefined}
-              className={`${boton} border-blue-700 text-blue-800 hover:bg-blue-50 disabled:cursor-not-allowed disabled:border-slate-300 disabled:text-slate-400`}
-            >
-              <Icono nombre="descarga" /> Descargar PDF
-              <span className="sr-only"> {viaje.codigo}</span>
-            </button>
+            {listo ? (
+              <a
+                href={enlaceArchivo(viaje.reserva_id, viaje.archivo_id!)}
+                className={`${boton} border-blue-700 text-blue-800 hover:bg-blue-50`}
+              >
+                <Icono nombre="descarga" />
+                Descargar PDF
+              </a>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className={`${boton} cursor-not-allowed border-slate-300 text-slate-400`}
+              >
+                <Icono nombre="descarga" />
+                Descargar PDF
+              </button>
+            )}
             {viaje.estado === "CONFIRMADA" && (
               <a
                 href={`https://wa.me/?text=${encodeURIComponent(mensajeWhatsApp)}`}
@@ -222,11 +263,24 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
                 <span className="sr-only"> (se abre en otra pestaña)</span>
               </a>
             )}
+            {viaje.estado === "CONFIRMADA" && (
+              <Link
+                to={`/mis-viajes/reembolso?${reservaParam}`}
+                className={`${boton} border-slate-400 text-slate-700 hover:bg-slate-50`}
+              >
+                <Icono nombre="xCirculo" /> Solicitar reembolso
+                <span className="sr-only"> {viaje.codigo}</span>
+              </Link>
+            )}
           </>
         )}
-        {enVerificacion && (
+        {viaje.tipo === "RESERVA" && (
           <Link
-            to={`/pago/seguimiento?reserva_id=${encodeURIComponent(viaje.reserva_id)}`}
+            to={`${
+              viaje.estado === "PENDIENTE_PAGO" || viaje.estado === "RECHAZADA"
+                ? "/pago"
+                : "/pago/seguimiento"
+            }?${reservaParam}`}
             className={`${boton} border-blue-700 text-blue-800 hover:bg-blue-50 sm:max-w-xs sm:self-end lg:ml-auto`}
           >
             <Icono nombre="documento" /> Ver reserva
@@ -235,7 +289,7 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
         )}
         {(viaje.estado === "CANCELADA" || viaje.estado === "REEMBOLSADA") && (
           <Link
-            to={`/boleto?compra_id=${encodeURIComponent(viaje.compra_id ?? "")}`}
+            to={enlaceConfirmacion}
             className={`${boton} border-blue-700 text-blue-800 hover:bg-blue-50 sm:max-w-xs lg:ml-auto`}
           >
             <Icono nombre="documento" /> Ver detalle
@@ -248,12 +302,7 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
           El boleto se está emitiendo; podrás descargarlo cuando esté listo.
         </p>
       )}
-      {avisoDescarga && (
-        <p role="status" className="mt-2 text-sm text-slate-600">
-          La descarga del PDF se habilitará cuando se integre el servicio de
-          boletos.
-        </p>
-      )}
+
     </article>
   );
 }

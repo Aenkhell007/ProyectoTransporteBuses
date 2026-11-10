@@ -5,6 +5,7 @@ import type { Cotizacion } from "./cotizacion";
 
 export type TipoDocumento = "CEDULA" | "PASAPORTE" | "OTRO";
 export type BeneficioCodigo = "NINO" | "TERCERA_EDAD" | "DISCAPACIDAD";
+export type TipoPasajero = "ADULTO" | BeneficioCodigo;
 export type EstadoReserva =
   | "PENDIENTE"
   | "CONFIRMADA"
@@ -21,7 +22,26 @@ export interface AsientoReservado {
   tarifa_centavos: number;
 }
 
+/** POST /reservas: viaje, tramo y asientos elegidos en la selección de asientos (vistas 3.1/3.2). */
+export interface SolicitudReserva {
+  viaje_id: string;
+  origen_orden: number;
+  destino_orden: number;
+  asiento_ids: string[];
+}
+
+/** Respuesta 201 de POST /reservas. */
+export interface ReservaCreada {
+  reserva_id: string;
+  expires_at: string;
+  asientos: Pick<
+    AsientoReservado,
+    "reserva_asiento_id" | "asiento_id" | "codigo"
+  >[];
+}
+
 export interface PasajeroDatos {
+  tipo_pasajero?: TipoPasajero;
   reserva_asiento_id: string;
   nombres: string;
   apellidos: string;
@@ -30,7 +50,7 @@ export interface PasajeroDatos {
   nacimiento: string | null;
   beneficio_codigo: BeneficioCodigo | null;
   respaldo_archivo_id: string | null;
-  /** Pendiente (decisión 11): la tabla pasajeros no tiene teléfono ni correo. */
+  /** Contactos opcionales del pasajero; no crean una cuenta de usuario. */
   telefono?: string | null;
   email?: string | null;
 }
@@ -46,6 +66,8 @@ export interface SolicitudPasajeros {
 }
 
 export interface ReservaPendiente {
+  edicion_asientos_version: number;
+  asientos_editables: boolean;
   reserva_id: string;
   estado: EstadoReserva;
   expires_at: string;

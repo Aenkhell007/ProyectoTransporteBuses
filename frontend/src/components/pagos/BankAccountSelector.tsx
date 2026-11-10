@@ -26,7 +26,7 @@ function normalizar(texto: string) {
 }
 
 function etiquetaCuenta(cuenta: BankAccountOption) {
-  return `${cuenta.banco} · ${cuenta.tipo} · ••••${cuenta.numero.slice(-4)}`;
+  return `${cuenta.banco} · ${cuenta.tipo === "CORRIENTE" ? "Corriente" : cuenta.tipo === "AHORROS" ? "Ahorros" : cuenta.tipo} · ••••${cuenta.numero.slice(-4)}`;
 }
 
 export default function BankAccountSelector({

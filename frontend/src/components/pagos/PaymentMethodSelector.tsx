@@ -28,6 +28,7 @@ function PaymentMethodIcon({ metodo }: { metodo: string }) {
   };
 
   switch (metodo) {
+    case "BANCO":
     case "transferencia":
       return (
         <svg {...svgProps}>
@@ -37,6 +38,7 @@ function PaymentMethodIcon({ metodo }: { metodo: string }) {
         </svg>
       );
 
+    case "OFICINA":
     case "oficina":
       return (
         <svg {...svgProps}>
@@ -48,6 +50,7 @@ function PaymentMethodIcon({ metodo }: { metodo: string }) {
         </svg>
       );
 
+    case "PAYPHONE":
     case "payphone":
       return (
         <svg {...svgProps}>
@@ -56,6 +59,7 @@ function PaymentMethodIcon({ metodo }: { metodo: string }) {
         </svg>
       );
 
+    case "PAYPAL":
     case "paypal":
       return (
         <span

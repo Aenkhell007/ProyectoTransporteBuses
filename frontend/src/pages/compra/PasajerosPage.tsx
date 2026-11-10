@@ -1,3 +1,4 @@
+import { recuperarFichas } from "../../features/compra/pasajeros";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
@@ -17,6 +18,7 @@ import {
   fichaAPasajero,
   fichaVacia,
   pasajeroAFicha,
+  validarFicha,
   validarFichas,
 } from "../../features/compra/pasajeros";
 import type {
@@ -35,6 +37,7 @@ import {
 } from "../../features/compra/fechas";
 import { ProgresoCompra } from "../../components/compra/ProgresoCompra";
 import { PassengerForm } from "../../components/compra/PassengerForm";
+import { nombreGrupo } from "../../components/compra/TripCard";
 import { BusImagen } from "../../components/compra/BusImagen";
 import { Icono } from "../../components/compra/Icono";
 import type { NombreIcono } from "../../components/compra/Icono";
@@ -63,6 +66,35 @@ const CAMPOS_PERFIL = [
   "email",
 ] as const;
 
+// Borrador de las fichas por reserva, para que recargar la página no pierda lo escrito.
+// Vive solo en esta pestaña y se borra al guardar o al cancelar la reserva.
+const claveBorrador = (reservaId: string) => `gc.compra.borrador.${reservaId}`;
+
+function leerBorrador(reservaId: string): FichaPasajero[] | null {
+  try {
+    const guardado = sessionStorage.getItem(claveBorrador(reservaId));
+    return guardado ? (JSON.parse(guardado) as FichaPasajero[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+function guardarBorrador(reservaId: string, fichas: FichaPasajero[]) {
+  try {
+    sessionStorage.setItem(claveBorrador(reservaId), JSON.stringify(fichas));
+  } catch {
+    // Sin almacenamiento, lo escrito se conserva mientras la página siga abierta.
+  }
+}
+
+function borrarBorrador(reservaId: string) {
+  try {
+    sessionStorage.removeItem(claveBorrador(reservaId));
+  } catch {
+    // Nada que borrar.
+  }
+}
+
 /** Vista 4: datos de los pasajeros, un pasajero por asiento reservado. */
 export function PasajerosPage() {
   const navigate = useNavigate();
@@ -85,7 +117,7 @@ export function PasajerosPage() {
   const cargar = useCallback(() => {
     if (!reservaId) return;
     setCarga({ estado: "cargando" });
-    Promise.all([obtenerReserva(reservaId), obtenerBeneficios()])
+    Promise.all([obtenerReserva(reservaId), obtenerBeneficios(reservaId)])
       .then(([reserva, beneficios]) => {
         const iniciales = reserva.asientos.map((a) => {
           const guardado = reserva.pasajeros.find(
@@ -102,9 +134,21 @@ export function PasajerosPage() {
             email: reserva.contacto.email,
           };
         }
-        setFichas(iniciales);
-        setAbiertas(iniciales.map(() => true));
-        setErrores(iniciales.map(() => ({})));
+        const borrador = leerBorrador(reserva.reserva_id);
+        const fichasIniciales = recuperarFichas(iniciales, borrador);
+        setFichas(fichasIniciales);
+        // En móvil solo se pliega un acompañante que ya tiene sus datos completos.
+        const movil = window.matchMedia("(max-width: 639px)").matches;
+        setAbiertas(
+          fichasIniciales.map(
+            (f, i) =>
+              i === 0 ||
+              !movil ||
+              Object.keys(validarFicha(f, false, hoyEnEcuador(), beneficios))
+                .length > 0,
+          ),
+        );
+        setErrores(fichasIniciales.map(() => ({})));
         setCarga({ estado: "listo", reserva, beneficios });
       })
       .catch((e) =>
@@ -117,6 +161,11 @@ export function PasajerosPage() {
   }, [reservaId]);
 
   useEffect(cargar, [cargar]);
+
+  useEffect(() => {
+    if (carga.estado === "listo" && reservaId)
+      guardarBorrador(reservaId, fichas);
+  }, [carga.estado, reservaId, fichas]);
 
   const reserva = carga.estado === "listo" ? carga.reserva : null;
   const beneficios = carga.estado === "listo" ? carga.beneficios : [];
@@ -196,6 +245,7 @@ export function PasajerosPage() {
         },
         pasajeros: fichas.map(fichaAPasajero),
       });
+      borrarBorrador(reservaId);
       setEnvio({ estado: "enviando", paso: "Calculando el total…" });
       await cotizarReserva(reservaId);
       navigate(`/resumen?reserva_id=${encodeURIComponent(reservaId)}`);
@@ -239,6 +289,7 @@ export function PasajerosPage() {
     if (!reservaId) return;
     try {
       await cancelarReserva(reservaId);
+      borrarBorrador(reservaId);
       navigate(`/viajes?${busquedaDelViaje}`);
     } catch (e) {
       setConfirmarEdicion(false);
@@ -302,7 +353,7 @@ export function PasajerosPage() {
 
   return (
     <Marco>
-      <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-4">
           <Link
             to={enlaceAsientos}
@@ -312,7 +363,7 @@ export function PasajerosPage() {
             selección de asientos
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
+            <h1 className="text-2xl font-bold text-[#08035b] sm:text-3xl">
               Datos de los pasajeros
             </h1>
             <p className="text-slate-600">
@@ -342,7 +393,7 @@ export function PasajerosPage() {
             className="space-y-4"
           >
             {r.asientos.map((asiento, i) => (
-              <PassengerForm
+              <PassengerForm reservaId={reservaId!}
                 key={asiento.reserva_asiento_id}
                 indice={i}
                 asiento={asiento}
@@ -431,7 +482,7 @@ export function PasajerosPage() {
                 type="submit"
                 disabled={enviando}
                 aria-busy={enviando}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-red-600 px-6 text-lg font-semibold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-wait disabled:bg-red-400"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-[#ff0018] px-6 text-lg font-semibold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-wait disabled:bg-red-400"
               >
                 {enviando ? "Procesando…" : "Continuar al resumen"}{" "}
                 <Icono nombre="flechaDerecha" />
@@ -442,13 +493,13 @@ export function PasajerosPage() {
 
         <aside
           aria-labelledby="resumen-viaje"
-          className="space-y-4 lg:sticky lg:top-28 lg:self-start"
+          className="space-y-4 lg:self-start"
         >
-          <section className="rounded-lg border border-slate-200 bg-white p-4">
+          <section className="rounded-lg border border-indigo-100 bg-white p-4">
             <div className="flex items-center justify-between">
               <h2
                 id="resumen-viaje"
-                className="text-lg font-bold text-slate-900"
+                className="text-lg font-bold text-[#08035b]"
               >
                 Resumen de tu viaje
               </h2>
@@ -492,15 +543,15 @@ export function PasajerosPage() {
             )}
             <div className="mt-3 flex gap-3">
               <BusImagen
-                src={r.bus.foto_url}
+                src={r.bus.foto_url} pisos={r.bus.pisos}
                 alt={`Bus unidad ${r.bus.unidad}`}
                 className="h-20 w-24 shrink-0 rounded-md"
               />
               <div>
                 <span className="rounded-md bg-green-50 px-2 py-0.5 text-xs font-medium text-green-800">
-                  {r.bus.grupo} ({r.bus.pisos >= 2 ? "Dos pisos" : "Un piso"})
+                  {nombreGrupo(r.bus.grupo, r.bus.pisos)}
                 </span>
-                <p className="mt-1 flex flex-wrap items-center gap-1.5 text-lg font-bold text-slate-900">
+                <p className="mt-1 flex flex-wrap items-center gap-1.5 text-lg font-bold text-[#08035b]">
                   {r.viaje.origen.ciudad}{" "}
                   <Icono nombre="flechaDerecha" className="h-4 w-4" />{" "}
                   {r.viaje.destino.ciudad}
@@ -536,21 +587,41 @@ export function PasajerosPage() {
                   <dt className="text-slate-600">
                     Tarifa del asiento {a.codigo}
                   </dt>
-                  <dd className="font-semibold text-slate-900">
+                  <dd className="font-semibold text-[#08035b]">
                     {formatearCentavos(a.tarifa_centavos)}
                   </dd>
                 </div>
               ))}
             </dl>
             {r.cotizacion ? (
-              <div className="mt-3 flex items-baseline justify-between border-t border-slate-100 pt-3">
-                <span className="font-bold text-slate-900">
-                  Último total cotizado
-                </span>
-                <span className="text-xl font-bold text-slate-900">
-                  {formatearCentavos(r.cotizacion.total_centavos)}
-                </span>
-              </div>
+              <>
+                <dl className="mt-3 space-y-1 border-t border-slate-100 pt-3 text-sm">
+                  <div className="flex justify-between">
+                    <dt className="text-slate-600">Descuento</dt>
+                    <dd
+                      className={`font-semibold ${r.cotizacion.descuento_centavos > 0 ? "text-green-700" : "text-[#08035b]"}`}
+                    >
+                      {r.cotizacion.descuento_centavos > 0
+                        ? formatearCentavos(-r.cotizacion.descuento_centavos)
+                        : "-"}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-slate-600">Tarifa de servicio</dt>
+                    <dd className="font-semibold text-[#08035b]">
+                      {formatearCentavos(r.cotizacion.servicio_centavos)}
+                    </dd>
+                  </div>
+                </dl>
+                <div className="mt-3 flex items-baseline justify-between border-t border-slate-100 pt-3">
+                  <span className="font-bold text-[#08035b]">
+                    Último total cotizado
+                  </span>
+                  <span className="text-xl font-bold text-[#08035b]">
+                    {formatearCentavos(r.cotizacion.total_centavos)}
+                  </span>
+                </div>
+              </>
             ) : (
               <p className="mt-3 border-t border-slate-100 pt-3 text-sm text-slate-600">
                 Los descuentos y el total a pagar los calcula el sistema al
@@ -609,8 +680,8 @@ function EstadoVacio({
   reintentar?: () => void;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 text-center">
-      <h1 className="text-xl font-bold text-slate-900">{titulo}</h1>
+    <div className="rounded-lg border border-indigo-100 bg-slate-50 p-6 text-center">
+      <h1 className="text-xl font-bold text-[#08035b]">{titulo}</h1>
       <p className="mt-1 text-slate-600">{texto}</p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
         {reintentar && (
@@ -624,7 +695,7 @@ function EstadoVacio({
         )}
         <Link
           to="/"
-          className="inline-flex min-h-11 items-center rounded-md bg-red-600 px-4 font-semibold text-white focus-visible:outline-2 focus-visible:outline-blue-600"
+          className="inline-flex min-h-11 items-center rounded-md bg-[#ff0018] px-4 font-semibold text-white focus-visible:outline-2 focus-visible:outline-blue-600"
         >
           Buscar un viaje
         </Link>

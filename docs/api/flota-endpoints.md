@@ -111,7 +111,12 @@ Plano con todas sus celdas. Éxito: 200.
 
 ### PUT /planos/:id/celdas
 Reemplaza la grilla del plano (lo usa el editor visual). Éxito: 200.
-Solo permitido si el plano no está publicado (propuesta, a confirmar).
+
+Regla de la base: un plano no se puede modificar si existe un viaje no cancelado que lo
+use. En ese caso las celdas no se insertan, mueven ni borran y la base lanza el error
+"Plano en uso: cree una nueva version". El código HTTP está por acordar (se propone 409).
+Para cambiar un plano en uso se crea una versión nueva con POST /buses/:id/planos y se
+cargan sus celdas; los viajes ya programados siguen con la versión anterior.
 
 Body:
 {
@@ -121,17 +126,20 @@ Body:
   ]
 }
 
-Validaciones:
-- piso: entre 1 y el número de pisos del plano.
+Validaciones (las impone la base):
+- piso: entre 1 y el número de pisos del plano ("Piso fuera de plano" si lo excede) y
+  entre 1 y 3.
 - fila: mayor que 0. columna: entre 1 y 12.
 - tipo: ASIENTO, PASILLO o BLOQUE.
 - ASIENTO: codigo y clase_id obligatorios. PASILLO y BLOQUE: sin codigo ni clase_id.
 - El codigo no se repite dentro del plano; la posición (piso, fila, columna) tampoco.
-- Errores: 400, 404, 409.
+- Errores: 400, 404 y el de plano en uso.
 
 ### POST /planos/:id/publicar
-Marca el plano como publicado. Desde entonces no se edita: se crea otra versión
-(propuesta, a confirmar con Matías). Éxito: 200. Errores: 404, 409 (ya publicado).
+Marca el plano como publicado (columna publicado de la tabla planos). Éxito: 200.
+Pendiente de confirmar con Matías: la base no usa esa columna para bloquear la edición
+(el bloqueo depende de los viajes que usan el plano), así que hay que definir qué efecto
+tiene publicar. Errores: 404, 409 (ya publicado).
 
 ## Disponibilidad de buses (para Benjamín)
 
@@ -156,31 +164,69 @@ Validaciones:
 ## Mapa de asientos de un viaje (para KT)
 
 ### GET /viajes/:viajeId/mapa-asientos?origen_orden=1&destino_orden=3
-Devuelve el plano del viaje (viajes.plano_id) con la ocupación. Éxito: 200.
-La estructura de la respuesta está en docs/api/mapa-asientos.mock.json.
+Llama a la función transporte.plano_disponible(viaje, origen, destino). Éxito: 200.
+Solo responde para viajes PUBLICADO con salida futura.
 
-Regla de ocupación:
-- Las paradas se identifican por su orden en la ruta (ruta_paradas.orden).
-- Cada celda trae ocupaciones: [{ origen_orden, destino_orden, estado }].
-- Un asiento está libre para el recorrido o -> d solo si ninguna ocupación
-  cumple origen_orden < d y destino_orden > o.
-- Una retención vencida (expires_at pasado) no cuenta como ocupación.
-- Qué estados de reserva_asientos cuentan como ocupados se confirma con KT y Matías.
-- Es información de consulta: la disponibilidad real se vuelve a verificar, de forma
-  transaccional, al crear la reserva.
+Respuesta:
+{
+  "planoId": "uuid",
+  "celdas": [
+    { "id": "uuid", "piso": 1, "fila": 1, "columna": 1, "tipo": "ASIENTO",
+      "codigo": "1", "clase": "NORMAL", "estado": "DISPONIBLE" },
+    { "id": "uuid", "piso": 1, "fila": 1, "columna": 3, "tipo": "PASILLO",
+      "codigo": null, "clase": null, "estado": "DISPONIBLE" }
+  ]
+}
 
-Errores: 400 (orden inválido), 401, 404 (viaje inexistente o de otra cooperativa).
+Detalles:
+- El id de cada celda es el que se envía como asiento_ids en POST /reservas.
+- No hay lista de pisos ni de clases: los pisos se deducen de las celdas y la clase es
+  el código de clases_asiento (NORMAL o EJECUTIVO).
+- tipo es ASIENTO, PASILLO o BLOQUE. Solo los ASIENTO se pueden reservar.
+
+Estados de una celda para el tramo pedido:
+- DISPONIBLE: sin reserva en el tramo.
+- OCUPADO: una compra confirmada cubre el tramo.
+- RESERVADO: otra persona lo tiene retenido y la retención no ha vencido.
+- SELECCIONADO: la retención es de quien consulta.
+
+Regla del tramo: dos rangos [origen, destino) que se cruzan cuentan como ocupación. Una
+retención vencida (expires_at pasado) no cuenta.
+
+Sesión: la función no la exige. Sin sesión ningún asiento sale SELECCIONADO, porque no se
+sabe quién consulta. Si la API exige sesión en esta ruta es una decisión pendiente.
+
+Es información de consulta: la disponibilidad real se verifica de nuevo, de forma
+transaccional, al crear la reserva (reservar_asientos), y una restricción de la base
+impide que dos retenciones del mismo asiento se crucen en un tramo.
+
+Errores: un viaje inexistente, no publicado, ya salido o un tramo inválido hace que la
+función lance "Viaje o tramo no disponible"; el código HTTP (404 o 422) está pendiente de
+confirmar con Matías.
 
 ## Roles y control de acceso
-Propuesta, a alinear con las tablas roles, permisos y rol_permiso:
-- Administrador de cooperativa: crea y modifica buses, planos y celdas.
-- Oficinista: solo lectura de buses y mapa.
-- Cliente: solo mapa de asientos de viajes publicados.
+Los permisos salen de la base (tablas roles, permisos y rol_permiso) y se aplican con
+políticas de seguridad por fila para el rol de la API:
+- Leer buses, planos y celdas: permiso cooperativa.leer ("Consultar operación del ámbito")
+  sobre la cooperativa del recurso.
+- Crear, modificar o desactivar buses, planos y celdas, y editar grupos de buses: permiso
+  flota.admin ("Editar flota y grupos").
+
+Quién tiene cada permiso (rol_permiso):
+- COOPERATIVA: ambos. Es el rol que administra la flota de su cooperativa.
+- ADMIN_SISTEMA: todos los permisos.
+- OFICINISTA: cooperativa.leer, pero no flota.admin. Ve la flota sin modificarla.
+- PERSONAL_BUS: cooperativa.leer, pero no flota.admin. Ve la flota sin modificarla.
+- CLIENTE: ningún permiso de cooperativa; solo el mapa de asientos de un viaje.
 
 Aislamiento por cooperativa:
-- La sesión define cooperativa_id.
-- Un recurso de otra cooperativa responde 404 (no 403), para no revelar que existe.
-- Errores: 401 sin sesión, 403 sin permiso.
+- La sesión define el actor; no se envía la cooperativa ni el usuario en el body.
+- Un recurso de otra cooperativa no aparece, así que se responde 404.
+- Errores: 401 sin sesión, 403 sin permiso (según el mensaje de la base: "Sin permiso").
+- Pendiente de confirmar con Matías: si ADMIN_SISTEMA puede operar sobre la flota de
+  cualquier cooperativa.
+
+Mapa de asientos de un viaje: ver su sección; la función plano_disponible no exige sesión.
 
 ## Errores comunes
 - 400: datos inválidos
@@ -190,9 +236,17 @@ Aislamiento por cooperativa:
 - 409: conflicto (placa, unidad, código de asiento o posición duplicados)
 
 ## Pendiente
-- Nombres de los campos (español como la base, o con traducción).
-- Si un plano publicado o con viajes es inmutable.
-- Estados de reserva_asientos que cuentan como ocupados.
-- Códigos reales de las clases de asiento (Normal / Ejecutivo).
+- Código HTTP del error "Viaje o tramo no disponible" del mapa (404 o 422).
+- Código HTTP del error "Plano en uso" (se propone 409).
+- Si la API exige sesión para consultar el mapa (la función no la exige).
+- Efecto de publicar un plano, ya que la base bloquea por viajes y no por publicado.
+- Si ADMIN_SISTEMA puede operar sobre la flota de cualquier cooperativa.
+- Si el 409 del DELETE de bus cuenta cualquier viaje o solo los futuros.
 - Fotos del bus (bus_fotos y archivos): endpoint por definir.
 - Equipamiento (bus_equipamiento): fuera de la primera entrega salvo que se pida.
+
+## Decisiones tomadas
+- Los campos van en español y snake_case, como la base (decisión 9 de compra-endpoints.md).
+- Las clases de asiento son NORMAL y EJECUTIVO.
+- Un bus no se elimina: se desactiva (activo = false).
+- Escribir en la flota exige flota.admin, que tiene el rol COOPERATIVA.

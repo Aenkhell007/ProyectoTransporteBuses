@@ -8,7 +8,10 @@ export type EstadoMiViaje =
   | "PAGO_EN_VERIFICACION"
   | "FINALIZADO"
   | "CANCELADA"
-  | "REEMBOLSADA";
+  | "REEMBOLSADA"
+  | "PENDIENTE_PAGO"
+  | "RECHAZADA"
+  | "VENCIDA";
 
 /** Estado del boleto (tabla boletos). */
 export type EstadoDocumento =
@@ -40,6 +43,8 @@ export interface MiViaje {
   boleto_id: string | null;
   estado_documento: EstadoDocumento | null;
   foto_url: string | null;
+  monto_esperado_centavos?: number | null;
+  archivo_id?: string | null;
 }
 
 export interface FiltrosMisViajes {

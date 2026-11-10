@@ -6,6 +6,7 @@ import type {
 } from "../../types/compra/reserva";
 import {
   LIMITES_PASAJERO,
+  NOMBRES_TIPO_PASAJERO,
   TIPOS_DOCUMENTO,
 } from "../../features/compra/pasajeros";
 import type {
@@ -25,6 +26,7 @@ export function nombrePiso(piso: number, pisos: number) {
 }
 
 interface PassengerFormProps {
+  reservaId: string;
   indice: number;
   asiento: AsientoReservado;
   pisosBus: number;
@@ -46,9 +48,10 @@ interface PassengerFormProps {
 }
 
 const entrada = (error?: string) =>
-  `h-11 w-full rounded-md border bg-white px-3 text-[15px] outline-none focus-visible:border-blue-600 focus-visible:ring-2 focus-visible:ring-blue-200 ${error ? "border-red-500" : "border-slate-300"}`;
+  `h-11 w-full rounded-md border bg-white px-3 text-[15px] outline-none focus-visible:border-blue-600 focus-visible:ring-2 focus-visible:ring-blue-200 ${error ? "border-red-500" : "border-indigo-200"}`;
 
 export function PassengerForm({
+  reservaId,
   indice,
   asiento,
   pisosBus,
@@ -97,7 +100,7 @@ export function PassengerForm({
     setErrorRespaldo(null);
     setSubiendo(true);
     try {
-      const { archivo_id } = await subirRespaldo(archivo);
+      const { archivo_id } = await subirRespaldo(archivo,reservaId);
       onCambiar({
         ...ficha,
         respaldo_archivo_id: archivo_id,
@@ -117,7 +120,7 @@ export function PassengerForm({
   return (
     <section
       aria-labelledby={`${id}-titulo`}
-      className="rounded-lg border border-slate-200 bg-white"
+      className="rounded-lg border border-indigo-100 bg-white"
     >
       <header className="flex flex-wrap items-center gap-3 p-4">
         <span
@@ -126,7 +129,7 @@ export function PassengerForm({
         >
           {indice + 1}
         </span>
-        <h2 id={`${id}-titulo`} className="text-lg font-bold text-slate-900">
+        <h2 id={`${id}-titulo`} className="text-lg font-bold text-[#08035b]">
           Pasajero {indice + 1}
           {esComprador && " (Comprador)"}
         </h2>
@@ -135,7 +138,14 @@ export function PassengerForm({
         </span>
         {!abierta && completa && (
           <span className="text-sm text-green-700">
-            {ficha.nombres} {ficha.apellidos} · Datos completos
+            {ficha.nombres} {ficha.apellidos} ·{" "}
+            {
+              NOMBRES_TIPO_PASAJERO[
+                ficha.tipo_pasajero || ficha.beneficio || "ADULTO"
+              ]
+            }
+            {edad !== null && ` (${edad} ${edad === 1 ? "año" : "años"})`} ·
+            Datos completos
           </span>
         )}
         <button
@@ -313,38 +323,18 @@ export function PassengerForm({
               </span>
             </legend>
             <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2">
-              <Opcion
-                nombre={`${id}-beneficio`}
-                valor=""
-                actual={ficha.beneficio ?? ""}
-                onElegir={() => onCambiar({ ...ficha, beneficio: "" })}
-              >
-                Adulto
-              </Opcion>
-              {beneficios.map((b) => (
-                <Opcion
-                  key={b.codigo}
-                  nombre={`${id}-beneficio`}
-                  valor={b.codigo}
-                  actual={ficha.beneficio ?? ""}
-                  deshabilitada={!b.activo}
-                  onElegir={() => onCambiar({ ...ficha, beneficio: b.codigo })}
-                >
-                  {b.nombre}
-                  {!b.activo && (
-                    <span className="block text-xs text-slate-500">
-                      Sin regla vigente
-                    </span>
-                  )}
-                  {b.activo && b.descuento_bp !== null && (
-                    <span className="block text-xs text-slate-500">
-                      Descuento vigente: {formatearPuntosBase(b.descuento_bp)}
-                    </span>
-                  )}
-                </Opcion>
-              ))}
+              {([['ADULTO', 'Adulto'], ['NINO', 'Niño'], ['TERCERA_EDAD', 'Tercera edad'], ['DISCAPACIDAD', 'Persona con discapacidad']] as const).map(([codigo, nombre]) => {
+                const beneficio = beneficios.find(b => b.codigo === codigo && b.activo);
+                return <Opcion key={codigo} nombre={`${id}-tipo-pasajero`} valor={codigo}
+                  actual={ficha.tipo_pasajero || ficha.beneficio || "ADULTO"}
+                  onElegir={() => onCambiar({ ...ficha, tipo_pasajero: codigo, beneficio: beneficio?.codigo ?? "", respaldo_archivo_id: null, respaldo_nombre: "" })}>
+                  {nombre}
+                  {beneficio?.descuento_bp != null && <span className="block text-xs text-slate-500">Descuento vigente: {formatearPuntosBase(beneficio.descuento_bp)}</span>}
+                </Opcion>;
+              })}
             </div>
             {ayuda("beneficio")}
+            {ficha.tipo_pasajero && ficha.tipo_pasajero !== "ADULTO" && !regla?.activo && <p className="mt-2 text-xs text-slate-600">No hay un beneficio vigente configurado para esta categoría. El servidor calculará la tarifa general; seleccionar el tipo no crea un descuento.</p>}
             {regla?.activo && (
               <p className="mt-2 text-xs text-slate-600">
                 {regla.condiciones ??

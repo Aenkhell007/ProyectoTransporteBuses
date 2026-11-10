@@ -89,3 +89,18 @@
   .gc-header__actions .gc-button { flex: 1; }
   .gc-footer { width: 100%; min-height: 56px; margin: 0; padding: 18px 16px; border-radius: 0; font-size: 12px; }
 }
+
+.gc-footer.gc-footer--admin {
+  width: auto;
+  min-height: 0;
+  margin: 0 16px;
+  padding: 8px;
+  border-top: 1px solid #e0e7ff;
+  border-radius: 0;
+  background: transparent;
+  color: #08064e;
+  font-size: 12px;
+}
+@media (min-width: 640px) {
+  .gc-footer.gc-footer--admin { margin-inline: 20px; }
+}
