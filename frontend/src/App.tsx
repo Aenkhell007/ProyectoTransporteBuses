@@ -57,7 +57,11 @@ export function App() {
   const location = useLocation();
   const section = homeSections[location.hash] ?? homeSections[""];
 
-  if (import.meta.env.DEV && matchPath("/vista-previa/panel/*", location.pathname)) {
+  if (
+    import.meta.env.DEV &&
+    (matchPath("/vista-previa/panel/*", location.pathname) ||
+      matchPath("/vista-previa/oficinista/*", location.pathname))
+  ) {
     return (
       <Routes>
         <Route path="/vista-previa/panel" element={<AdminLayout panelFijo />}>
@@ -66,6 +70,17 @@ export function App() {
           <Route path="usuarios" element={<SeccionAdminPendiente titulo="Usuarios y roles" />} />
           <Route path="reportes" element={<SeccionAdminPendiente titulo="Reportes" />} />
           <Route path="configuracion" element={<SeccionAdminPendiente titulo="Configuración" />} />
+          <Route path="*" element={<p>Sección no encontrada.</p>} />
+        </Route>
+        <Route
+          path="/vista-previa/oficinista"
+          element={<AdminLayout variant="oficina" panelFijo />}
+        >
+          <Route index element={<SeccionAdminPendiente titulo="Resumen" />} />
+          <Route path="ventas" element={<SeccionAdminPendiente titulo="Ventas" />} />
+          <Route path="reservas" element={<SeccionAdminPendiente titulo="Reservas" />} />
+          <Route path="comprobantes" element={<SeccionAdminPendiente titulo="Comprobantes" />} />
+          <Route path="reembolsos" element={<SeccionAdminPendiente titulo="Reembolsos" />} />
           <Route path="*" element={<p>Sección no encontrada.</p>} />
         </Route>
       </Routes>
