@@ -6,7 +6,8 @@ import MiCuenta from "./pages/auth/MiCuenta";
 import RecuperarContrasena from "./pages/auth/RecuperarContrasena";
 import RestablecerContrasena from "./pages/auth/RestablecerContrasena";
 import { useAuth } from "./features/auth/AuthContext";
-import { matchPath, Navigate, Route, Routes, useLocation } from "react-router";
+import { Link, matchPath, Navigate, Route, Routes, useLocation } from "react-router";
+import type { ReactNode } from "react";
 import { ResultadosPage } from "./pages/compra/ResultadosPage";
 import { PublicLayout } from "./components/layout";
 import AdminLayout from "./layouts/AdminLayout";
@@ -14,7 +15,6 @@ import AdminResumenPage from "./features/administracion/AdminResumenPage";
 import { MisViajesPage } from "./pages/mis-viajes/MisViajesPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { InicioPage } from "./pages/compra/InicioPage";
-
 import SeleccionAsientosPage from "./pages/flota/SeleccionAsientosPage";
 import MetodoPago from "./pages/pagos/MetodoPago";
 import { PasajerosPage } from "./pages/compra/PasajerosPage";
@@ -24,9 +24,9 @@ import ConfirmacionCompra from "./pages/pagos/ConfirmacionCompra";
 import SolicitarReembolso from "./pages/mis-viajes/SolicitarReembolso";
 import { ResumenCompraPage } from "./pages/compra/ResumenCompraPage";
 import GestionCooperativasPage from "./pages/administracion/GestionCooperativasPage";
+import AdminUsuariosPage from "./pages/administracion/AdminUsuariosPage";
 import ConfiguracionPagosPage from "./pages/configuracion/ConfiguracionPagosPage";
 import FrecuenciasPage from "./pages/frecuencias/FrecuenciasPage";
-
 import HojaRutaPage from "./pages/operacion/HojaRutaPage";
 import ParadasTarifasPage from "./pages/administracion/ParadasTarifasPage";
 import MikelV3Panel from "./pages/mikel/MikelV3Panel";
@@ -34,11 +34,13 @@ import BusesPage from "./pages/flota/BusesPage";
 import PlanosBusPage from "./pages/flota/PlanosBusPage";
 import ConfiguracionCooperativaPage from "./pages/configuracion/ConfiguracionCooperativaPage";
 
-// Importaciones de los submódulos de la Vista 12 y páginas oficiales de oficina
+// Importaciones oficiales del equipo y submódulos de oficina (Vistas 12, 13 y 14)
 import { OficinaResumenPage } from "./features/oficina/OficinaResumenPage";
 import { OficinaReservasPage } from "./features/oficina/OficinaReservasPage";
 import { BandejaComprobantes } from "./pages/oficina/BandejaComprobantes";
 import { VentaPresencial } from "./pages/oficina/VentaPresencial";
+import RevisionComprobantePage from "./pages/oficina/RevisionComprobantePage";
+import VentaOficinaPage from "./pages/oficina/VentaOficinaPage";
 
 const homeSections: Record<
   string,
@@ -91,35 +93,96 @@ export function App() {
       <Routes>
         <Route path="/vista-previa/panel" element={<AdminLayout panelFijo />}>
           <Route index element={<AdminResumenPage />} />
+
           <Route
             path="cooperativas"
             element={<GestionCooperativasPage />}
           />
+
           <Route
             path="usuarios"
-            element={<SeccionAdminPendiente titulo="Usuarios y roles" />}
+            element={
+              <VistaPreviaPanel>
+                <AdminUsuariosPage />
+              </VistaPreviaPanel>
+            }
           />
+
           <Route
             path="reportes"
             element={<SeccionAdminPendiente titulo="Reportes" />}
           />
+
           <Route
             path="configuracion"
             element={<ConfiguracionPagosPage />}
           />
+
           <Route path="*" element={<p>Sección no encontrada.</p>} />
         </Route>
-        
-        {/* Panel del Oficinista con rutas oficiales */}
+
+        {/* Panel del Oficinista con rutas oficiales y submódulos integrados */}
         <Route
           path="/vista-previa/oficinista"
           element={<AdminLayout variant="oficina" panelFijo />}
         >
           <Route index element={<OficinaResumenPage />} />
-          <Route path="ventas" element={<VentaPresencial />} />
-          <Route path="reservas" element={<OficinaReservasPage />} />
-          <Route path="comprobantes" element={<BandejaComprobantes />} />
-          <Route path="reembolsos" element={<SeccionAdminPendiente titulo="Reembolsos" />} />
+
+          <Route
+            path="ventas"
+            element={
+              <VistaPreviaPanel soloLectura>
+                <VentaPresencial />
+              </VistaPreviaPanel>
+            }
+          />
+
+          <Route
+            path="venta-oficina"
+            element={
+              <VistaPreviaPanel>
+                <VentaOficinaPage />
+              </VistaPreviaPanel>
+            }
+          />
+
+          <Route
+            path="reservas"
+            element={<OficinaReservasPage />}
+          />
+
+          <Route
+            path="comprobantes"
+            element={
+              <VistaPreviaPanel soloLectura>
+                <BandejaComprobantes />
+              </VistaPreviaPanel>
+            }
+          />
+
+          <Route
+            path="comprobantes/:id"
+            element={
+              <VistaPreviaPanel>
+                <BandejaComprobantes />
+              </VistaPreviaPanel>
+            }
+          />
+
+          <Route
+            path="revision-comprobante/:id?"
+            element={
+              <VistaPreviaPanel>
+                <RevisionComprobantePage />
+              </VistaPreviaPanel>
+            }
+          />
+
+          <Route
+            path="reembolsos"
+            element={<SeccionAdminPendiente titulo="Reembolsos" />}
+          />
+
           <Route path="*" element={<p className="p-6 text-gray-500">Sección no encontrada.</p>} />
         </Route>
       </Routes>
@@ -144,25 +207,7 @@ export function App() {
         <Route path="/pasajeros" element={<PasajerosPage />} />
         <Route path="/registrarse" element={<RegistroPage />} />
         <Route path="/viajes" element={<ResultadosPage />} />
-        {import.meta.env.DEV && (
-          <Route
-            path="/vista-previa/frecuencias"
-            element={<FrecuenciasPage />}
-          />
-        )}
-        <Route path="/mi-cuenta" element={<MiCuenta />} />
-        <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
-        <Route
-          path="/restablecer-contrasena"
-          element={<RestablecerContrasena />}
-        />
-        <Route path="/pago" element={<MetodoPago />} />
-        <Route path="/resumen" element={<ResumenCompraPage />} />
-        <Route path="/pago/comprobante" element={<SubirComprobante />} />
-        <Route path="/pago/seguimiento" element={<SeguimientoPago />} />
-        <Route path="/pago/confirmacion" element={<ConfirmacionCompra />} />
-        <Route path="/mis-viajes" element={<MisViajesPage />} />
-        <Route path="/mis-viajes/reembolso" element={<SolicitarReembolso />} />
+
         {import.meta.env.DEV && (
           <Route path="/vista-previa/frecuencias" element={<FrecuenciasPage />} />
         )}
@@ -175,12 +220,42 @@ export function App() {
         {import.meta.env.DEV && (
           <Route path="/vista-previa/configuracion/cooperativa" element={<ConfiguracionCooperativaPage />} />
         )}
+
+        <Route path="/mi-cuenta" element={<MiCuenta />} />
+        <Route
+          path="/recuperar-contrasena"
+          element={<RecuperarContrasena />}
+        />
+        <Route
+          path="/restablecer-contrasena"
+          element={<RestablecerContrasena />}
+        />
+        <Route path="/pago" element={<MetodoPago />} />
+        <Route path="/resumen" element={<ResumenCompraPage />} />
+        <Route path="/pago/comprobante" element={<SubirComprobante />} />
+        <Route path="/pago/seguimiento" element={<SeguimientoPago />} />
+        <Route path="/pago/confirmacion" element={<ConfirmacionCompra />} />
+        <Route path="/mis-viajes" element={<MisViajesPage />} />
+        <Route
+          path="/mis-viajes/reembolso"
+          element={<SolicitarReembolso />}
+        />
+
+        {import.meta.env.DEV && (
+          <Route
+            path="/vista-previa/hoja-ruta"
+            element={<HojaRutaPage />}
+          />
+        )}
+
         {import.meta.env.DEV && (
           <Route
             path="/vista-previa/paradas-tarifas"
             element={<ParadasTarifasPage />}
           />
         )}
+
+        {/* Rutas agregadas por Mikel y equipo en develop */}
         {import.meta.env.DEV && (
           <Route path="/vista-previa/mikel-v3" element={<MikelV3Panel />} />
         )}
@@ -202,6 +277,7 @@ export function App() {
         {import.meta.env.DEV && (
           <Route path="/vista-previa/mikel-v3/identidad" element={<MikelV3Panel inicial="identidad" />} />
         )}
+
         <Route
           path="*"
           element={<PlaceholderPage title="Aquí va esta página" />}
@@ -211,6 +287,41 @@ export function App() {
   );
 }
 
+function VistaPreviaPanel({
+  children,
+  soloLectura = false,
+}: {
+  children: ReactNode;
+  soloLectura?: boolean;
+}) {
+  return (
+    <>
+      <p className="mt-4 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
+        Vista previa con datos de ejemplo. Los cambios no se guardan en el
+        sistema.
+      </p>
+
+      {soloLectura ? (
+        <fieldset disabled className="min-w-0">
+          <legend className="sr-only">
+            Vista previa de solo lectura
+          </legend>
+          {children}
+        </fieldset>
+      ) : (
+        children
+      )}
+    </>
+  );
+}
+
 function SeccionAdminPendiente({ titulo }: { titulo: string }) {
-  return <h2 className="sr-only">{titulo}</h2>;
+  return (
+    <section className="space-y-2 py-4">
+      <h2 className="text-xl font-semibold text-slate-900">{titulo}</h2>
+      <p className="text-sm text-slate-600">
+        Esta sección aún no está disponible.
+      </p>
+    </section>
+  );
 }
