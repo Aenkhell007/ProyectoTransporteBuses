@@ -61,7 +61,7 @@ export function App() {
   if (import.meta.env.DEV && matchPath("/vista-previa/panel/*", location.pathname)) {
     return (
       <Routes>
-        <Route path="/vista-previa/panel" element={<AdminLayout />}>
+        <Route path="/vista-previa/panel" element={<AdminLayout panelFijo />}>
           <Route index element={<AdminResumenPage />} />
           <Route path="cooperativas" element={<SeccionAdminPendiente titulo="Cooperativas" />} />
           <Route path="usuarios" element={<SeccionAdminPendiente titulo="Usuarios y roles" />} />
