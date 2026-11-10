@@ -583,14 +583,34 @@ export function PasajerosPage() {
               ))}
             </dl>
             {r.cotizacion ? (
-              <div className="mt-3 flex items-baseline justify-between border-t border-slate-100 pt-3">
-                <span className="font-bold text-[#08035b]">
-                  Último total cotizado
-                </span>
-                <span className="text-xl font-bold text-[#08035b]">
-                  {formatearCentavos(r.cotizacion.total_centavos)}
-                </span>
-              </div>
+              <>
+                <dl className="mt-3 space-y-1 border-t border-slate-100 pt-3 text-sm">
+                  <div className="flex justify-between">
+                    <dt className="text-slate-600">Descuento</dt>
+                    <dd
+                      className={`font-semibold ${r.cotizacion.descuento_centavos > 0 ? "text-green-700" : "text-[#08035b]"}`}
+                    >
+                      {r.cotizacion.descuento_centavos > 0
+                        ? formatearCentavos(-r.cotizacion.descuento_centavos)
+                        : "-"}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-slate-600">Tarifa de servicio</dt>
+                    <dd className="font-semibold text-[#08035b]">
+                      {formatearCentavos(r.cotizacion.servicio_centavos)}
+                    </dd>
+                  </div>
+                </dl>
+                <div className="mt-3 flex items-baseline justify-between border-t border-slate-100 pt-3">
+                  <span className="font-bold text-[#08035b]">
+                    Último total cotizado
+                  </span>
+                  <span className="text-xl font-bold text-[#08035b]">
+                    {formatearCentavos(r.cotizacion.total_centavos)}
+                  </span>
+                </div>
+              </>
             ) : (
               <p className="mt-3 border-t border-slate-100 pt-3 text-sm text-slate-600">
                 Los descuentos y el total a pagar los calcula el sistema al
