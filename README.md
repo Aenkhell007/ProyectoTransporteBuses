@@ -166,6 +166,17 @@ Para el recorrido manual se usan cédulas de prueba que pasan el dígito verific
 - Elementos de configuración: `docs/configuracion/inventario-ec.csv`
 - Forma de trabajo con Git Flow: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Plantillas: `.github/ISSUE_TEMPLATE/tarea.md` y `.github/pull_request_template.md`
+- Cita del repositorio: [CITATION.cff](CITATION.cff)
+
+## Cómo citar
+
+[CITATION.cff](CITATION.cff) tiene el título, el resumen, los 6 integrantes, el repositorio y la licencia en formato Citation File Format 1.2.0. GitHub muestra el botón "Cite this repository", con la cita en APA y BibTeX, cuando el archivo está en la rama por defecto (`main`); hasta `release/1.0.0` el archivo solo está en `develop`. La versión y la fecha de publicación se agregan con la etiqueta `v1.0.0`.
+
+Cita en APA armada con los datos de `CITATION.cff`:
+
+```text
+Galarza Moreta, Á. G., Balseca Tumbaco, K. D., Guzmán Lescano, M. A., Mena Romero, M. X., Basurto Villalba, P. B., & Yupa Aguiar, P. D. (2026). Gran Continental: venta de pasajes de buses interprovinciales [Computer software]. https://github.com/Aenkhell007/ProyectoTransporteBuses
+```
 
 ## Licencia
 
