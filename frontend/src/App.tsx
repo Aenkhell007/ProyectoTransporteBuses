@@ -23,6 +23,8 @@ import SolicitarReembolso from "./pages/mis-viajes/SolicitarReembolso";
 import { ResumenCompraPage } from "./pages/compra/ResumenCompraPage";
 import ConfiguracionPagosPage from "./pages/configuracion/ConfiguracionPagosPage";
 
+import HojaRutaPage from "./pages/operacion/HojaRutaPage";
+
 const homeSections: Record<
   string,
   { title: string; activeItem: string; id?: string }
@@ -101,6 +103,9 @@ export function App() {
           />
         )}
 
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/hoja-ruta" element={<HojaRutaPage />} />
+        )}
         <Route
           path="*"
           element={<PlaceholderPage title="Aquí va esta página" />}
