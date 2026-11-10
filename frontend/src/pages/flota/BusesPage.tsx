@@ -12,9 +12,10 @@ import {
   tarjeta,
   titulo,
 } from '../../components/flota/estilos';
-import { gruposMock } from '../../mocks/buses';
 import type { Bus, BusFormData } from '../../types/bus';
 import { listarBuses, crearBus, actualizarBus, desactivarBus as desactivarBusApi } from '../../services/busesApi';
+import { listarGruposBus } from '../../services/flotaApi';
+import type { GrupoBus } from '../../types/bus';
 
 const normalizarDatos = (datos: BusFormData) => ({
   unidad: datos.unidad.trim(),
@@ -33,6 +34,7 @@ export default function BusesPage() {
   
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [grupos, setGrupos] = useState<GrupoBus[]>([]);
 
   const editando = buses.find((b) => b.id === editandoId);
 
@@ -43,10 +45,14 @@ export default function BusesPage() {
   const cargarBuses = async () => {
     try {
       setCargando(true);
-      const activos = await listarBuses(true);
-      const inactivos = await listarBuses(false);
+      const [activos, inactivos, gruposReales] = await Promise.all([
+        listarBuses(true),
+        listarBuses(false),
+        listarGruposBus(),
+      ]);
       
       setBuses([...activos, ...inactivos]);
+      setGrupos(gruposReales);
       setError(null);
     } catch (err) {
       setError('Error al cargar la lista de buses desde el servidor.');
@@ -90,7 +96,7 @@ export default function BusesPage() {
   };
 
   const visibles = buses.filter((b) => b.activo !== verInactivos);
-  const nombreGrupo = (id: string) => gruposMock.find((g) => g.id === id)?.nombre ?? '—';
+  const nombreGrupo = (id: string) => grupos.find((g) => g.id === id)?.nombre ?? '—';
 
   return (
     <div className={tarjeta}>
@@ -100,7 +106,7 @@ export default function BusesPage() {
       <div className="mt-4">
         <BusForm
           key={editando?.id ?? 'nuevo'}
-          grupos={gruposMock}
+          grupos={grupos}
           existentes={buses}
           onGuardar={editando ? guardarEdicion : agregar}
           bus={editando}

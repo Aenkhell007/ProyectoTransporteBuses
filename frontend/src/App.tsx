@@ -34,6 +34,9 @@ import FrecuenciasPage from "./pages/frecuencias/FrecuenciasPage";
 import HojaRutaPage from "./pages/operacion/HojaRutaPage";
 
 import ParadasTarifasPage from "./pages/administracion/ParadasTarifasPage";
+import BusesPage from "./pages/flota/BusesPage";
+import PlanosBusPage from "./pages/flota/PlanosBusPage";
+import ConfiguracionCooperativaPage from "./pages/configuracion/ConfiguracionCooperativaPage";
 
 const homeSections: Record<
   string,
@@ -179,7 +182,16 @@ export function App() {
         <Route path="/mis-viajes" element={<MisViajesPage />} />
         <Route path="/mis-viajes/reembolso" element={<SolicitarReembolso />} />
         {import.meta.env.DEV && (
-          <Route path="/vista-previa/hoja-ruta" element={<HojaRutaPage />} />
+          <Route path="/vista-previa/frecuencias" element={<FrecuenciasPage />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/flota/buses" element={<BusesPage />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/flota/planos" element={<PlanosBusPage />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/configuracion/cooperativa" element={<ConfiguracionCooperativaPage />} />
         )}
         {import.meta.env.DEV && (
           <Route
