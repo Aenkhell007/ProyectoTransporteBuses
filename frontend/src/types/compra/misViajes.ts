@@ -38,8 +38,11 @@ export interface MiViaje {
   asientos: string[];
   /** Total pagado de la compra (compras.total_pagado_centavos). */
   total_pagado_centavos: number | null;
-  /** Monto que el cliente reportó en el comprobante; no es dinero confirmado. */
-  monto_reportado_centavos: number | null;
+  /**
+   * Sin uso en el frontend (decisión de #94): comprobantes no guarda un monto y el backend
+   * lo envía en null (misViajes.ts). Se conserva opcional porque la API lo sigue enviando.
+   */
+  monto_reportado_centavos?: number | null;
   boleto_id: string | null;
   estado_documento: EstadoDocumento | null;
   foto_url: string | null;

@@ -1,7 +1,6 @@
 import { useId } from "react";
 import { Link } from "react-router";
 import type { EstadoMiViaje, MiViaje } from "../../types/compra/misViajes";
-import { formatearCentavos } from "../../features/compra/dinero";
 import {
   diaEnEcuador,
   formatearDuracion,
@@ -10,6 +9,7 @@ import {
   minutosEntre,
 } from "../../features/compra/fechas";
 import { BusImagen } from "./BusImagen";
+import { ImporteMiViaje } from "./ImporteMiViaje";
 import { Icono } from "./Icono";
 import type { NombreIcono } from "./Icono";
 import { nombreGrupo } from "./TripCard";
@@ -195,38 +195,7 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
         </div>
 
         <div className="md:col-span-2 lg:col-span-1">
-          {enVerificacion ? (
-            <div className="rounded-md bg-amber-50 p-3 text-center">
-              <p className="text-sm text-slate-700">Importe por verificar</p>
-              <p className="text-2xl font-bold text-slate-900">
-                {formatearCentavos(viaje.monto_esperado_centavos ?? 0)}
-              </p>
-              <p className="mt-1 text-xs text-slate-700">
-                Comprobante recibido. Consulta el seguimiento; todavía no es un pago confirmado.
-              </p>
-            </div>
-          ) : (
-            <div
-              className={`rounded-md p-3 text-center ${
-                viaje.estado === "CANCELADA" || viaje.estado === "REEMBOLSADA"
-                  ? "bg-slate-100"
-                  : "bg-green-50"
-              }`}
-            >
-              <p className="text-sm text-slate-700">
-                {viaje.estado === "CANCELADA" || viaje.estado === "REEMBOLSADA"
-                  ? "Monto pagado"
-                  : viaje.tipo === "RESERVA" ? "Importe esperado" : "Total pagado"}
-              </p>
-              <p className="text-2xl font-bold text-slate-900">
-                {viaje.total_pagado_centavos !== null
-                  ? formatearCentavos(viaje.total_pagado_centavos)
-                  : viaje.monto_esperado_centavos != null
-                    ? formatearCentavos(viaje.monto_esperado_centavos)
-                    : "Por cotizar"}
-              </p>
-            </div>
-          )}
+          <ImporteMiViaje viaje={viaje} />
         </div>
       </div>
 
