@@ -18,6 +18,7 @@ import {
   fichaAPasajero,
   fichaVacia,
   pasajeroAFicha,
+  validarFicha,
   validarFichas,
 } from "../../features/compra/pasajeros";
 import type {
@@ -136,7 +137,17 @@ export function PasajerosPage() {
         const borrador = leerBorrador(reserva.reserva_id);
         const fichasIniciales = recuperarFichas(iniciales, borrador);
         setFichas(fichasIniciales);
-        setAbiertas(fichasIniciales.map(() => true));
+        // En móvil solo se pliega un acompañante que ya tiene sus datos completos.
+        const movil = window.matchMedia("(max-width: 639px)").matches;
+        setAbiertas(
+          fichasIniciales.map(
+            (f, i) =>
+              i === 0 ||
+              !movil ||
+              Object.keys(validarFicha(f, false, hoyEnEcuador(), beneficios))
+                .length > 0,
+          ),
+        );
         setErrores(fichasIniciales.map(() => ({})));
         setCarga({ estado: "listo", reserva, beneficios });
       })

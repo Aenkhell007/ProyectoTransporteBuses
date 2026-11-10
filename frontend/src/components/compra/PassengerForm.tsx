@@ -6,6 +6,7 @@ import type {
 } from "../../types/compra/reserva";
 import {
   LIMITES_PASAJERO,
+  NOMBRES_TIPO_PASAJERO,
   TIPOS_DOCUMENTO,
 } from "../../features/compra/pasajeros";
 import type {
@@ -137,7 +138,14 @@ export function PassengerForm({
         </span>
         {!abierta && completa && (
           <span className="text-sm text-green-700">
-            {ficha.nombres} {ficha.apellidos} · Datos completos
+            {ficha.nombres} {ficha.apellidos} ·{" "}
+            {
+              NOMBRES_TIPO_PASAJERO[
+                ficha.tipo_pasajero || ficha.beneficio || "ADULTO"
+              ]
+            }
+            {edad !== null && ` (${edad} ${edad === 1 ? "año" : "años"})`} ·
+            Datos completos
           </span>
         )}
         <button
