@@ -64,7 +64,7 @@ export function App() {
   ) {
     return (
       <Routes>
-        <Route path="/vista-previa/panel" element={<AdminLayout />}>
+        <Route path="/vista-previa/panel" element={<AdminLayout panelFijo />}>
           <Route index element={<SeccionAdminPendiente titulo="Resumen" />} />
           <Route path="cooperativas" element={<SeccionAdminPendiente titulo="Cooperativas" />} />
           <Route path="usuarios" element={<SeccionAdminPendiente titulo="Usuarios y roles" />} />
