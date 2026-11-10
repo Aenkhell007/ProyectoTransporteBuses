@@ -32,6 +32,7 @@ const servicios: Servicio[] = [
       ["clima", "Climatización"],
       ["bano", "Baño"],
       ["enchufe", "Enchufes USB"],
+      ["pantalla", "Entretenimiento"],
     ],
   },
   {
@@ -102,8 +103,11 @@ export function ServiciosSeccion({
                 onClick={() => onElegir(s.clase, `${s.nombre} (${s.pisos})`)}
                 className="relative inline-flex min-h-11 w-fit items-center rounded-md bg-red-600 px-6 text-sm font-semibold hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               >
-                Buscar en {s.nombre}
-                <span className="sr-only"> ({s.pisos})</span>
+                Ver más
+                <span className="sr-only">
+                  {" "}
+                  sobre {s.nombre} ({s.pisos})
+                </span>
               </button>
             </div>
             <ul className="grid content-center gap-2 bg-slate-950/60 p-5 text-sm">

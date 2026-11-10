@@ -1,3 +1,4 @@
+import { useId, useState } from "react";
 import type { ReactNode } from "react";
 import type { ReservaPendiente } from "../../types/compra/reserva";
 import {
@@ -9,7 +10,7 @@ import {
 } from "../../features/compra/fechas";
 import { BusImagen } from "./BusImagen";
 import { Icono } from "./Icono";
-import { SERVICIOS_BUS, nombreGrupo } from "./TripCard";
+import { NOMBRE_CLASE, SERVICIOS_BUS, nombreGrupo } from "./TripCard";
 
 interface TripSummaryProps {
   reserva: ReservaPendiente;
@@ -24,8 +25,11 @@ function pisoLegible(piso: number, pisos: number) {
 
 /** Información del viaje y del bus de una reserva (vista 5). Solo muestra datos. */
 export function TripSummary({ reserva, accion }: TripSummaryProps) {
+  const idContenido = useId();
+  const [abierta, setAbierta] = useState(true);
   const { viaje, bus } = reserva;
   const pisos = [...new Set(reserva.asientos.map((a) => a.piso))].sort();
+  const clases = [...new Set(reserva.asientos.map((a) => a.clase))];
   const carroceria = [bus.carroceria, bus.carroceria_modelo]
     .filter(Boolean)
     .join(" ");
@@ -45,10 +49,27 @@ export function TripSummary({ reserva, accion }: TripSummaryProps) {
           </span>
           Información del viaje
         </h2>
-        {accion}
+        <div className="flex items-center gap-2">
+          {accion}
+          <button
+            type="button"
+            onClick={() => setAbierta(!abierta)}
+            aria-expanded={abierta}
+            aria-controls={idContenido}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-blue-600 lg:hidden"
+          >
+            <Icono nombre={abierta ? "chevronArriba" : "chevronAbajo"} />
+            <span className="sr-only">
+              {abierta ? "Contraer" : "Expandir"} información del viaje
+            </span>
+          </button>
+        </div>
       </div>
 
-      <div className="mt-3 grid gap-4 md:grid-cols-[200px_1fr]">
+      <div
+        id={idContenido}
+        className={`mt-3 gap-4 md:grid-cols-[200px_1fr] ${abierta ? "grid" : "hidden lg:grid"}`}
+      >
         <div>
           <BusImagen
             src={bus.foto_url} pisos={bus.pisos}
@@ -89,7 +110,7 @@ export function TripSummary({ reserva, accion }: TripSummaryProps) {
           </p>
           <ul
             className="mt-2 flex flex-wrap gap-2 text-sm"
-            aria-label="Ubicación de los asientos"
+            aria-label="Ubicación y clase de los asientos"
           >
             {pisos.map((p) => (
               <li
@@ -97,6 +118,14 @@ export function TripSummary({ reserva, accion }: TripSummaryProps) {
                 className="rounded-md bg-slate-100 px-2.5 py-1 text-slate-700"
               >
                 {pisoLegible(p, bus.pisos)}
+              </li>
+            ))}
+            {clases.map((c) => (
+              <li
+                key={c}
+                className="rounded-md bg-blue-50 px-2.5 py-1 text-blue-800"
+              >
+                {NOMBRE_CLASE[c]}
               </li>
             ))}
           </ul>
