@@ -6,10 +6,12 @@ import MiCuenta from "./pages/auth/MiCuenta";
 import RecuperarContrasena from "./pages/auth/RecuperarContrasena";
 import RestablecerContrasena from "./pages/auth/RestablecerContrasena";
 import { useAuth } from "./features/auth/AuthContext";
-import { matchPath, Navigate, Route, Routes, useLocation } from "react-router";
+import { Link, matchPath, Navigate, Route, Routes, useLocation } from "react-router";
+import type { ReactNode } from "react";
 import { ResultadosPage } from "./pages/compra/ResultadosPage";
 import { PublicLayout } from "./components/layout";
 import AdminLayout from "./layouts/AdminLayout";
+import AdminResumenPage from "./features/administracion/AdminResumenPage";
 import { MisViajesPage } from "./pages/mis-viajes/MisViajesPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { InicioPage } from "./pages/compra/InicioPage";
@@ -22,6 +24,10 @@ import SeguimientoPago from "./pages/pagos/SeguimientoPago";
 import ConfirmacionCompra from "./pages/pagos/ConfirmacionCompra";
 import SolicitarReembolso from "./pages/mis-viajes/SolicitarReembolso";
 import { ResumenCompraPage } from "./pages/compra/ResumenCompraPage";
+import GestionCooperativasPage from "./pages/administracion/GestionCooperativasPage";
+import AdminUsuariosPage from "./pages/administracion/AdminUsuariosPage";
+import { BandejaComprobantes } from "./pages/oficina/BandejaComprobantes";
+import { VentaPresencial } from "./pages/oficina/VentaPresencial";
 import ConfiguracionPagosPage from "./pages/configuracion/ConfiguracionPagosPage";
 import FrecuenciasPage from "./pages/frecuencias/FrecuenciasPage";
 
@@ -79,14 +85,22 @@ export function App() {
     return (
       <Routes>
         <Route path="/vista-previa/panel" element={<AdminLayout panelFijo />}>
-          <Route index element={<SeccionAdminPendiente titulo="Resumen" />} />
+          <Route index element={<AdminResumenPage />} />
           <Route
             path="cooperativas"
-            element={<SeccionAdminPendiente titulo="Cooperativas" />}
+            element={
+              <VistaPreviaPanel>
+                <GestionCooperativasPage />
+              </VistaPreviaPanel>
+            }
           />
           <Route
             path="usuarios"
-            element={<SeccionAdminPendiente titulo="Usuarios y roles" />}
+            element={
+              <VistaPreviaPanel>
+                <AdminUsuariosPage />
+              </VistaPreviaPanel>
+            }
           />
           <Route
             path="reportes"
@@ -102,10 +116,24 @@ export function App() {
           path="/vista-previa/oficinista"
           element={<AdminLayout variant="oficina" panelFijo />}
         >
-          <Route index element={<SeccionAdminPendiente titulo="Resumen" />} />
-          <Route path="ventas" element={<SeccionAdminPendiente titulo="Ventas" />} />
+          <Route index element={<ResumenOficina />} />
+          <Route
+            path="ventas"
+            element={
+              <VistaPreviaPanel soloLectura>
+                <VentaPresencial />
+              </VistaPreviaPanel>
+            }
+          />
           <Route path="reservas" element={<SeccionAdminPendiente titulo="Reservas" />} />
-          <Route path="comprobantes" element={<SeccionAdminPendiente titulo="Comprobantes" />} />
+          <Route
+            path="comprobantes"
+            element={
+              <VistaPreviaPanel soloLectura>
+                <BandejaComprobantes />
+              </VistaPreviaPanel>
+            }
+          />
           <Route path="reembolsos" element={<SeccionAdminPendiente titulo="Reembolsos" />} />
           <Route path="*" element={<p>Sección no encontrada.</p>} />
         </Route>
@@ -168,6 +196,57 @@ export function App() {
   );
 }
 
+function VistaPreviaPanel({
+  children,
+  soloLectura = false,
+}: {
+  children: ReactNode;
+  soloLectura?: boolean;
+}) {
+  return (
+    <>
+      <p className="mt-4 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
+        Vista previa con datos de ejemplo. Los cambios no se guardan en el
+        sistema.
+      </p>
+      {soloLectura ? (
+        <fieldset disabled className="min-w-0">
+          <legend className="sr-only">Vista previa de solo lectura</legend>
+          {children}
+        </fieldset>
+      ) : (
+        children
+      )}
+    </>
+  );
+}
+
+function ResumenOficina() {
+  return (
+    <section className="space-y-4 py-4" aria-labelledby="resumen-oficina">
+      <h2 id="resumen-oficina" className="text-xl font-semibold text-slate-900">
+        Resumen de oficina
+      </h2>
+      <p className="text-sm text-slate-600">
+        Los indicadores aparecerán cuando el servicio de oficina esté disponible.
+      </p>
+      <div className="flex flex-wrap gap-3">
+        <Link className="rounded-md border border-blue-700 px-4 py-2 text-blue-900" to="ventas">
+          Ver ventas
+        </Link>
+        <Link className="rounded-md border border-blue-700 px-4 py-2 text-blue-900" to="comprobantes">
+          Ver comprobantes
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 function SeccionAdminPendiente({ titulo }: { titulo: string }) {
-  return <h2 className="sr-only">{titulo}</h2>;
+  return (
+    <section className="space-y-2 py-4">
+      <h2 className="text-xl font-semibold text-slate-900">{titulo}</h2>
+      <p className="text-sm text-slate-600">Esta sección aún no está disponible.</p>
+    </section>
+  );
 }
