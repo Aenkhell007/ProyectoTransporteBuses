@@ -1,0 +1,47 @@
+enum BusStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Bus {
+  id        Int        @id @default(autoincrement())
+  plate     String     @unique
+  brand     String
+  chassis   String
+  bodywork  String
+  status    BusStatus  @default(ACTIVE)
+  // cooperativeId: pendiente de acordar con Matías (relación con Cooperative)
+  floors    BusFloor[]
+}
+
+model BusFloor {
+  id          Int    @id @default(autoincrement())
+  busId       Int
+  floorNumber Int
+  bus         Bus    @relation(fields: [busId], references: [id])
+  seats       Seat[]
+
+  @@unique([busId, floorNumber])
+}
+
+model SeatType {
+  id    Int    @id @default(autoincrement())
+  code  String @unique
+  name  String
+  seats Seat[]
+}
+
+
+model Seat {
+  id         Int      @id @default(autoincrement())
+  floorId    Int
+  seatTypeId Int
+  number     String
+  row        Int
+  column     Int
+  floor      BusFloor @relation(fields: [floorId], references: [id])
+  seatType   SeatType @relation(fields: [seatTypeId], references: [id])
+
+  @@unique([floorId, number])
+  @@unique([floorId, row, column])
+}

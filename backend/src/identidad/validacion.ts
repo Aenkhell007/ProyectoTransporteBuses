@@ -1,0 +1,6 @@
+import { cedulaValida } from '../auth/validation';
+export class ErrorIdentidad extends Error { constructor(public status:number,mensaje:string){super(mensaje);} }
+export function exigir(v:unknown,m:string):asserts v {if(!v)throw new ErrorIdentidad(422,m);}
+export function texto(v:unknown,n:string,max=100,requerido=true){exigir(typeof v==='string'&&(!requerido||v.trim().length>0)&&v.trim().length<=max&&!/[\x00-\x1f<>]/.test(v),`${n}: revisa el valor.`);return v.trim();}
+export function persona(d:any){exigir(d&&typeof d==='object','Completa el formulario.');const nombres=texto(d.nombres,'Nombres'),apellidos=texto(d.apellidos,'Apellidos'),email=texto(d.email,'Correo',254).toLowerCase(),documento=texto(d.documento,'Documento',30),telefono=texto(d.telefono,'Teléfono',25);exigir(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),'Correo no válido.');exigir(['CEDULA','PASAPORTE','OTRO'].includes(d.tipoDocumento),'Tipo de documento no válido.');exigir(d.tipoDocumento!=='CEDULA'||cedulaValida(documento),'La cédula no supera el dígito de control.');exigir(!telefono||/^\+5939\d{8}$/.test(telefono),'Usa un celular ecuatoriano con +5939 y ocho dígitos.');return {...d,nombres,apellidos,email,documento,telefono};}
+export function version(v:unknown){exigir(Number.isInteger(v)&&Number(v)>0,'Actualiza la vista antes de guardar.');return v as number;}

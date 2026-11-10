@@ -1,0 +1,16 @@
+.versiones-plano__tabla {
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  width: 100%;
+}
+.versiones-plano__tabla th,
+.versiones-plano__tabla td {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.5rem;
+  text-align: left;
+}
+.versiones-plano__editor {
+  border-top: 2px solid #e5e7eb;
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
