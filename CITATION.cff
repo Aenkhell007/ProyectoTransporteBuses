@@ -1,0 +1,46 @@
+# Datos para citar el repositorio. GitHub los muestra en "Cite this repository"
+# cuando el archivo está en la rama por defecto (main).
+# Formato: https://citation-file-format.github.io (versión 1.2.0).
+# version y date-released se agregan con release/1.0.0 y la etiqueta v1.0.0.
+cff-version: 1.2.0
+message: "Si usas este software, cítalo con los datos de este archivo."
+type: software
+title: "Gran Continental: venta de pasajes de buses interprovinciales"
+abstract: >-
+  Aplicación web para comprar pasajes de bus entre ciudades de Ecuador.
+  El cliente busca un viaje, elige asientos, registra a los pasajeros y
+  paga por transferencia subiendo el comprobante; cuando la cooperativa
+  aprueba el pago, descarga un boleto PDF con código QR. El personal de
+  cada cooperativa administra buses, planos de asientos, frecuencias,
+  tarifas y la revisión de comprobantes. Proyecto de la asignatura Manejo
+  y Configuración del Software, carrera de Software, FISEI, Universidad
+  Técnica de Ambato, período julio a diciembre de 2026.
+authors:
+  - given-names: "Ángel Giovanni"
+    family-names: "Galarza Moreta"
+    affiliation: "Universidad Técnica de Ambato"
+  - given-names: "Kevin David"
+    family-names: "Balseca Tumbaco"
+    affiliation: "Universidad Técnica de Ambato"
+  - given-names: "Mikel Alejandro"
+    family-names: "Guzmán Lescano"
+    affiliation: "Universidad Técnica de Ambato"
+  - given-names: "Matías Xavier"
+    family-names: "Mena Romero"
+    affiliation: "Universidad Técnica de Ambato"
+  - given-names: "Patricio Benjamín"
+    family-names: "Basurto Villalba"
+    affiliation: "Universidad Técnica de Ambato"
+  - given-names: "Pablo David"
+    family-names: "Yupa Aguiar"
+    affiliation: "Universidad Técnica de Ambato"
+repository-code: "https://github.com/Aenkhell007/ProyectoTransporteBuses"
+license: MIT
+keywords:
+  - venta de pasajes
+  - buses interprovinciales
+  - Ecuador
+  - React
+  - Express
+  - PostgreSQL
+  - Git Flow

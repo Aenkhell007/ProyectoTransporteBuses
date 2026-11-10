@@ -1,0 +1,98 @@
+# .gitignore de Gran Continental
+# Cada bloque dice qué excluye y por qué. Antes de agregar una regla, comprobar
+# que no oculta archivos que ya están versionados:
+#   git ls-files -ci --exclude-standard
+
+# ---------------------------------------------------------------------------
+# 1. Credenciales y configuración privada
+# Valores reales de Supabase y Brevo. Se entregan por canal privado, nunca en Git.
+# Las plantillas .env.example sí se versionan.
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.env
+!*.env.example
+# Vite: frontend/.env.local, .env.development.local, etc.
+*.local
+
+# Certificado TLS de Supabase (backend/conexion-bd/certs/supabase-ca.crt)
+# y cualquier clave o certificado suelto.
+certs/
+*.pem
+*.key
+*.crt
+*.p12
+
+# Guías con credenciales que circulan entre el equipo (TXT de conexión y pruebas).
+GUIA_PRIVADA*
+
+# ---------------------------------------------------------------------------
+# 2. Datos privados que genera el backend en cada equipo
+# Comprobantes de pago subidos y boletos PDF/QR. Contienen datos de pasajeros
+# y solo existen en el backend local de quien los creó.
+# ---------------------------------------------------------------------------
+backend/.data/
+uploads/
+
+# ---------------------------------------------------------------------------
+# 3. Dependencias
+# Se reconstruyen con npm ci a partir de package-lock.json.
+# ---------------------------------------------------------------------------
+node_modules/
+
+# ---------------------------------------------------------------------------
+# 4. Código generado y compilados
+# El cliente de Prisma se genera con: npm --prefix backend/conexion-bd run db:generate
+# ---------------------------------------------------------------------------
+backend/conexion-bd/src/generated/
+dist/
+dist-verificacion/
+build/
+.vite/
+*.tsbuildinfo
+coverage/
+.eslintcache
+
+# ---------------------------------------------------------------------------
+# 5. Registros y depuración
+# ---------------------------------------------------------------------------
+*.log
+npm-debug.log*
+.npm/
+
+# ---------------------------------------------------------------------------
+# 6. Sistema operativo
+# El equipo trabaja en Windows; se cubren también macOS y Linux.
+# ---------------------------------------------------------------------------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+*~
+
+# ---------------------------------------------------------------------------
+# 7. Editores
+# Se versiona solo la configuración compartida de VS Code (.vscode/settings.json).
+# ---------------------------------------------------------------------------
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+
+# ---------------------------------------------------------------------------
+# 8. Agentes de código
+# Configuración y notas locales de Claude Code de cada integrante.
+# CLAUDE.md compartido sí se versiona.
+# ---------------------------------------------------------------------------
+.claude/settings.local.json
+CLAUDE.local.md
+
+# ---------------------------------------------------------------------------
+# 9. Temporales
+# ---------------------------------------------------------------------------
+*.tmp
+*.bak
+tmp/

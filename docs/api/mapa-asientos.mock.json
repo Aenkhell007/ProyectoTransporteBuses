@@ -1,0 +1,12 @@
+{
+  "planoId": "00000000-0000-4000-8000-000000000011",
+  "celdas": [
+    { "id": "00000000-0000-4000-8000-000000000201", "piso": 1, "fila": 1, "columna": 1, "tipo": "ASIENTO", "codigo": "1", "clase": "NORMAL", "estado": "DISPONIBLE" },
+    { "id": "00000000-0000-4000-8000-000000000202", "piso": 1, "fila": 1, "columna": 2, "tipo": "ASIENTO", "codigo": "2", "clase": "NORMAL", "estado": "RESERVADO" },
+    { "id": "00000000-0000-4000-8000-000000000203", "piso": 1, "fila": 1, "columna": 3, "tipo": "PASILLO", "codigo": null, "clase": null, "estado": "DISPONIBLE" },
+    { "id": "00000000-0000-4000-8000-000000000204", "piso": 1, "fila": 1, "columna": 4, "tipo": "ASIENTO", "codigo": "3", "clase": "NORMAL", "estado": "DISPONIBLE" },
+    { "id": "00000000-0000-4000-8000-000000000205", "piso": 1, "fila": 1, "columna": 5, "tipo": "ASIENTO", "codigo": "4", "clase": "NORMAL", "estado": "OCUPADO" },
+    { "id": "00000000-0000-4000-8000-000000000206", "piso": 2, "fila": 1, "columna": 1, "tipo": "ASIENTO", "codigo": "5", "clase": "EJECUTIVO", "estado": "DISPONIBLE" },
+    { "id": "00000000-0000-4000-8000-000000000207", "piso": 2, "fila": 1, "columna": 2, "tipo": "ASIENTO", "codigo": "6", "clase": "EJECUTIVO", "estado": "SELECCIONADO" }
+  ]
+}

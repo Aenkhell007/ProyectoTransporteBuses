@@ -1,0 +1,18 @@
+# Fines de línea: el repositorio guarda texto con LF aunque se edite en Windows.
+# Sin esta regla, un editor que guarda con CRLF marca el archivo entero como modificado.
+* text=auto eol=lf
+
+# Scripts de Windows con CRLF
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binarios: Git no los compara ni convierte
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary

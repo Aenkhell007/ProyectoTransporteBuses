@@ -1,0 +1,5 @@
+ID,Nombre,Tipo,Responsable,Version,Estado
+EC-REQ-01,Requisitos Sistema,EC-REQ,Matias,1.0,Aprobado
+EC-DB-01,Esquema Prisma Base,EC-DB,Matias,1.0,Borrador
+EC-FE-01,Frontend Base,EC-FE,Equipo,1.0,Borrador
+EC-BE-01,Backend Base,EC-BE,Equipo,1.0,Borrador
