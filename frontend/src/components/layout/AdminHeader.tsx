@@ -11,7 +11,6 @@ const fechaDelPanel = new Intl.DateTimeFormat("es-EC", {
 interface AdminHeaderProps {
   cabeceraApp?: boolean;
   cooperativa?: boolean;
-  oficina?: boolean;
   nombreUsuario?: string;
   cargando: boolean;
 }
@@ -19,15 +18,12 @@ interface AdminHeaderProps {
 export function AdminHeader({
   cabeceraApp = false,
   cooperativa = false,
-  oficina = false,
   nombreUsuario,
   cargando,
 }: AdminHeaderProps) {
   const hoy = new Date();
-  const tituloPanel = oficina ? "Panel del oficinista" : "Panel de administración";
-  const descripcionPanel = oficina
-    ? "Gestiona las ventas de oficina y los comprobantes pendientes."
-    : "Gestiona cooperativas, usuarios y accesos al sistema.";
+  const tituloPanel = "Panel de administración";
+  const descripcionPanel = "Gestiona cooperativas, usuarios y accesos al sistema.";
   const titulo = (
     <div className={cabeceraApp ? "min-w-0 max-[960px]:sr-only" : ""}>
       <h1 className={cabeceraApp ? "truncate text-xl font-bold xl:text-2xl" : "text-2xl leading-tight font-bold lg:text-4xl"}>
@@ -41,7 +37,7 @@ export function AdminHeader({
     return (
       <header className="gc-header">
         <div className="gc-header__inner">
-          <Link to={oficina ? "/vista-previa/oficinista" : "/vista-previa/panel"} className="gc-brand" aria-label={oficina ? "Gran Continental, resumen de oficina" : "Gran Continental, resumen de administración"}>
+          <Link to="/vista-previa/panel" className="gc-brand" aria-label="Gran Continental, resumen de administración">
             <img src="/images/Logo G-C.png" alt="Gran Continental" width="216" height="88" />
           </Link>
           {titulo}

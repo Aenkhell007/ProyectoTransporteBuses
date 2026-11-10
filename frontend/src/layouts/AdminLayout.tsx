@@ -9,12 +9,10 @@ import { useAuth } from "../features/auth/AuthContext";
 export default function AdminLayout({
   children,
   cooperativa = false,
-  oficina = false,
   panelFijo = false,
 }: {
   children?: ReactNode;
   cooperativa?: boolean;
-  oficina?: boolean;
   panelFijo?: boolean;
 }) {
   const { usuario, cargando, logout } = useAuth();
@@ -39,7 +37,7 @@ export default function AdminLayout({
   return (
     <div className={panelFijo ? "gc-shell gc-shell--public" : "gc-shell gc-shell--public p-3 sm:p-5"}>
       {panelFijo && (
-        <AdminHeader cabeceraApp oficina={oficina} nombreUsuario={nombreUsuario} cargando={cargando} />
+        <AdminHeader cabeceraApp nombreUsuario={nombreUsuario} cargando={cargando} />
       )}
       <div
         className={`relative mx-auto grid w-full max-w-[1440px] flex-1 items-start rounded-lg bg-white lg:grid-cols-[200px_minmax(0,1fr)] ${panelFijo ? "w-[calc(100%-36px)] max-[960px]:w-full" : ""}`}
@@ -54,7 +52,7 @@ export default function AdminLayout({
           >
             <AdminSidebar
               sinLogo={panelFijo}
-              oficina={oficina}
+             
               cooperativa={cooperativa}
               puedeSalir={!!usuario}
               saliendo={saliendo}
@@ -70,7 +68,7 @@ export default function AdminLayout({
               cargando={cargando}
             />
           )}
-          <main id={oficina ? "contenido-oficina" : "contenido-administracion"} className="min-w-0 flex-1 px-4 pb-4 sm:px-5">
+          <main id="contenido-administracion" className="min-w-0 flex-1 px-4 pb-4 sm:px-5">
             {error && (
               <p role="alert" className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
                 {error}

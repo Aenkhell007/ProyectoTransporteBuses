@@ -75,8 +75,7 @@ export function App() {
 
   if (
     import.meta.env.DEV &&
-    (matchPath("/vista-previa/panel/*", location.pathname) ||
-      matchPath("/vista-previa/oficinista/*", location.pathname))
+    matchPath("/vista-previa/panel/*", location.pathname)
   ) {
     return (
       <Routes>
@@ -100,14 +99,7 @@ export function App() {
           />
           <Route path="*" element={<p>Sección no encontrada.</p>} />
         </Route>
-        <Route path="/vista-previa/oficinista" element={<AdminLayout oficina panelFijo />}>
-          <Route index element={<SeccionAdminPendiente titulo="Resumen" />} />
-          <Route path="ventas" element={<SeccionAdminPendiente titulo="Ventas" />} />
-          <Route path="reservas" element={<SeccionAdminPendiente titulo="Reservas" />} />
-          <Route path="comprobantes" element={<SeccionAdminPendiente titulo="Comprobantes" />} />
-          <Route path="reembolsos" element={<SeccionAdminPendiente titulo="Reembolsos" />} />
-          <Route path="*" element={<p>Sección no encontrada.</p>} />
-        </Route>
+
       </Routes>
     );
   }
