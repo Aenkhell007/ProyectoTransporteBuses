@@ -74,7 +74,7 @@ export function App() {
         </Route>
         <Route
           path="/vista-previa/oficinista"
-          element={<AdminLayout variant="oficina" />}
+          element={<AdminLayout variant="oficina" panelFijo />}
         >
           <Route index element={<SeccionAdminPendiente titulo="Resumen" />} />
           <Route path="ventas" element={<SeccionAdminPendiente titulo="Ventas" />} />
