@@ -10,31 +10,29 @@ const fechaDelPanel = new Intl.DateTimeFormat("es-EC", {
 
 interface AdminHeaderProps {
   cabeceraApp?: boolean;
+  homeHref?: string;
+  titulo: string;
+  descripcion: string;
   nombreUsuario?: string;
   cargando: boolean;
 }
 
-export function AdminHeader({ cabeceraApp = false, nombreUsuario, cargando }: AdminHeaderProps) {
+export function AdminHeader({ cabeceraApp = false, homeHref = "/vista-previa/panel", titulo, descripcion, nombreUsuario, cargando }: AdminHeaderProps) {
   const hoy = new Date();
-  const tituloPanel = "Panel de administración";
-  const descripcionPanel = "Gestiona cooperativas, usuarios y accesos al sistema.";
-  const titulo = (
-    <div className={cabeceraApp ? "min-w-0 max-[960px]:sr-only" : ""}>
-      <h1 className={cabeceraApp ? "truncate text-xl font-bold xl:text-2xl" : "text-2xl leading-tight font-bold lg:text-4xl"}>
-        {tituloPanel}
-      </h1>
-      <p className="mt-1 text-sm text-indigo-900">{descripcionPanel}</p>
+  const encabezado = (
+    <div className="min-w-0 max-[960px]:sr-only">
+      <h1 className="truncate text-xl font-bold xl:text-2xl">{titulo}</h1>
+      <p className="mt-1 text-sm text-indigo-900">{descripcion}</p>
     </div>
   );
-
   if (cabeceraApp) {
     return (
       <header className="gc-header">
         <div className="gc-header__inner">
-          <Link to="/vista-previa/panel" className="gc-brand" aria-label="Gran Continental, resumen de administración">
+          <Link to={homeHref} className="gc-brand" aria-label="Gran Continental, resumen del panel">
             <img src="/images/Logo G-C.png" alt="Gran Continental" width="216" height="88" />
           </Link>
-          {titulo}
+          {encabezado}
           <div className="flex shrink-0 items-center gap-4">
             <time dateTime={hoy.toISOString()} className="hidden items-center gap-2 rounded-lg border border-indigo-100 px-3 py-2 text-sm min-[1121px]:flex">
               <Icono nombre="calendario" className="size-4" />
@@ -62,8 +60,8 @@ export function AdminHeader({ cabeceraApp = false, nombreUsuario, cargando }: Ad
   return (
     <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 bg-white px-4 pt-2 pb-4 text-[#08064e] sm:px-5 lg:min-h-24 lg:py-4">
       <div>
-        <h1 className="text-2xl leading-tight font-bold lg:text-4xl">Panel de administración</h1>
-        <p className="mt-1 text-sm text-indigo-900">Gestiona cooperativas, usuarios y accesos al sistema.</p>
+        <h1 className="text-2xl leading-tight font-bold lg:text-4xl">{titulo}</h1>
+        <p className="mt-1 text-sm text-indigo-900">{descripcion}</p>
       </div>
       <div className="flex items-center gap-4">
         <time dateTime={hoy.toISOString()} className="flex items-center gap-2 rounded-lg border border-indigo-100 px-3 py-2 text-sm">
