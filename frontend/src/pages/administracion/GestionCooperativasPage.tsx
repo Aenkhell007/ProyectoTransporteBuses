@@ -24,7 +24,7 @@ export default function GestionCooperativasPage() {
     const newErrors: Record<string, string> = {};
 
     const rucRegex = /^\d{13}$/;
-    const cedulaRegex = /^\d{10}$/; // Validación exacta de 10 dígitos requerida
+    const cedulaRegex = /^\d{10}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!rucRegex.test(formData.ruc)) newErrors.ruc = 'El RUC debe tener 13 dígitos numéricos.';
@@ -39,32 +39,11 @@ export default function GestionCooperativasPage() {
 
     setIsLoading(true);
 
-    const payload = {
-      cooperativa: {
-        nombreComercial: formData.nombreComercial,
-        razonSocial: formData.razonSocial,
-        ruc: formData.ruc,
-        correoContacto: formData.correoContacto,
-        telefono: formData.telefono,
-        estado: formData.estadoCoop
-      },
-      responsable: {
-        nombres: formData.nombres,
-        apellidos: formData.apellidos,
-        cedula: formData.cedula,
-        correo: formData.correoUser,
-        telefono: formData.telefonoUser,
-        rol: formData.rol,
-        estado: formData.estadoUser,
-        permisos: permisosUsuario || { venta: true, revisarComprobantes: true, publicarViajes: false, administrarCooperativas: false }
-      }
-    };
-
+    // Simulación asíncrona local (sin consola ni guardado en BD real todavía)
     setTimeout(() => {
-      console.log('Payload enviado a la API:', payload);
       setIsLoading(false);
-      alert('¡Cooperativa y usuario guardados con éxito en la base de datos!');
-    }, 2000);
+      alert('¡Validación exitosa! (Prueba local: los datos no se han registrado en la base de datos todavía).');
+    }, 1500);
   };
 
   return (
@@ -77,21 +56,21 @@ export default function GestionCooperativasPage() {
             <h2 className="text-xl font-bold text-blue-900 flex items-center mb-4"><span className="mr-2">🏢</span> Datos de la cooperativa</h2>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre comercial *</label>
-                <input type="text" name="nombreComercial" value={formData.nombreComercial} onChange={handleChange} disabled={isLoading} className="w-full border rounded p-2 disabled:bg-gray-100" required />
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="nombreComercial">Nombre comercial *</label>
+                <input type="text" id="nombreComercial" name="nombreComercial" value={formData.nombreComercial} onChange={handleChange} disabled={isLoading} className="w-full border rounded p-2 disabled:bg-gray-100" required />
               </div>
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Razón social *</label>
-                <input type="text" name="razonSocial" value={formData.razonSocial} onChange={handleChange} disabled={isLoading} className="w-full border rounded p-2 disabled:bg-gray-100" required />
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="razonSocial">Razón social *</label>
+                <input type="text" id="razonSocial" name="razonSocial" value={formData.razonSocial} onChange={handleChange} disabled={isLoading} className="w-full border rounded p-2 disabled:bg-gray-100" required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">RUC *</label>
-                <input type="text" name="ruc" value={formData.ruc} onChange={handleChange} disabled={isLoading} className={`w-full border rounded p-2 disabled:bg-gray-100 ${errors.ruc ? 'border-red-500 bg-red-50' : ''}`} required />
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="ruc">RUC *</label>
+                <input type="text" id="ruc" name="ruc" value={formData.ruc} onChange={handleChange} disabled={isLoading} className={`w-full border rounded p-2 disabled:bg-gray-100 ${errors.ruc ? 'border-red-500 bg-red-50' : ''}`} required />
                 {errors.ruc && <p className="text-xs text-red-600 mt-1">{errors.ruc}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Correo de contacto *</label>
-                <input type="email" name="correoContacto" value={formData.correoContacto} onChange={handleChange} disabled={isLoading} className={`w-full border rounded p-2 disabled:bg-gray-100 ${errors.correoContacto ? 'border-red-500 bg-red-50' : ''}`} required />
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="correoContacto">Correo de contacto *</label>
+                <input type="email" id="correoContacto" name="correoContacto" value={formData.correoContacto} onChange={handleChange} disabled={isLoading} className={`w-full border rounded p-2 disabled:bg-gray-100 ${errors.correoContacto ? 'border-red-500 bg-red-50' : ''}`} required />
                 {errors.correoContacto && <p className="text-xs text-red-600 mt-1">{errors.correoContacto}</p>}
               </div>
             </div>
@@ -101,21 +80,21 @@ export default function GestionCooperativasPage() {
             <h2 className="text-xl font-bold text-blue-900 flex items-center mb-4"><span className="mr-2">👤</span> Usuario responsable</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombres *</label>
-                <input type="text" name="nombres" value={formData.nombres} onChange={handleChange} disabled={isLoading} className="w-full border rounded p-2 disabled:bg-gray-100" required />
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="nombres">Nombres *</label>
+                <input type="text" id="nombres" name="nombres" value={formData.nombres} onChange={handleChange} disabled={isLoading} className="w-full border rounded p-2 disabled:bg-gray-100" required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Apellidos *</label>
-                <input type="text" name="apellidos" value={formData.apellidos} onChange={handleChange} disabled={isLoading} className="w-full border rounded p-2 disabled:bg-gray-100" required />
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="apellidos">Apellidos *</label>
+                <input type="text" id="apellidos" name="apellidos" value={formData.apellidos} onChange={handleChange} disabled={isLoading} className="w-full border rounded p-2 disabled:bg-gray-100" required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cédula (10 dígitos) *</label>
-                <input type="text" name="cedula" value={formData.cedula} onChange={handleChange} disabled={isLoading} className={`w-full border rounded p-2 disabled:bg-gray-100 ${errors.cedula ? 'border-red-500 bg-red-50' : ''}`} required />
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="cedula">Cédula (10 dígitos) *</label>
+                <input type="text" id="cedula" name="cedula" value={formData.cedula} onChange={handleChange} disabled={isLoading} className={`w-full border rounded p-2 disabled:bg-gray-100 ${errors.cedula ? 'border-red-500 bg-red-50' : ''}`} required />
                 {errors.cedula && <p className="text-xs text-red-600 mt-1">{errors.cedula}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico *</label>
-                <input type="email" name="correoUser" value={formData.correoUser} onChange={handleChange} disabled={isLoading} className={`w-full border rounded p-2 disabled:bg-gray-100 ${errors.correoUser ? 'border-red-500 bg-red-50' : ''}`} required />
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="correoUser">Correo electrónico *</label>
+                <input type="email" id="correoUser" name="correoUser" value={formData.correoUser} onChange={handleChange} disabled={isLoading} className={`w-full border rounded p-2 disabled:bg-gray-100 ${errors.correoUser ? 'border-red-500 bg-red-50' : ''}`} required />
                 {errors.correoUser && <p className="text-xs text-red-600 mt-1">{errors.correoUser}</p>}
               </div>
               
