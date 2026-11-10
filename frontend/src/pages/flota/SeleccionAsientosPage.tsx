@@ -29,7 +29,6 @@ export default function SeleccionAsientosPage() {
     d = Number(p.get("destino_orden")),
     cantidad = Number(p.get("cantidad"));
   const reservaId = p.get("reserva_id");
-  const claveRetorno = usuario && id ? `gc.compra.retorno.${usuario.id}.${id}.${o}.${d}.${cantidad}` : null;
   const [reserva, setReserva] = useState<ReservaPendiente | null>(null);
   const [confirmandoCambio, setConfirmandoCambio] = useState(false);
   const valido =
@@ -66,19 +65,14 @@ export default function SeleccionAsientosPage() {
       setCargando(false);
       return;
     }
-    let retorno = reservaId;
-    if (!retorno && claveRetorno) {
-      try { retorno = sessionStorage.getItem(claveRetorno); } catch { /* La URL conserva la reserva cuando el almacenamiento no está disponible. */ }
-    }
     Promise.all([
       apiCompra<DetalleViaje & { mapa: MapaViaje }>(`/viajes/${encodeURIComponent(id!)}?origen_orden=${o}&destino_orden=${d}`),
-      retorno ? obtenerReserva(retorno) : Promise.resolve(null),
+      reservaId ? obtenerReserva(reservaId) : Promise.resolve(null),
     ]).then(([v, r]) => {
       if (!vigente) return;
       if (r && (r.viaje.viaje_id !== id || r.viaje.origen.orden !== o || r.viaje.destino.orden !== d || r.cantidad !== cantidad))
         throw new ErrorCompra(409, { mensaje: "La reserva no corresponde a este viaje. Vuelve a los resultados." });
       if (r && (r.estado === "VENCIDA" || r.estado === "CANCELADA" || (r.estado === "PENDIENTE" && Date.parse(r.expires_at) <= Date.now()))) {
-        if (claveRetorno) { try { sessionStorage.removeItem(claveRetorno); } catch { /* Sin almacenamiento. */ } }
         throw new ErrorCompra(409, { mensaje: "La retención terminó. Vuelve a los resultados para elegir nuevamente." });
       }
       setReserva(r);
@@ -94,7 +88,7 @@ export default function SeleccionAsientosPage() {
     return () => {
       vigente = false;
     };
-  }, [id, o, d, cantidad, valido, version, reservaId, claveRetorno, sesionCargando]);
+  }, [id, o, d, cantidad, valido, version, reservaId, usuario?.id, sesionCargando]);
   async function confirmar() {
     if (!id || !viaje || enviando || seleccion.length !== cantidad) return;
     if (!usuario) {
@@ -120,8 +114,7 @@ export default function SeleccionAsientosPage() {
         destino_orden: d,
         asiento_ids: seleccion,
       });
-      if (claveRetorno) { try { sessionStorage.setItem(claveRetorno, r.reserva_id); } catch { /* El enlace explícito de volver conserva el ID. */ } }
-      // Conserva también el ID en el historial del navegador antes de pasar al formulario.
+      // Atrás vuelve a esta reserva. Desde resultados se inicia una selección nueva.
       const regreso = new URLSearchParams(p); regreso.set("reserva_id", r.reserva_id);
       navegar(`/asientos?${regreso}`, { replace: true });
       navegar(`/pasajeros?reserva_id=${r.reserva_id}`);

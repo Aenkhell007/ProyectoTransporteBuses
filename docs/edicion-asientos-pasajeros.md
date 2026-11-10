@@ -15,7 +15,8 @@ La migración `20261106_edicion_asientos_pasajeros` agrega una versión de edici
 
 ## Comportamiento
 
-- Volver desde pasajeros recupera la reserva y los asientos propios mediante una consulta autorizada. El historial y un identificador en sessionStorage permiten regresar también con Atrás. El almacenamiento no autoriza acceso: el servidor valida la sesión y la titularidad.
+- El enlace para volver desde pasajeros y la entrada anterior del historial incluyen el ID de la reserva. El servidor comprueba la sesión y la titularidad antes de recuperar los asientos.
+- Elegir un viaje desde resultados abre una selección nueva, incluso con el mismo tramo y número de pasajeros en la misma pestaña.
 - Sin cambiar la selección, Continuar reutiliza la reserva. No crea otra ni prolonga el plazo.
 - Para editar, quitar un asiento, escoger otro y pulsar Revisar cambio de asientos. Confirmar guarda el cambio atómicamente; cancelar no modifica la reserva.
 - Se conservan los identificadores de las fichas y los datos guardados. El borrador se recupera por identificador, aunque cambie el orden visual.
