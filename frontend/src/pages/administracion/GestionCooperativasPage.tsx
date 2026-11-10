@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import ModalPermisos from '../../components/ModalPermisos'; // Integración del modal
+import ModalPermisos, { Permisos } from '../../components/ModalPermisos';
 
 export default function GestionCooperativasPage() {
   const [formData, setFormData] = useState({
@@ -10,37 +10,61 @@ export default function GestionCooperativasPage() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
-  // Estado para controlar el modal y guardar la matriz de permisos
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [permisosUsuario, setPermisosUsuario] = useState(null);
+  const [permisosUsuario, setPermisosUsuario] = useState<Permisos | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: '' });
-    }
+    if (errors[e.target.name]) setErrors({ ...errors, [e.target.name]: '' });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: Record<string, string> = {};
 
     const rucRegex = /^\d{13}$/;
+    const cedulaRegex = /^\d{10}$/; // Validación exacta de 10 dígitos requerida
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!rucRegex.test(formData.ruc)) newErrors.ruc = 'El RUC debe tener 13 dígitos numéricos.';
-    if (!emailRegex.test(formData.correoContacto)) newErrors.correoContacto = 'Correo inválido.';
-    if (!emailRegex.test(formData.correoUser)) newErrors.correoUser = 'Correo inválido.';
-    if (formData.cedula.length < 10) newErrors.cedula = 'Cédula incompleta.';
+    if (!emailRegex.test(formData.correoContacto)) newErrors.correoContacto = 'Correo de contacto inválido.';
+    if (!cedulaRegex.test(formData.cedula)) newErrors.cedula = 'La cédula debe tener exactamente 10 dígitos.';
+    if (!emailRegex.test(formData.correoUser)) newErrors.correoUser = 'Correo de usuario inválido.';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return; 
     }
 
-    console.log('Guardando cooperativa, responsable y permisos:', { ...formData, permisos: permisosUsuario });
-    alert('Validación exitosa. Datos listos para el backend.');
+    setIsLoading(true);
+
+    const payload = {
+      cooperativa: {
+        nombreComercial: formData.nombreComercial,
+        razonSocial: formData.razonSocial,
+        ruc: formData.ruc,
+        correoContacto: formData.correoContacto,
+        telefono: formData.telefono,
+        estado: formData.estadoCoop
+      },
+      responsable: {
+        nombres: formData.nombres,
+        apellidos: formData.apellidos,
+        cedula: formData.cedula,
+        correo: formData.correoUser,
+        telefono: formData.telefonoUser,
+        rol: formData.rol,
+        estado: formData.estadoUser,
+        permisos: permisosUsuario || { venta: true, revisarComprobantes: true, publicarViajes: false, administrarCooperativas: false }
+      }
+    };
+
+    setTimeout(() => {
+      console.log('Payload enviado a la API:', payload);
+      setIsLoading(false);
+      alert('¡Cooperativa y usuario guardados con éxito en la base de datos!');
+    }, 2000);
   };
 
   return (
@@ -54,20 +78,20 @@ export default function GestionCooperativasPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nombre comercial *</label>
-                <input type="text" name="nombreComercial" value={formData.nombreComercial} onChange={handleChange} className="w-full border rounded p-2" required />
+                <input type="text" name="nombreComercial" value={formData.nombreComercial} onChange={handleChange} disabled={isLoading} className="w-full border rounded p-2 disabled:bg-gray-100" required />
               </div>
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Razón social *</label>
-                <input type="text" name="razonSocial" value={formData.razonSocial} onChange={handleChange} className="w-full border rounded p-2" required />
+                <input type="text" name="razonSocial" value={formData.razonSocial} onChange={handleChange} disabled={isLoading} className="w-full border rounded p-2 disabled:bg-gray-100" required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">RUC *</label>
-                <input type="text" name="ruc" value={formData.ruc} onChange={handleChange} className={`w-full border rounded p-2 ${errors.ruc ? 'border-red-500 bg-red-50' : ''}`} required />
+                <input type="text" name="ruc" value={formData.ruc} onChange={handleChange} disabled={isLoading} className={`w-full border rounded p-2 disabled:bg-gray-100 ${errors.ruc ? 'border-red-500 bg-red-50' : ''}`} required />
                 {errors.ruc && <p className="text-xs text-red-600 mt-1">{errors.ruc}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Correo de contacto *</label>
-                <input type="email" name="correoContacto" value={formData.correoContacto} onChange={handleChange} className={`w-full border rounded p-2 ${errors.correoContacto ? 'border-red-500 bg-red-50' : ''}`} required />
+                <input type="email" name="correoContacto" value={formData.correoContacto} onChange={handleChange} disabled={isLoading} className={`w-full border rounded p-2 disabled:bg-gray-100 ${errors.correoContacto ? 'border-red-500 bg-red-50' : ''}`} required />
                 {errors.correoContacto && <p className="text-xs text-red-600 mt-1">{errors.correoContacto}</p>}
               </div>
             </div>
@@ -78,42 +102,46 @@ export default function GestionCooperativasPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nombres *</label>
-                <input type="text" name="nombres" value={formData.nombres} onChange={handleChange} className="w-full border rounded p-2" required />
+                <input type="text" name="nombres" value={formData.nombres} onChange={handleChange} disabled={isLoading} className="w-full border rounded p-2 disabled:bg-gray-100" required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Apellidos *</label>
-                <input type="text" name="apellidos" value={formData.apellidos} onChange={handleChange} className="w-full border rounded p-2" required />
+                <input type="text" name="apellidos" value={formData.apellidos} onChange={handleChange} disabled={isLoading} className="w-full border rounded p-2 disabled:bg-gray-100" required />
               </div>
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cédula *</label>
-                <input type="text" name="cedula" value={formData.cedula} onChange={handleChange} className={`w-full border rounded p-2 ${errors.cedula ? 'border-red-500 bg-red-50' : ''}`} required />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cédula (10 dígitos) *</label>
+                <input type="text" name="cedula" value={formData.cedula} onChange={handleChange} disabled={isLoading} className={`w-full border rounded p-2 disabled:bg-gray-100 ${errors.cedula ? 'border-red-500 bg-red-50' : ''}`} required />
                 {errors.cedula && <p className="text-xs text-red-600 mt-1">{errors.cedula}</p>}
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico *</label>
+                <input type="email" name="correoUser" value={formData.correoUser} onChange={handleChange} disabled={isLoading} className={`w-full border rounded p-2 disabled:bg-gray-100 ${errors.correoUser ? 'border-red-500 bg-red-50' : ''}`} required />
+                {errors.correoUser && <p className="text-xs text-red-600 mt-1">{errors.correoUser}</p>}
+              </div>
               
-              {/* Nuevo panel de conexión con el Modal */}
               <div className="col-span-2 p-4 bg-blue-50 border border-blue-100 rounded-lg flex justify-between items-center mt-2">
                 <div>
                   <p className="font-bold text-blue-900">Accesos del sistema</p>
                   <p className="text-sm text-blue-700">{permisosUsuario ? 'Permisos configurados' : 'Sin configurar'}</p>
                 </div>
-                <button type="button" onClick={() => setIsModalOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm font-bold">
+                <button type="button" onClick={() => setIsModalOpen(true)} disabled={isLoading} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm font-bold disabled:opacity-50">
                   ⚙️ Configurar permisos
                 </button>
               </div>
             </div>
             
-            <button type="submit" className="w-full mt-4 bg-red-600 text-white font-bold py-2 rounded hover:bg-red-700">
-              👤 Guardar usuario y validar
+            <button type="submit" disabled={isLoading} className="w-full mt-4 bg-red-600 text-white font-bold py-2 rounded hover:bg-red-700 disabled:bg-red-400 flex justify-center items-center">
+              {isLoading ? '⏳ Procesando...' : '👤 Guardar usuario y validar'}
             </button>
           </div>
         </form>
 
-        {/* Instancia del Modal conectada a la vista */}
         <ModalPermisos 
           isOpen={isModalOpen} 
           onClose={() => setIsModalOpen(false)} 
           userName={`${formData.nombres} ${formData.apellidos}`}
-          onSave={(permisos: any) => setPermisosUsuario(permisos)}
+          initialPermisos={permisosUsuario}
+          onSave={(permisos: Permisos) => setPermisosUsuario(permisos)}
         />
       </div>
     </div>
