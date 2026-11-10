@@ -30,10 +30,11 @@ import FrecuenciasPage from "./pages/frecuencias/FrecuenciasPage";
 import HojaRutaPage from "./pages/operacion/HojaRutaPage";
 import ParadasTarifasPage from "./pages/administracion/ParadasTarifasPage";
 
-// Importaciones de los submódulos de la Vista 12 hasta 12.2
+// Importaciones de los submódulos de la Vista 12 y páginas oficiales de oficina
 import { OficinaResumenPage } from "./features/oficina/OficinaResumenPage";
 import { OficinaReservasPage } from "./features/oficina/OficinaReservasPage";
-import { OficinaComprobantesPage } from "./features/oficina/OficinaComprobantesPage";
+import { BandejaComprobantes } from "./pages/oficina/BandejaComprobantes";
+import { VentaPresencial } from "./pages/oficina/VentaPresencial";
 
 const homeSections: Record<
   string,
@@ -105,15 +106,15 @@ export function App() {
           <Route path="*" element={<p>Sección no encontrada.</p>} />
         </Route>
         
-        {/* Panel del Oficinista (hasta Vista 12.2) */}
+        {/* Panel del Oficinista con rutas oficiales */}
         <Route
           path="/vista-previa/oficinista"
           element={<AdminLayout variant="oficina" panelFijo />}
         >
           <Route index element={<OficinaResumenPage />} />
-          <Route path="ventas" element={<PlaceholderSeccion titulo="Gestión de Ventas de Oficina" />} />
+          <Route path="ventas" element={<VentaPresencial />} />
           <Route path="reservas" element={<OficinaReservasPage />} />
-          <Route path="comprobantes" element={<OficinaComprobantesPage />} />
+          <Route path="comprobantes" element={<BandejaComprobantes />} />
           <Route path="reembolsos" element={<SeccionAdminPendiente titulo="Reembolsos" />} />
           <Route path="*" element={<p className="p-6 text-gray-500">Sección no encontrada.</p>} />
         </Route>
@@ -178,13 +179,4 @@ export function App() {
 
 function SeccionAdminPendiente({ titulo }: { titulo: string }) {
   return <h2 className="sr-only">{titulo}</h2>;
-}
-
-function PlaceholderSeccion({ titulo }: { titulo: string }) {
-  return (
-    <div className="p-8 text-center space-y-3 bg-gray-50 rounded-xl border border-dashed border-gray-200 my-6">
-      <h3 className="text-lg font-bold text-indigo-950">{titulo}</h3>
-      <p className="text-sm text-gray-500">Esta sección está asignada a otro miembro del equipo y se integrará próximamente.</p>
-    </div>
-  );
 }

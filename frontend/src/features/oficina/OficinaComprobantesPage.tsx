@@ -18,12 +18,12 @@ export const OficinaComprobantesPage: React.FC = () => {
   // Modal de detalle/revisión
   const [comprobanteSeleccionado, setComprobanteSeleccionado] = useState<ComprobanteItem | null>(null);
 
-  const cargarComprobantes = async (estado?: string, q?: string, banco?: string, desde?: string, hasta?: string) => {
+  const cargarComprobantes = async (estado?: string, q?: string, banco?: string, desde?: string, hasta?: string): Promise<void> => {
     try {
       setLoading(true);
       const res = await fetchOficinaComprobantesData(estado, q, banco, desde, hasta);
       setData(res);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error al cargar comprobantes:', err);
     } finally {
       setLoading(false);
@@ -34,43 +34,11 @@ export const OficinaComprobantesPage: React.FC = () => {
     cargarComprobantes(tabEstado, busqueda, bancoFiltro, desdeFiltro, hastaFiltro);
   }, [tabEstado, busqueda, bancoFiltro, desdeFiltro, hastaFiltro]);
 
-  const handleAccion = (item: ComprobanteItem) => {
+  const handleAccion = (item: ComprobanteItem): void => {
     setComprobanteSeleccionado(item);
   };
 
-  // Función para aprobar o rechazar y guardar en sessionStorage
-  const handleCambiarEstado = (nuevoEstado: 'Aprobados' | 'Rechazados') => {
-    if (!comprobanteSeleccionado) return;
-
-    // Obtener lista completa actual desde sessionStorage o usar la inicial
-    const guardados = sessionStorage.getItem('gc_comprobantes_oficina');
-    let listaActual = guardados ? JSON.parse(guardados) : [
-      { id: 1, reserva: 'GC-20261010-4587', cliente: 'Ángel Matías Galarza', banco: 'Pichincha', recibido: '16 oct 2026 09:30', monto: 47.60, estado: 'Aprobados', reembolso: 'Sin solicitud', accionTexto: 'Ver detalle' },
-      { id: 2, reserva: 'GC-20261012-4621', cliente: 'María López', banco: 'Guayaquil', recibido: '16 oct 2026 10:00', monto: 20.00, estado: 'En revisión', reembolso: 'No aplica', accionTexto: 'Revisar' },
-      { id: 3, reserva: 'GC-20261012-4622', cliente: 'Juan Pérez', banco: 'Produbanco', recibido: '16 oct 2026 10:15', monto: 12.00, estado: 'Rechazados', reembolso: 'No aplica', accionTexto: 'Ver motivo' },
-      { id: 4, reserva: 'GC-20261009-4400', cliente: 'Luis Vera', banco: 'Pichincha', recibido: '15 oct 2026 12:00', monto: 47.60, estado: 'Aprobados', reembolso: 'Completado $23.80', accionTexto: 'Ver detalle' },
-    ];
-
-    const actualizados = listaActual.map((c: any) => {
-      if (c.id === comprobanteSeleccionado.id) {
-        return {
-          ...c,
-          estado: nuevoEstado,
-          accionTexto: nuevoEstado === 'Aprobados' ? 'Ver detalle' : 'Ver motivo',
-        };
-      }
-      return c;
-    });
-
-    // Guardar en sessionStorage para persistencia ante recargas
-    sessionStorage.setItem('gc_comprobantes_oficina', JSON.stringify(actualizados));
-
-    setComprobanteSeleccionado(null);
-    // Recargar vista con filtros actuales
-    cargarComprobantes(tabEstado, busqueda, bancoFiltro, desdeFiltro, hastaFiltro);
-  };
-
-  const handleIrReembolsos = () => {
+  const handleIrReembolsos = (): void => {
     navigate('/vista-previa/oficinista/reembolsos');
   };
 
@@ -295,7 +263,7 @@ export const OficinaComprobantesPage: React.FC = () => {
       {/* Modal de Revisión / Detalle */}
       {comprobanteSeleccionado && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-xl animate-in fade-in zoom-in duration-200">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-xl">
             <div className="flex justify-between items-center border-b pb-3">
               <h3 className="text-lg font-bold text-indigo-950">Gestión de Comprobante: {comprobanteSeleccionado.reserva}</h3>
               <button
@@ -334,7 +302,36 @@ export const OficinaComprobantesPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-3 border-t">
+            {/* Bloque de aprobación/rechazo deshabilitado por integración real pendiente */}
+            <div className="pt-3 space-y-2 border-t">
+              <div className="bg-blue-50 border border-blue-200 text-blue-900 p-3 rounded-lg text-xs space-y-1">
+                <p className="font-semibold flex items-center gap-1">
+                  <span>🔒</span> Revisión pendiente de API
+                </p>
+                <p className="text-blue-700">
+                  La aprobación o rechazo de comprobantes requiere la conexión con el servidor (ver <code className="bg-blue-100 px-1 rounded">docs/integracion-pagos-reales.md</code>). Los botones están deshabilitados en este entorno.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                disabled
+                className="w-full bg-gray-300 text-gray-500 py-2 rounded-lg text-xs font-bold cursor-not-allowed opacity-70"
+                title="Funcionalidad deshabilitada hasta integrar el endpoint real"
+              >
+                Aprobar comprobante (Requiere Endpoint)
+              </button>
+              <button
+                type="button"
+                disabled
+                className="w-full bg-gray-300 text-gray-500 py-2 rounded-lg text-xs font-bold cursor-not-allowed opacity-70"
+                title="Funcionalidad deshabilitada hasta integrar el endpoint real"
+              >
+                Rechazar comprobante (Requiere Endpoint)
+              </button>
+            </div>
+
+            <div className="flex justify-end pt-3 border-t">
               <button
                 type="button"
                 onClick={() => setComprobanteSeleccionado(null)}
@@ -342,24 +339,6 @@ export const OficinaComprobantesPage: React.FC = () => {
               >
                 Cerrar
               </button>
-              {comprobanteSeleccionado.estado === 'En revisión' && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => handleCambiarEstado('Rechazados')}
-                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
-                  >
-                    Rechazar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleCambiarEstado('Aprobados')}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
-                  >
-                    Aprobar comprobante
-                  </button>
-                </>
-              )}
             </div>
           </div>
         </div>

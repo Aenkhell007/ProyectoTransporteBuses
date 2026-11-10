@@ -1,6 +1,6 @@
-import { OficinaComprobantesResponse } from './OficinaComprobantesPage.types';
+import { OficinaComprobantesResponse, ComprobanteItem } from './OficinaComprobantesPage.types';
 
-const MOCK_COMPROBANTES_DATA: OficinaComprobantesResponse = {
+const MOCK_COMPROBANTES_LOCAL: OficinaComprobantesResponse = {
   kpis: {
     total: 4,
     enRevision: 1,
@@ -56,91 +56,67 @@ const MOCK_COMPROBANTES_DATA: OficinaComprobantesResponse = {
 };
 
 export const fetchOficinaComprobantesData = async (
-  estadoTab?: string,
-  busqueda?: string,
+  estado?: string,
+  q?: string,
   banco?: string,
   desde?: string,
   hasta?: string
 ): Promise<OficinaComprobantesResponse> => {
   try {
     const params = new URLSearchParams();
-    if (estadoTab && estadoTab !== 'Todos') params.append('estado', estadoTab);
-    if (busqueda) params.append('q', busqueda);
+    if (estado && estado !== 'Todos') params.append('estado', estado);
+    if (q) params.append('q', q);
     if (banco && banco !== 'Todos') params.append('banco', banco);
     if (desde) params.append('desde', desde);
     if (hasta) params.append('hasta', hasta);
 
     const response = await fetch(`/api/oficina/comprobantes?${params.toString()}`);
+    
     if (!response.ok) {
-      throw new Error(`Error en el servidor: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error((errorData as { message?: string }).message || `Error del servidor: ${response.status}`);
     }
-    return await response.json();
-  } catch (error) {
-    // Verificamos si hay datos guardados en sessionStorage para persistir cambios locales
-    const guardados = sessionStorage.getItem('gc_comprobantes_oficina');
-    let listaComprobantes = guardados ? JSON.parse(guardados) : [...MOCK_COMPROBANTES_DATA.comprobantes];
 
-    let resultado = [...listaComprobantes];
-
-    // 1. Filtrar por pestaña de estado
-    if (estadoTab && estadoTab !== 'Todos') {
-      resultado = resultado.filter(
-        (c) => c.estado.toLowerCase() === estadoTab.toLowerCase()
+    return (await response.json()) as OficinaComprobantesResponse;
+  } catch (error: unknown) {
+    // Manejo de errores con catch inteligente para entorno DEV
+    if (import.meta.env.DEV) {
+      const mensajeError = error instanceof Error ? error.message : 'Error desconocido';
+      console.warn(
+        `[VistaPreviaPanel] Aviso: No se pudo conectar con el endpoint de comprobantes (/api/oficina/comprobantes). Usando datos de maqueta local en modo DEV. Detalle: ${mensajeError}`
       );
-    }
 
-    // 2. Filtrar por búsqueda de texto (reserva o cliente)
-    if (busqueda && busqueda.trim() !== '') {
-      const q = busqueda.toLowerCase().trim();
-      resultado = resultado.filter(
-        (c) => c.reserva.toLowerCase().includes(q) || c.cliente.toLowerCase().includes(q)
-      );
-    }
+      const guardados = sessionStorage.getItem('gc_comprobantes_oficina');
+      let lista: ComprobanteItem[] = guardados ? JSON.parse(guardados) : [...MOCK_COMPROBANTES_LOCAL.comprobantes];
 
-    // 3. Filtrar por banco
-    if (banco && banco !== 'Todos') {
-      resultado = resultado.filter(
-        (c) => c.banco.toLowerCase() === banco.toLowerCase()
-      );
-    }
+      let resultado = [...lista];
 
-    // 4. Filtrar por rango de fechas (Desde - Hasta)
-    if (desde || hasta) {
-      const mesesMap: Record<string, number> = {
-        'ene': 1, 'feb': 2, 'mar': 3, 'abr': 4,
-        'may': 5, 'jun': 6, 'jul': 7, 'ago': 8,
-        'sep': 9, 'oct': 10, 'nov': 11, 'dic': 12
+      if (estado && estado !== 'Todos') {
+        resultado = resultado.filter(
+          (c) => c.estado.toLowerCase() === estado.toLowerCase()
+        );
+      }
+
+      if (banco && banco !== 'Todos') {
+        resultado = resultado.filter(
+          (c) => c.banco.toLowerCase() === banco.toLowerCase()
+        );
+      }
+
+      if (q && q.trim() !== '') {
+        const query = q.toLowerCase().trim();
+        resultado = resultado.filter(
+          (c) => c.reserva.toLowerCase().includes(query) || c.cliente.toLowerCase().includes(query)
+        );
+      }
+
+      return {
+        kpis: MOCK_COMPROBANTES_LOCAL.kpis,
+        comprobantes: resultado,
       };
-
-      resultado = resultado.filter((c) => {
-        // Ejemplo de recibido: "16 oct 2026 09:30"
-        const partes = c.recibido.split(' ');
-        if (partes.length < 3) return true;
-        const dia = partes[0].padStart(2, '0');
-        const mesStr = partes[1].toLowerCase();
-        const anio = partes[2];
-        const mes = (mesesMap[mesStr] || 1).toString().padStart(2, '0');
-        
-        const fechaComprobanteStr = `${anio}-${mes}-${dia}`; // Formato YYYY-MM-DD
-
-        if (desde && fechaComprobanteStr < desde) return false;
-        if (hasta && fechaComprobanteStr > hasta) return false;
-        return true;
-      });
     }
 
-    const enRevisionCount = listaComprobantes.filter((c: any) => c.estado === 'En revisión').length;
-    const aprobadosCount = listaComprobantes.filter((c: any) => c.estado === 'Aprobados').length;
-    const rechazadosCount = listaComprobantes.filter((c: any) => c.estado === 'Rechazados').length;
-
-    return {
-      kpis: {
-        total: listaComprobantes.length,
-        enRevision: enRevisionCount,
-        aprobados: aprobadosCount,
-        rechazados: rechazadosCount,
-      },
-      comprobantes: resultado,
-    };
+    // En producción relanzamos el error real
+    throw error;
   }
 };
