@@ -29,6 +29,10 @@ import FrecuenciasPage from "./pages/frecuencias/FrecuenciasPage";
 
 import HojaRutaPage from "./pages/operacion/HojaRutaPage";
 import ParadasTarifasPage from "./pages/administracion/ParadasTarifasPage";
+import MikelV3Panel from "./pages/mikel/MikelV3Panel";
+import BusesPage from "./pages/flota/BusesPage";
+import PlanosBusPage from "./pages/flota/PlanosBusPage";
+import ConfiguracionCooperativaPage from "./pages/configuracion/ConfiguracionCooperativaPage";
 
 // Importaciones de los submódulos de la Vista 12 y páginas oficiales de oficina
 import { OficinaResumenPage } from "./features/oficina/OficinaResumenPage";
@@ -160,13 +164,43 @@ export function App() {
         <Route path="/mis-viajes" element={<MisViajesPage />} />
         <Route path="/mis-viajes/reembolso" element={<SolicitarReembolso />} />
         {import.meta.env.DEV && (
-          <Route path="/vista-previa/hoja-ruta" element={<HojaRutaPage />} />
+          <Route path="/vista-previa/frecuencias" element={<FrecuenciasPage />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/flota/buses" element={<BusesPage />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/flota/planos" element={<PlanosBusPage />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/configuracion/cooperativa" element={<ConfiguracionCooperativaPage />} />
         )}
         {import.meta.env.DEV && (
           <Route
             path="/vista-previa/paradas-tarifas"
             element={<ParadasTarifasPage />}
           />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/mikel-v3" element={<MikelV3Panel />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/mikel-v3/asientos-normal" element={<MikelV3Panel inicial="normal" />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/mikel-v3/asientos-premium" element={<MikelV3Panel inicial="premium" />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/mikel-v3/buses" element={<MikelV3Panel inicial="buses" />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/mikel-v3/grupos" element={<MikelV3Panel inicial="grupos" />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/mikel-v3/configuracion-global" element={<MikelV3Panel inicial="global" />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/mikel-v3/identidad" element={<MikelV3Panel inicial="identidad" />} />
         )}
         <Route
           path="*"
