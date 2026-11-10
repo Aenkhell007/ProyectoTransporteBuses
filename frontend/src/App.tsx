@@ -28,6 +28,7 @@ import FrecuenciasPage from "./pages/frecuencias/FrecuenciasPage";
 import HojaRutaPage from "./pages/operacion/HojaRutaPage";
 
 import ParadasTarifasPage from "./pages/administracion/ParadasTarifasPage";
+import { AdminResumenPage } from "./features/administracion/AdminResumenPage";
 
 const homeSections: Record<
   string,
@@ -61,7 +62,7 @@ export function App() {
     return (
       <Routes>
         <Route path="/vista-previa/panel" element={<AdminLayout />}>
-          <Route index element={<SeccionAdminPendiente titulo="Resumen" />} />
+          <Route index element={<AdminResumenPage />} />
           <Route path="cooperativas" element={<SeccionAdminPendiente titulo="Cooperativas" />} />
           <Route path="usuarios" element={<SeccionAdminPendiente titulo="Usuarios y roles" />} />
           <Route path="reportes" element={<SeccionAdminPendiente titulo="Reportes" />} />
