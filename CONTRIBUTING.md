@@ -19,14 +19,14 @@ Revisión cruzada: Benjamín revisa los PR de KT y KT revisa los de Benjamín. L
 
 ## Aportes por integrante
 
-Datos de `develop` al 10/11/2026, último merge `f06e449` (PR #103). Los PR son los fusionados con base `develop` según GitHub (60 en total), agrupados por autor. Los commits no cuentan merges (`git shortlog -sn --no-merges origin/develop`, 260 en total).
+Datos de `develop` al 10/11/2026, último merge `cb543ef` (PR #112). Los PR son los fusionados con base `develop` según GitHub (62 en total), agrupados por autor. Los commits no cuentan merges (`git shortlog -sn --no-merges origin/develop`, 275 en total).
 
 | Integrante | PR fusionados | Commits | Merges hechos con el botón de GitHub |
 |---|---|---|---|
-| Mikel | 18 | 86 | 10 |
-| Ángel | 13 | 31 | 31 |
+| Mikel | 18 | 86 | 11 |
+| Ángel | 14 | 34 | 32 |
+| Kevin | 11 | 60 | 6 |
 | Matías | 10 | 51 | 4 |
-| Kevin | 10 | 48 | 6 |
 | Benjamín | 6 | 36 | 1 |
 | Pablo | 3 | 8 | 7 |
 
@@ -34,13 +34,13 @@ Un merge más no tiene autor registrado en GitHub.
 
 ### Ángel Galarza
 
-PR #12 contratos de reservas, pagos y boletos; #16 layout compartido y conexión a Supabase; #25 método de pago; #32 subida de comprobante; #56 integración de identidad con Brevo; #69 seguimiento del pago (vista 7.1); #70 confirmación de compra (vista 8); #71 solicitud de reembolso (vista 9.2); #84 compra, reserva y pagos con PostgreSQL; #85 edición de asientos sin perder pasajeros; #102 layout del panel de administración; #103 layout del panel del oficinista; #107 cabecera fija y lateral del panel.
+PR #12 contratos de reservas, pagos y boletos; #16 layout compartido y conexión a Supabase; #25 método de pago; #32 subida de comprobante; #56 integración de identidad con Brevo; #69 seguimiento del pago (vista 7.1); #70 confirmación de compra (vista 8); #71 solicitud de reembolso (vista 9.2); #84 compra, reserva y pagos con PostgreSQL; #85 edición de asientos sin perder pasajeros; #102 layout del panel de administración; #103 layout del panel del oficinista; #104 configuración de pagos en el panel de cooperativa (vistas 19.1 y 19.1.1); #107 cabecera fija y lateral del panel.
 
 Documentación: `docs/angel/`, `docs/integracion-pagos-reales.md`, `docs/integracion-compra-real.md`, `docs/edicion-asientos-pasajeros.md`.
 
 ### Kevin Balseca (KT)
 
-PR #38 contrato de API de compra; #40 inicio y búsqueda; #42 resultados con filtros, orden y paginación; #51 datos de pasajeros por asiento; #53 resumen del viaje y descuentos; #55 Mis viajes e historial; #77 contrato de compra 0.3.0; #79 enlaces de Mis viajes a las vistas de pago; #81 reserva compartida entre la selección de asientos y los pasajeros; #83 fotos de buses.
+PR #38 contrato de API de compra; #40 inicio y búsqueda; #42 resultados con filtros, orden y paginación; #51 datos de pasajeros por asiento; #53 resumen del viaje y descuentos; #55 Mis viajes e historial; #77 contrato de compra 0.3.0; #79 enlaces de Mis viajes a las vistas de pago; #81 reserva compartida entre la selección de asientos y los pasajeros; #83 fotos de buses; #112 ajustes de las vistas 1, 2, 4 y 5 (#88 a #93), imágenes del inicio en WebP, formato de Mis viajes y documentación raíz.
 
 Documentación: `docs/kt/README.md`, `docs/api/compra-endpoints.md`.
 

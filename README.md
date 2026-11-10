@@ -13,10 +13,10 @@ Actualizado el 10/11/2026.
 | Rama | Contenido |
 |---|---|
 | `main` | Commit inicial `9b20fa5` del 13/10/2026. Recibe la primera versión con `release/1.0.0`. No hay etiquetas. |
-| `develop` | 60 PR fusionados entre el 15/10/2026 y el 10/11/2026; 260 commits sin contar merges. Último merge: `f06e449` (PR #103). |
+| `develop` | 62 PR fusionados entre el 15/10/2026 y el 10/11/2026; 275 commits sin contar merges. Último merge: `cb543ef` (PR #112). |
 | `feature/*` | 64 ramas en `origin`. Las ramas integradas no se borran (ver [CONTRIBUTING.md](CONTRIBUTING.md)). |
 
-PR abiertos el 10/11/2026: #98 (matriz de permisos de usuarios), #104 (configuración de pagos en el panel de cooperativa) y #106 (interfaz de la vista 11).
+PR abiertos el 10/11/2026: #98 (matriz de permisos de usuarios) y #106 (interfaz de la vista 11).
 
 Pendiente para la primera parte:
 - Dar ruta real a las páginas del personal. La bandeja de revisión de comprobantes no tiene ruta, así que una compra llega a EN REVISIÓN y nadie puede aprobarla desde la interfaz.
@@ -29,7 +29,7 @@ Pendiente para la primera parte:
 |---|---|---|---|
 | Compra del cliente | 1, 1.1, 2, 4, 5, 9, 9.1 | `/`, `/viajes`, `/pasajeros`, `/resumen`, `/mis-viajes` | Kevin Balseca (KT) |
 | Flota y asientos | 3.1, 3.2, 11.4, 16, 16.1, 19 | `/asientos` | Mikel Guzmán |
-| Reservas, pagos y boletos | 6, 7, 7.1, 8, 9.2, 19.1, 19.1.1 | `/pago`, `/pago/comprobante`, `/pago/seguimiento`, `/pago/confirmacion`, `/mis-viajes/reembolso`; `/vista-previa/configuracion/pagos` (solo desarrollo) | Ángel Galarza |
+| Reservas, pagos y boletos | 6, 7, 7.1, 8, 9.2, 19.1, 19.1.1 | `/pago`, `/pago/comprobante`, `/pago/seguimiento`, `/pago/confirmacion`, `/mis-viajes/reembolso`; `/vista-previa/panel/configuracion` (solo desarrollo, vistas 19.1 y 19.1.1 desde #104; `/vista-previa/configuracion/pagos` redirige ahí) | Ángel Galarza |
 | Identidad y administración | 0.1, 0.2, 0.3, 10, 11.2, 20, 20.1, 20.2 | `/registrarse`, `/iniciar-sesion`, `/activar-cuenta`, `/reenviar-activacion`, `/recuperar-contrasena`, `/restablecer-contrasena`, `/mi-cuenta` | Matías Mena |
 | Operación | 11.1, 15, 17, 18, 19.2, frecuencias (PR #26 y #99 la llaman V16), paradas y tarifas (ADM06) | `/vista-previa/frecuencias`, `/vista-previa/hoja-ruta`, `/vista-previa/paradas-tarifas` (solo desarrollo) | Benjamín Basurto |
 | Oficina y panel de administración | 11, 12.x, 13, 14 | `/vista-previa/panel/*`, `/vista-previa/oficinista/*` (solo desarrollo, secciones pendientes) | Pablo Yupa |
