@@ -6,9 +6,10 @@ import MiCuenta from "./pages/auth/MiCuenta";
 import RecuperarContrasena from "./pages/auth/RecuperarContrasena";
 import RestablecerContrasena from "./pages/auth/RestablecerContrasena";
 import { useAuth } from "./features/auth/AuthContext";
-import { Route, Routes, useLocation } from "react-router";
+import { matchPath, Route, Routes, useLocation } from "react-router";
 import { ResultadosPage } from "./pages/compra/ResultadosPage";
-import { PublicLayout, SiteFooter } from "./components/layout";
+import { PublicLayout } from "./components/layout";
+import AdminLayout from "./layouts/AdminLayout";
 import { MisViajesPage } from "./pages/mis-viajes/MisViajesPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { InicioPage } from "./pages/compra/InicioPage";
@@ -54,15 +55,18 @@ export function App() {
   const location = useLocation();
   const section = homeSections[location.hash] ?? homeSections[""];
 
-  // Los paneles mantienen su navegación propia; comparten únicamente el pie.
-  if (location.pathname === "/vista-previa/panel") {
+  if (import.meta.env.DEV && matchPath("/vista-previa/panel/*", location.pathname)) {
     return (
-      <div className="gc-shell">
-        <main className="gc-main">
-          <PlaceholderPage title="Aquí va el panel" />
-        </main>
-        <SiteFooter />
-      </div>
+      <Routes>
+        <Route path="/vista-previa/panel" element={<AdminLayout />}>
+          <Route index element={<SeccionAdminPendiente titulo="Resumen" />} />
+          <Route path="cooperativas" element={<SeccionAdminPendiente titulo="Cooperativas" />} />
+          <Route path="usuarios" element={<SeccionAdminPendiente titulo="Usuarios y roles" />} />
+          <Route path="reportes" element={<SeccionAdminPendiente titulo="Reportes" />} />
+          <Route path="configuracion" element={<SeccionAdminPendiente titulo="Configuración" />} />
+          <Route path="*" element={<p>Sección no encontrada.</p>} />
+        </Route>
+      </Routes>
     );
   }
 
@@ -116,5 +120,11 @@ export function App() {
         />
       </Routes>
     </PublicLayout>
+  );
+}
+
+function SeccionAdminPendiente({ titulo }: { titulo: string }) {
+  return (
+    <h2 className="sr-only">{titulo}</h2>
   );
 }
