@@ -64,8 +64,15 @@ export function validarFiltrosMisViajes(f: FiltrosMisViajes): string | null {
   return null;
 }
 
-export async function listarMisViajes(filtros:FiltrosMisViajes,cursor:string|null):Promise<ListaPaginada<MiViaje>> {
- const p=filtrosMisViajesAUrl(filtros);if(cursor)p.set("cursor",cursor);
- return apiCompra(`/mis-viajes?${p}`);
+export async function listarMisViajes(
+  filtros: FiltrosMisViajes,
+  cursor: string | null,
+): Promise<ListaPaginada<MiViaje>> {
+  const p = filtrosMisViajesAUrl(filtros);
+  if (cursor) p.set("cursor", cursor);
+  return apiCompra(`/mis-viajes?${p}`);
 }
-export async function obtenerMiViaje(identificador:string):Promise<MiViaje>{return apiCompra(`/mis-viajes/${encodeURIComponent(identificador)}`);}
+
+export async function obtenerMiViaje(identificador: string): Promise<MiViaje> {
+  return apiCompra(`/mis-viajes/${encodeURIComponent(identificador)}`);
+}
