@@ -20,18 +20,18 @@ export function fotoTarjetaBus(pisos: number): string {
 
 // Recursos comerciales del inicio. Los archivos permanecen organizados por uso.
 export const FOTOS_INICIO = {
-  portada: "/images/home/hero-gran-continental.png",
-  servicioEjecutivo: "/images/home/servicio-premium.png",
-  servicioConfort: "/images/home/servicio-confort.png",
-  sobreNosotros: "/images/home/sobre-nosotros.png",
+  portada: "/images/home/hero-gran-continental.webp",
+  servicioEjecutivo: "/images/home/servicio-premium.webp",
+  servicioConfort: "/images/home/servicio-confort.webp",
+  sobreNosotros: "/images/home/sobre-nosotros.webp",
 } as const;
 
 export const FOTOS_DESTINOS: Readonly<Record<string, string>> = {
-  quito: "/images/destinos/destino-quito.png",
-  guayaquil: "/images/destinos/destino-guayaquil.png",
-  cuenca: "/images/destinos/destino-cuenca.png",
-  ambato: "/images/destinos/destino-ambato.png",
-  loja: "/images/destinos/destino-loja.png",
+  quito: "/images/destinos/destino-quito.webp",
+  guayaquil: "/images/destinos/destino-guayaquil.webp",
+  cuenca: "/images/destinos/destino-cuenca.webp",
+  ambato: "/images/destinos/destino-ambato.webp",
+  loja: "/images/destinos/destino-loja.webp",
 };
 
 /** Los IDs dependen de la base; la ilustración se asocia al nombre de la ciudad. */
