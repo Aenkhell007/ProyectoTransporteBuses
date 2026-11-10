@@ -6,7 +6,13 @@ import { AdminSidebar } from "../components/layout/AdminSidebar";
 import { SiteFooter } from "../components/layout";
 import { useAuth } from "../features/auth/AuthContext";
 
-export default function AdminLayout({ children }: { children?: ReactNode }) {
+export default function AdminLayout({
+  children,
+  cooperativa = false,
+}: {
+  children?: ReactNode;
+  cooperativa?: boolean;
+}) {
   const { usuario, cargando, logout } = useAuth();
   const [saliendo, setSaliendo] = useState(false);
   const [error, setError] = useState("");
@@ -29,9 +35,18 @@ export default function AdminLayout({ children }: { children?: ReactNode }) {
   return (
     <div className="gc-shell gc-shell--public p-3 sm:p-5">
       <div className="relative mx-auto grid w-full max-w-[1440px] flex-1 grid-rows-[auto_1fr] overflow-hidden rounded-lg bg-white lg:grid-cols-[200px_minmax(0,1fr)] lg:grid-rows-1">
-        <AdminSidebar puedeSalir={!!usuario} saliendo={saliendo} onSalir={cerrarSesion} />
+        <AdminSidebar
+          cooperativa={cooperativa}
+          puedeSalir={!!usuario}
+          saliendo={saliendo}
+          onSalir={cerrarSesion}
+        />
         <div className="flex min-w-0 flex-col">
-          <AdminHeader nombreUsuario={nombreUsuario} cargando={cargando} />
+          <AdminHeader
+            cooperativa={cooperativa}
+            nombreUsuario={nombreUsuario}
+            cargando={cargando}
+          />
           <main id="contenido-administracion" className="min-w-0 flex-1 px-4 pb-4 sm:px-5">
             {error && <p role="alert" className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</p>}
             {children ?? <Outlet />}

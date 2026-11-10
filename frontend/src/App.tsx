@@ -57,6 +57,19 @@ export function App() {
   const location = useLocation();
   const section = homeSections[location.hash] ?? homeSections[""];
 
+  if (
+    import.meta.env.DEV &&
+    matchPath("/vista-previa/configuracion/pagos", location.pathname)
+  ) {
+    return (
+      <Routes>
+        <Route path="/vista-previa/configuracion/pagos" element={<AdminLayout cooperativa />}>
+          <Route index element={<ConfiguracionPagosPage />} />
+        </Route>
+      </Routes>
+    );
+  }
+
   if (import.meta.env.DEV && matchPath("/vista-previa/panel/*", location.pathname)) {
     return (
       <Routes>
@@ -106,13 +119,6 @@ export function App() {
         <Route path="/pago/confirmacion" element={<ConfirmacionCompra />} />
         <Route path="/mis-viajes" element={<MisViajesPage />} />
         <Route path="/mis-viajes/reembolso" element={<SolicitarReembolso />} />
-        {import.meta.env.DEV && (
-          <Route
-            path="/vista-previa/configuracion/pagos"
-            element={<ConfiguracionPagosPage />}
-          />
-        )}
-
         {import.meta.env.DEV && (
           <Route path="/vista-previa/hoja-ruta" element={<HojaRutaPage />} />
         )}
