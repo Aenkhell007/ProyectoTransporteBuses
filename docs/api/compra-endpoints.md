@@ -405,12 +405,18 @@ Orden estable por salida y `compra_id` con cursor.
 }
 ```
 
-- `total_pagado_centavos` sale de `compras` y `monto_reportado_centavos` del
-  comprobante: no son lo mismo y se muestran con etiquetas distintas.
+- `total_pagado_centavos` sale de `compras` y se muestra como "Total pagado".
+- `monto_esperado_centavos` sale de `intentos_pago.total_centavos` (o de `reservas.total_centavos`)
+  y se muestra como "Importe por verificar" en una reserva con pago en verificación.
+- `monto_reportado_centavos`: sin uso en el frontend, decisión de #94. `comprobantes` no tiene
+  columna de monto y `backend/src/compra/misViajes.ts` lo envía en `null`.
 - Los datos de viaje y precio salen del snapshot de la compra; no se recalculan con tarifas actuales.
 - Ver boleto, Descargar PDF y Ver reserva abren las vistas 8 y 7.1 de Ángel; la descarga
   es un endpoint de Ángel que vuelve a verificar la propiedad.
-- `v_mis_viajes` expone `codigo` como UUID; el formato `GC-AAAAMMDD-NNNN` del diseño está por acordar con Ángel.
+- `codigo` es un UUID (`compras.codigo`, o el `id` de la reserva si no hay compra). Mis viajes muestra
+  `codigoCorto(codigo)` (`frontend/src/features/compra/codigo.ts`): los 8 primeros caracteres sin
+  guiones, en mayúsculas; el UUID completo queda en el atributo `title`. Buscar esos 8 caracteres en
+  `q` encuentra la reserva porque `misViajes.ts` compara con `ILIKE`. Decisión de #95 (opción b).
 
 ## Contacto
 
@@ -481,5 +487,5 @@ Estado al 03/11/2026.
 | 9 | Nombres de campos | Español y snake_case, como el contrato de flota. | Acordada (#38) | Equipo |
 | 10 | Beneficios | Solo niño 30 % está en la demo y sus edades no están definidas. Tercera edad y discapacidad sin porcentaje aprobado: se muestra lo que devuelva `cotizar`. | Abierta | Benjamín |
 | 11 | Contacto de acompañantes | La vista 4 pide teléfono y correo opcionales por acompañante, pero `pasajeros` no tiene esas columnas. Quitar los campos o agregar columnas. | Abierta | Matías y equipo |
-| 12 | Código de compra visible | `compras.codigo` es UUID; el diseño muestra `GC-AAAAMMDD-NNNN`. | Abierta | Ángel |
+| 12 | Código de compra visible | `compras.codigo` es UUID; el diseño muestra `GC-AAAAMMDD-NNNN`. Propuesta b de #95: 8 primeros caracteres en mayúsculas. | Propuesta en revisión (#95) | Ángel |
 | 13 | Rutas entre módulos | Tabla "Rutas del frontend en el flujo". Falta registrar `/asientos` (#47); las vistas de Ángel leen `reserva_id` (#69, #70, #71). | En curso | Mikel, Ángel y KT |

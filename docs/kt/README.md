@@ -3,7 +3,7 @@
 Responsable: Kevin Balseca (KT, `Balseca-Kevin`). Issue padre: #36.
 Elemento de configuración: <!-- PENDIENTE: ID del inventario; lo asigna Ángel. --> pendiente de asignar.
 
-Estado al 10/11/2026 (`develop` en `f06e449`): las 7 vistas del módulo tienen ruta y usan la API real desde #84 y #85. Este documento reemplaza la tabla del 03/11/2026, que describía datos simulados.
+Estado al 10/11/2026 (`develop` en `cb543ef`): las 7 vistas del módulo tienen ruta y usan la API real desde #84 y #85. Este documento reemplaza la tabla del 03/11/2026, que describía datos simulados.
 
 ## Vistas
 
@@ -19,9 +19,10 @@ Las vistas 3.1 y 3.2 (selección de asientos, `/asientos`) son de Mikel. Las vis
 
 ## Issues abiertos del módulo
 
+#88 a #93 (vistas 1, 2, 4 y 5) se fusionaron en `develop` con #112 (`cb543ef`).
+
 | Issue | Vista | Estado |
 |---|---|---|
-| #88 a #93 | 1, 2, 4 y 5 | Resueltos en la rama `feature/88-cierre-primera-parte-kt` |
 | #94 Monto reportado en Mis viajes | 9 | Espera a Ángel: de dónde sale el monto que reporta el cliente |
 | #95 Código legible en reservas en verificación | 9 | Espera a Ángel: formato del código de una reserva sin compra |
 | #96 Política de privacidad enlazada | 1.1 | Espera el texto y la versión de la política |
@@ -81,3 +82,4 @@ El recorrido manual completo (búsqueda hasta EN REVISIÓN) no se pudo hacer: de
 - 03/11/2026: estado de cada vista, rutas entre módulos y contrato 0.3.0 (#75).
 - 06/11/2026: compra y Mis viajes pasan a la API real (#84).
 - 10/11/2026: estado con #84 y #85 integrados, issues #88 a #97, pruebas e imágenes WebP (#111).
+- 10/11/2026: #88 a #93 fusionados con #112 (#113).

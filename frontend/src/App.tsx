@@ -25,14 +25,22 @@ import SolicitarReembolso from "./pages/mis-viajes/SolicitarReembolso";
 import { ResumenCompraPage } from "./pages/compra/ResumenCompraPage";
 import GestionCooperativasPage from "./pages/administracion/GestionCooperativasPage";
 import AdminUsuariosPage from "./pages/administracion/AdminUsuariosPage";
-import { BandejaComprobantes } from "./pages/oficina/BandejaComprobantes";
-import { VentaPresencial } from "./pages/oficina/VentaPresencial";
-import RevisionComprobantePage from "./pages/oficina/RevisionComprobantePage";
-import VentaOficinaPage from "./pages/oficina/VentaOficinaPage";
 import ConfiguracionPagosPage from "./pages/configuracion/ConfiguracionPagosPage";
 import FrecuenciasPage from "./pages/frecuencias/FrecuenciasPage";
 import HojaRutaPage from "./pages/operacion/HojaRutaPage";
 import ParadasTarifasPage from "./pages/administracion/ParadasTarifasPage";
+import MikelV3Panel from "./pages/mikel/MikelV3Panel";
+import BusesPage from "./pages/flota/BusesPage";
+import PlanosBusPage from "./pages/flota/PlanosBusPage";
+import ConfiguracionCooperativaPage from "./pages/configuracion/ConfiguracionCooperativaPage";
+
+// Importaciones oficiales del equipo y submódulos de oficina (Vistas 12, 13 y 14)
+import { OficinaResumenPage } from "./features/oficina/OficinaResumenPage";
+import { OficinaReservasPage } from "./features/oficina/OficinaReservasPage";
+import { BandejaComprobantes } from "./pages/oficina/BandejaComprobantes";
+import { VentaPresencial } from "./pages/oficina/VentaPresencial";
+import RevisionComprobantePage from "./pages/oficina/RevisionComprobantePage";
+import VentaOficinaPage from "./pages/oficina/VentaOficinaPage";
 
 const homeSections: Record<
   string,
@@ -88,11 +96,7 @@ export function App() {
 
           <Route
             path="cooperativas"
-            element={
-              <VistaPreviaPanel>
-                <GestionCooperativasPage />
-              </VistaPreviaPanel>
-            }
+            element={<GestionCooperativasPage />}
           />
 
           <Route
@@ -117,12 +121,12 @@ export function App() {
           <Route path="*" element={<p>Sección no encontrada.</p>} />
         </Route>
 
-        {/* RUTAS DEL OFICINISTA */}
+        {/* Panel del Oficinista con rutas oficiales y submódulos integrados */}
         <Route
           path="/vista-previa/oficinista"
           element={<AdminLayout variant="oficina" panelFijo />}
         >
-          <Route index element={<ResumenOficina />} />
+          <Route index element={<OficinaResumenPage />} />
 
           <Route
             path="ventas"
@@ -144,7 +148,7 @@ export function App() {
 
           <Route
             path="reservas"
-            element={<SeccionAdminPendiente titulo="Reservas" />}
+            element={<OficinaReservasPage />}
           />
 
           <Route
@@ -179,7 +183,7 @@ export function App() {
             element={<SeccionAdminPendiente titulo="Reembolsos" />}
           />
 
-          <Route path="*" element={<p>Sección no encontrada.</p>} />
+          <Route path="*" element={<p className="p-6 text-gray-500">Sección no encontrada.</p>} />
         </Route>
       </Routes>
     );
@@ -205,10 +209,16 @@ export function App() {
         <Route path="/viajes" element={<ResultadosPage />} />
 
         {import.meta.env.DEV && (
-          <Route
-            path="/vista-previa/frecuencias"
-            element={<FrecuenciasPage />}
-          />
+          <Route path="/vista-previa/frecuencias" element={<FrecuenciasPage />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/flota/buses" element={<BusesPage />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/flota/planos" element={<PlanosBusPage />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/configuracion/cooperativa" element={<ConfiguracionCooperativaPage />} />
         )}
 
         <Route path="/mi-cuenta" element={<MiCuenta />} />
@@ -245,6 +255,29 @@ export function App() {
           />
         )}
 
+        {/* Rutas agregadas por Mikel y equipo en develop */}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/mikel-v3" element={<MikelV3Panel />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/mikel-v3/asientos-normal" element={<MikelV3Panel inicial="normal" />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/mikel-v3/asientos-premium" element={<MikelV3Panel inicial="premium" />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/mikel-v3/buses" element={<MikelV3Panel inicial="buses" />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/mikel-v3/grupos" element={<MikelV3Panel inicial="grupos" />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/mikel-v3/configuracion-global" element={<MikelV3Panel inicial="global" />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/mikel-v3/identidad" element={<MikelV3Panel inicial="identidad" />} />
+        )}
+
         <Route
           path="*"
           element={<PlaceholderPage title="Aquí va esta página" />}
@@ -279,39 +312,6 @@ function VistaPreviaPanel({
         children
       )}
     </>
-  );
-}
-
-function ResumenOficina() {
-  return (
-    <section className="space-y-4 py-4" aria-labelledby="resumen-oficina">
-      <h2
-        id="resumen-oficina"
-        className="text-xl font-semibold text-slate-900"
-      >
-        Resumen de oficina
-      </h2>
-
-      <p className="text-sm text-slate-600">
-        Los indicadores aparecerán cuando el servicio de oficina esté disponible.
-      </p>
-
-      <div className="flex flex-wrap gap-3">
-        <Link
-          className="rounded-md border border-blue-700 px-4 py-2 text-blue-900"
-          to="ventas"
-        >
-          Ver ventas
-        </Link>
-
-        <Link
-          className="rounded-md border border-blue-700 px-4 py-2 text-blue-900"
-          to="comprobantes"
-        >
-          Ver comprobantes
-        </Link>
-      </div>
-    </section>
   );
 }
 
