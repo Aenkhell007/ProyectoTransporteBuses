@@ -1,55 +1,89 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
-import { fetchAdminResumenData } from './AdminResumenPage.service';
-import { AdminResumenResponse } from './AdminResumenPage.types';
+import { useEffect, useState } from "react";
+import { resumenDemo } from "./AdminResumenPage.demo";
+import { fetchAdminResumenData, mensajeErrorResumen } from "./AdminResumenPage.service";
+import type { AdminResumenResponse } from "./AdminResumenPage.types";
 
-export const AdminResumenPage: React.FC = () => {
-  const navigate = useNavigate();
-  const [data, setData] = useState<AdminResumenResponse | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+type EstadoResumen =
+  | { tipo: "cargando" }
+  | { tipo: "error"; mensaje: string }
+  | { tipo: "listo"; datos: AdminResumenResponse };
+
+export function AdminResumenPage() {
+  const [estado, setEstado] = useState<EstadoResumen>({ tipo: "cargando" });
+  const [intento, setIntento] = useState(0);
+  const [demostracion, setDemostracion] = useState(false);
 
   useEffect(() => {
-    const cargarDatos = async () => {
-      try {
-        setLoading(true);
-        const res = await fetchAdminResumenData();
-        setData(res);
-      } catch (err) {
-        console.error('Error al cargar datos:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    const consulta = new AbortController();
+    fetchAdminResumenData(undefined, undefined, consulta.signal)
+      .then((datos) => {
+        if (!consulta.signal.aborted) setEstado({ tipo: "listo", datos });
+      })
+      .catch((error: unknown) => {
+        if (!consulta.signal.aborted) {
+          setEstado({ tipo: "error", mensaje: mensajeErrorResumen(error) });
+        }
+      });
+    return () => consulta.abort();
+  }, [intento]);
 
-    cargarDatos();
-  }, []);
+  if (!demostracion && estado.tipo === "cargando") {
+    return <p role="status" className="p-4">Cargando panel de administración…</p>;
+  }
 
-  if (loading || !data) {
+  if (!demostracion && estado.tipo === "error") {
     return (
-      <div className="flex justify-center items-center h-64 text-gray-500">
-        <p className="animate-pulse text-lg font-medium">Cargando panel de administración...</p>
+      <div className="space-y-3 rounded-lg border border-slate-200 p-4">
+        <p role="alert">{estado.mensaje}</p>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            className="rounded-md border border-blue-700 px-3 py-2 text-blue-900"
+            onClick={() => {
+              setEstado({ tipo: "cargando" });
+              setIntento((anterior) => anterior + 1);
+            }}
+          >
+            Reintentar
+          </button>
+          {import.meta.env.DEV && (
+            <button
+              type="button"
+              className="rounded-md border border-blue-700 px-3 py-2 text-blue-900"
+              onClick={() => setDemostracion(true)}
+            >
+              Ver datos de ejemplo
+            </button>
+          )}
+        </div>
       </div>
     );
   }
 
-  const { kpis, cooperativas, usuariosPorRol, tendenciaUsuarios } = data;
+  const datos = demostracion ? resumenDemo : estado.tipo === "listo" ? estado.datos : null;
+  if (!datos) return null;
 
-  // Manejadores para los botones
-  const handleVerCooperativas = () => {
-    // Redirige a la subruta dentro del layout del admin
-    navigate('/vista-previa/panel/cooperativas');
-  };
-
-  const handleNuevaCooperativa = () => {
-    alert('Acción "Nueva cooperativa": abre el formulario de registro.');
-  };
-
-  const handleVerDetalle = (nombre: string) => {
-    alert(`Ver detalle de la cooperativa: ${nombre}`);
-  };
+  const { kpis, cooperativas, usuariosPorRol, tendenciaUsuarios } = datos;
+  const maxRegistros = Math.max(1, ...tendenciaUsuarios.map(({ registros }) => registros));
+  const puntos = tendenciaUsuarios.map(({ fecha, registros }, indice) => ({
+    fecha,
+    registros,
+    x: tendenciaUsuarios.length === 1 ? 250 : 20 + indice * 460 / (tendenciaUsuarios.length - 1),
+    y: 110 - registros / maxRegistros * 90,
+  }));
+  const linea = puntos.map(({ x, y }) => [x, y].join(",")).join(" ");
+  const area = puntos.length > 1 ? [puntos[0].x + ",110", linea, puntos.at(-1)!.x + ",110"].join(" ") : "";
 
   return (
     <div className="space-y-6">
+      {demostracion && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-amber-50 p-4 text-amber-900">
+          <p role="status">Vista previa con datos de ejemplo.</p>
+          <button type="button" className="underline" onClick={() => setDemostracion(false)}>
+            Volver al estado de la consulta
+          </button>
+        </div>
+      )}
       {/* Tarjetas KPI */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
@@ -96,10 +130,10 @@ export const AdminResumenPage: React.FC = () => {
         </div>
         <button
           type="button"
-          onClick={handleVerCooperativas}
-          className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow"
+          disabled
+          className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          👥 Ver cooperativas
+          👥 Ver cooperativas (pendiente)
         </button>
       </div>
 
@@ -110,45 +144,21 @@ export const AdminResumenPage: React.FC = () => {
           <h2 className="text-base font-bold text-indigo-950 flex items-center gap-2">
             📊 Usuarios registrados · últimos 7 días
           </h2>
-          <div className="h-52 flex flex-col justify-end pt-2 relative">
-            <svg className="w-full h-36 overflow-visible z-10" viewBox="0 0 500 120" preserveAspectRatio="none">
-              <polygon
-                fill="#d1fae5"
-                fillOpacity="0.6"
-                points={`0,120 ${tendenciaUsuarios
-                  .map((item: any, index: number) => {
-                    const x = (index / (tendenciaUsuarios.length - 1 || 1)) * 480 + 10;
-                    const y = 110 - (item.cantidad / 50) * 100;
-                    return `${x},${y}`;
-                  })
-                  .join(' ')} 480,120`}
-              />
-              <polyline
-                fill="none"
-                stroke="#10b981"
-                strokeWidth="3"
-                points={tendenciaUsuarios
-                  .map((item: any, index: number) => {
-                    const x = (index / (tendenciaUsuarios.length - 1 || 1)) * 480 + 10;
-                    const y = 110 - (item.cantidad / 50) * 100;
-                    return `${x},${y}`;
-                  })
-                  .join(' ')}
-              />
-              {tendenciaUsuarios.map((item: any, index: number) => {
-                const x = (index / (tendenciaUsuarios.length - 1 || 1)) * 480 + 10;
-                const y = 110 - (item.cantidad / 50) * 100;
-                return (
-                  <g key={index}>
-                    <circle cx={x} cy={y} r="5" fill="#059669" stroke="#ffffff" strokeWidth="2" />
-                    <text x={x} y="132" fontSize="11" textAnchor="middle" fill="#6b7280">
-                      {item.fecha}
-                    </text>
-                  </g>
-                );
-              })}
+          {puntos.length === 0 ? (
+            <p className="text-sm text-slate-600">No hay registros en este período.</p>
+          ) : (
+            <svg className="h-44 w-full" viewBox="0 0 500 140" role="img">
+              <title>{puntos.map(({ fecha, registros }) => fecha + ": " + registros).join("; ")}</title>
+              {area && <polygon fill="#d1fae5" points={area} />}
+              <polyline fill="none" stroke="#10b981" strokeWidth="3" points={linea} />
+              {puntos.map(({ fecha, x, y }) => (
+                <g key={fecha}>
+                  <circle cx={x} cy={y} r="5" fill="#059669" stroke="#ffffff" strokeWidth="2" />
+                  <text x={x} y="132" fontSize="11" textAnchor="middle" fill="#6b7280">{fecha}</text>
+                </g>
+              ))}
             </svg>
-          </div>
+          )}
         </div>
 
         {/* Desglose por Rol */}
@@ -160,8 +170,11 @@ export const AdminResumenPage: React.FC = () => {
             <span className="text-xs text-gray-400 font-medium">Total: {kpis.usuariosRegistrados}</span>
           </div>
           <div className="space-y-3">
-            {usuariosPorRol.map((item: any, idx: number) => (
-              <div key={idx} className="flex items-center justify-between text-xs">
+            {usuariosPorRol.length === 0 && (
+              <p className="text-sm text-slate-600">No hay registros de roles.</p>
+            )}
+            {usuariosPorRol.map((item) => (
+              <div key={item.rol} className="flex items-center justify-between text-xs">
                 <span className="text-gray-600 font-medium w-24">{item.rol}</span>
                 <span className="font-bold text-gray-800 w-8">{item.cantidad}</span>
                 <div className="flex-1 bg-gray-100 h-2 rounded-full overflow-hidden ml-2">
@@ -184,10 +197,10 @@ export const AdminResumenPage: React.FC = () => {
           </h2>
           <button
             type="button"
-            onClick={handleNuevaCooperativa}
-            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium shadow flex items-center gap-2 transition"
+            disabled
+            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium shadow flex items-center gap-2 transition disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <span>+</span> Nueva cooperativa
+            <span>+</span> Nueva cooperativa (pendiente)
           </button>
         </div>
 
@@ -203,7 +216,12 @@ export const AdminResumenPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {cooperativas.map((coop: any) => (
+              {cooperativas.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-3">No hay cooperativas registradas.</td>
+                </tr>
+              )}
+              {cooperativas.map((coop) => (
                 <tr key={coop.id} className="hover:bg-gray-50/50 transition">
                   <td className="py-3 px-4 font-semibold text-gray-800 flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full bg-blue-500"></span>
@@ -220,10 +238,10 @@ export const AdminResumenPage: React.FC = () => {
                   <td className="py-3 px-4 text-center">
                     <button
                       type="button"
-                      onClick={() => handleVerDetalle(coop.nombre)}
-                      className="border border-blue-600 text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-md text-xs font-medium transition"
+                      disabled
+                      className="border border-blue-600 text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-md text-xs font-medium transition disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      Ver detalle
+                      Ver detalle (pendiente)
                     </button>
                   </td>
                 </tr>
@@ -234,6 +252,6 @@ export const AdminResumenPage: React.FC = () => {
       </div>
     </div>
   );
-};
+}
 
 export default AdminResumenPage;

@@ -424,7 +424,7 @@ export function ResumenCompraPage() {
             </div>
           </Seccion>
 
-          <div className="lg:col-span-2 lg:row-start-3"><PriceBreakdown cotizacion={cotizacion} /></div>
+          <div className="lg:col-span-2 lg:row-start-3"><PriceBreakdown cotizacion={cotizacion} plegable /></div>
         </div>
 
         <aside

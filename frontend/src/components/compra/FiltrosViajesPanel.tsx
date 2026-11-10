@@ -29,6 +29,14 @@ interface FiltrosViajesPanelProps {
 const control =
   "h-10 w-full appearance-none rounded-md border border-slate-300 bg-white pr-8 pl-3 text-sm outline-none focus-visible:border-blue-600 focus-visible:ring-2 focus-visible:ring-blue-200";
 
+// Dos entradas superpuestas: la barra no recibe clics y cada extremo sí.
+const deslizador =
+  "pointer-events-none absolute inset-x-0 top-1/2 h-1.5 w-full -translate-y-1/2 appearance-none bg-transparent outline-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-green-700 [&::-webkit-slider-thumb]:ring-2 [&::-webkit-slider-thumb]:ring-white focus-visible:[&::-webkit-slider-thumb]:ring-blue-600 [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-green-700";
+
+const porcentaje = (valor: number) =>
+  ((valor - PRECIO_CONTROL.min) / (PRECIO_CONTROL.max - PRECIO_CONTROL.min)) *
+  100;
+
 export function FiltrosViajesPanel({
   filtros,
   opciones,
@@ -189,54 +197,75 @@ export function FiltrosViajesPanel({
           <legend className="text-sm font-semibold text-slate-800">
             Precio por pasajero
           </legend>
-          <label
-            htmlFor={`${id}-pmin`}
-            className="mt-2 flex justify-between text-xs text-slate-600"
-          >
-            <span>Mínimo</span>
-            <span className="font-semibold text-slate-900">
-              {formatearCentavos(precio.min)}
-            </span>
-          </label>
-          <input
-            id={`${id}-pmin`}
-            type="range"
-            min={PRECIO_CONTROL.min}
-            max={PRECIO_CONTROL.max}
-            step={PRECIO_CONTROL.paso}
-            value={precio.min}
-            aria-invalid={!!error}
-            aria-describedby={error ? `${id}-perror` : undefined}
-            onChange={(e) =>
-              setPrecio((p) => ({ ...p, min: Number(e.target.value) }))
-            }
-            className="w-full accent-green-700"
-          />
-          <label
-            htmlFor={`${id}-pmax`}
-            className="mt-1 flex justify-between text-xs text-slate-600"
-          >
-            <span>Máximo</span>
-            <span className="font-semibold text-slate-900">
+          <div className="relative mt-3 h-6">
+            <div
+              aria-hidden="true"
+              className="absolute top-1/2 h-1.5 w-full -translate-y-1/2 rounded-full bg-slate-200"
+            />
+            <div
+              aria-hidden="true"
+              className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-green-700"
+              style={{
+                left: `${porcentaje(precio.min)}%`,
+                right: `${100 - porcentaje(precio.max)}%`,
+              }}
+            />
+            <label htmlFor={`${id}-pmin`} className="sr-only">
+              Precio mínimo
+            </label>
+            <input
+              id={`${id}-pmin`}
+              type="range"
+              min={PRECIO_CONTROL.min}
+              max={PRECIO_CONTROL.max}
+              step={PRECIO_CONTROL.paso}
+              value={precio.min}
+              aria-invalid={!!error}
+              aria-describedby={error ? `${id}-perror` : undefined}
+              onChange={(e) =>
+                setPrecio((p) => ({
+                  ...p,
+                  min: Math.min(Number(e.target.value), p.max),
+                }))
+              }
+              style={{
+                zIndex:
+                  precio.min >= PRECIO_CONTROL.max - PRECIO_CONTROL.paso
+                    ? 2
+                    : 1,
+              }}
+              className={deslizador}
+            />
+            <label htmlFor={`${id}-pmax`} className="sr-only">
+              Precio máximo
+            </label>
+            <input
+              id={`${id}-pmax`}
+              type="range"
+              min={PRECIO_CONTROL.min}
+              max={PRECIO_CONTROL.max}
+              step={PRECIO_CONTROL.paso}
+              value={precio.max}
+              aria-invalid={!!error}
+              aria-describedby={error ? `${id}-perror` : undefined}
+              onChange={(e) =>
+                setPrecio((p) => ({
+                  ...p,
+                  max: Math.max(Number(e.target.value), p.min),
+                }))
+              }
+              style={{ zIndex: 1 }}
+              className={deslizador}
+            />
+          </div>
+          <p className="mt-1 flex justify-between text-sm font-semibold text-slate-900">
+            <span>{formatearCentavos(precio.min)}</span>
+            <span>
               {precio.max === PRECIO_CONTROL.max
                 ? "Sin límite"
                 : formatearCentavos(precio.max)}
             </span>
-          </label>
-          <input
-            id={`${id}-pmax`}
-            type="range"
-            min={PRECIO_CONTROL.min}
-            max={PRECIO_CONTROL.max}
-            step={PRECIO_CONTROL.paso}
-            value={precio.max}
-            aria-invalid={!!error}
-            aria-describedby={error ? `${id}-perror` : undefined}
-            onChange={(e) =>
-              setPrecio((p) => ({ ...p, max: Number(e.target.value) }))
-            }
-            className="w-full accent-green-700"
-          />
+          </p>
           {error && (
             <p
               id={`${id}-perror`}

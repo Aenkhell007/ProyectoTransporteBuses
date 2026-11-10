@@ -368,10 +368,10 @@ export default function ConfiguracionPagosPage() {
   }
 
   return (
-    <section className="mx-auto my-6 max-w-7xl rounded-lg bg-white p-4 text-blue-950 sm:p-6">
-      <header className="mb-5">
+    <section className="py-4 text-blue-950">
+      <header className="mb-4">
         <h1 className="text-2xl font-bold sm:text-3xl">
-          Configuración de pagos
+          Configuración de la cooperativa
         </h1>
 
         <p className="mt-2 text-sm text-slate-600">
@@ -380,12 +380,24 @@ export default function ConfiguracionPagosPage() {
         </p>
       </header>
 
+      <ul aria-label="Secciones de configuración" className="mb-4 grid grid-cols-3 gap-1 text-center text-xs sm:text-sm">
+        <li aria-disabled="true" className="grid min-h-11 place-items-center rounded-md bg-blue-50 px-1 py-2 text-blue-900/80">
+          Identidad y contacto
+        </li>
+        <li aria-current="page" className="grid min-h-11 place-items-center rounded-t-md border border-b-2 border-blue-100 border-b-blue-700 bg-white px-1 py-2 font-bold">
+          Pagos
+        </li>
+        <li aria-disabled="true" className="grid min-h-11 place-items-center rounded-md bg-blue-50 px-1 py-2 text-blue-900/80">
+          Tarifas y descuentos
+        </li>
+      </ul>
+
       <div className="mb-5 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900">
         Vista previa con datos de demostración. No utilices estas cuentas para
         realizar pagos.
       </div>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.8fr)_minmax(280px,1fr)]">
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.8fr)_minmax(280px,1fr)]">
         <section className={panel} aria-labelledby="titulo-cuentas">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>

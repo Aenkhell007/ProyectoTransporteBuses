@@ -20,9 +20,21 @@ const ESTADOS: Record<
   EstadoMiViaje,
   { nombre: string; icono: NombreIcono; clase: string }
 > = {
-  PENDIENTE_PAGO: {nombre:"Pendiente de pago",icono:"reloj",clase:"bg-blue-50 text-blue-800"},
-  RECHAZADA: {nombre:"Comprobante rechazado",icono:"alerta",clase:"bg-red-50 text-red-800"},
-  VENCIDA: {nombre:"Reserva vencida",icono:"reloj",clase:"bg-slate-100 text-slate-700"},
+  PENDIENTE_PAGO: {
+    nombre: "Pendiente de pago",
+    icono: "reloj",
+    clase: "bg-blue-50 text-blue-800",
+  },
+  RECHAZADA: {
+    nombre: "Comprobante rechazado",
+    icono: "alerta",
+    clase: "bg-red-50 text-red-800",
+  },
+  VENCIDA: {
+    nombre: "Reserva vencida",
+    icono: "reloj",
+    clase: "bg-slate-100 text-slate-700",
+  },
   CONFIRMADA: {
     nombre: "Confirmada",
     icono: "checkCirculo",
@@ -51,7 +63,9 @@ const ESTADOS: Record<
 };
 
 const boton =
-  "inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md border px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600";
+  "inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md border px-4 " +
+  "text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 " +
+  "focus-visible:outline-blue-600";
 
 function piso(pisos: number, lista: number[]) {
   if (pisos < 2) return null;
@@ -75,7 +89,9 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
   // Vistas de Ángel: 8 (confirmación y boleto) y 9.2 (reembolso); ambas leen reserva_id.
   const reservaParam = `reserva_id=${encodeURIComponent(viaje.reserva_id)}`;
   const enlaceConfirmacion = `/pago/confirmacion?${reservaParam}`;
-  const mensajeWhatsApp = `Mi viaje con Gran Continental: ${viaje.origen.ciudad} → ${viaje.destino.ciudad}, ${fecha}, salida ${formatearHora(viaje.salida)}. Código de compra ${viaje.codigo}.`;
+  const mensajeWhatsApp =
+    `Mi viaje con Gran Continental: ${viaje.origen.ciudad} → ${viaje.destino.ciudad}, ` +
+    `${fecha}, salida ${formatearHora(viaje.salida)}. Código de compra ${viaje.codigo}.`;
 
   return (
     <article
@@ -84,7 +100,9 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
     >
       <header className="flex flex-wrap items-center gap-x-6 gap-y-2">
         <span
-          className={`inline-flex min-w-40 items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium ${estado.clase}`}
+          className={`inline-flex min-w-40 items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium ${
+            estado.clase
+          }`}
         >
           <Icono nombre={estado.icono} className="h-5 w-5" /> {estado.nombre}
         </span>
@@ -183,7 +201,11 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
             </div>
           ) : (
             <div
-              className={`rounded-md p-3 text-center ${viaje.estado === "CANCELADA" || viaje.estado === "REEMBOLSADA" ? "bg-slate-100" : "bg-green-50"}`}
+              className={`rounded-md p-3 text-center ${
+                viaje.estado === "CANCELADA" || viaje.estado === "REEMBOLSADA"
+                  ? "bg-slate-100"
+                  : "bg-green-50"
+              }`}
             >
               <p className="text-sm text-slate-700">
                 {viaje.estado === "CANCELADA" || viaje.estado === "REEMBOLSADA"
@@ -191,7 +213,11 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
                   : viaje.tipo === "RESERVA" ? "Importe esperado" : "Total pagado"}
               </p>
               <p className="text-2xl font-bold text-slate-900">
-                {viaje.total_pagado_centavos !== null ? formatearCentavos(viaje.total_pagado_centavos) : viaje.monto_esperado_centavos != null ? formatearCentavos(viaje.monto_esperado_centavos) : "Por cotizar"}
+                {viaje.total_pagado_centavos !== null
+                  ? formatearCentavos(viaje.total_pagado_centavos)
+                  : viaje.monto_esperado_centavos != null
+                    ? formatearCentavos(viaje.monto_esperado_centavos)
+                    : "Por cotizar"}
               </p>
             </div>
           )}
@@ -208,7 +234,24 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
               <Icono nombre="boleto" /> Ver boleto
               <span className="sr-only"> {viaje.codigo}</span>
             </Link>
-            {listo?<a href={enlaceArchivo(viaje.reserva_id,viaje.archivo_id!)} className={`${boton} border-blue-700 text-blue-800 hover:bg-blue-50`}><Icono nombre="descarga"/>Descargar PDF</a>:<button type="button" disabled className={`${boton} cursor-not-allowed border-slate-300 text-slate-400`}><Icono nombre="descarga"/>Descargar PDF</button>}
+            {listo ? (
+              <a
+                href={enlaceArchivo(viaje.reserva_id, viaje.archivo_id!)}
+                className={`${boton} border-blue-700 text-blue-800 hover:bg-blue-50`}
+              >
+                <Icono nombre="descarga" />
+                Descargar PDF
+              </a>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className={`${boton} cursor-not-allowed border-slate-300 text-slate-400`}
+              >
+                <Icono nombre="descarga" />
+                Descargar PDF
+              </button>
+            )}
             {viaje.estado === "CONFIRMADA" && (
               <a
                 href={`https://wa.me/?text=${encodeURIComponent(mensajeWhatsApp)}`}
@@ -233,7 +276,11 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
         )}
         {viaje.tipo === "RESERVA" && (
           <Link
-            to={`${viaje.estado === "PENDIENTE_PAGO" || viaje.estado === "RECHAZADA" ? "/pago" : "/pago/seguimiento"}?${reservaParam}`}
+            to={`${
+              viaje.estado === "PENDIENTE_PAGO" || viaje.estado === "RECHAZADA"
+                ? "/pago"
+                : "/pago/seguimiento"
+            }?${reservaParam}`}
             className={`${boton} border-blue-700 text-blue-800 hover:bg-blue-50 sm:max-w-xs sm:self-end lg:ml-auto`}
           >
             <Icono nombre="documento" /> Ver reserva
