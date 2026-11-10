@@ -22,6 +22,7 @@ import SeguimientoPago from "./pages/pagos/SeguimientoPago";
 import ConfirmacionCompra from "./pages/pagos/ConfirmacionCompra";
 import SolicitarReembolso from "./pages/mis-viajes/SolicitarReembolso";
 import { ResumenCompraPage } from "./pages/compra/ResumenCompraPage";
+import GestionCooperativasPage from "./pages/administracion/GestionCooperativasPage";
 import ConfiguracionPagosPage from "./pages/configuracion/ConfiguracionPagosPage";
 import FrecuenciasPage from "./pages/frecuencias/FrecuenciasPage";
 
@@ -82,7 +83,7 @@ export function App() {
           <Route index element={<SeccionAdminPendiente titulo="Resumen" />} />
           <Route
             path="cooperativas"
-            element={<SeccionAdminPendiente titulo="Cooperativas" />}
+            element={<GestionCooperativasPage />}
           />
           <Route
             path="usuarios"

@@ -23,7 +23,7 @@ const defaultPermisos: Permisos = {
 };
 
 export default function ModalPermisos({ isOpen, onClose, userName = "Usuario", initialPermisos, onSave }: ModalPermisosProps) {
-  const [permisos, setPermisos] = useState<Permisos>(defaultPermisos);
+  const [permisos, setPermisos] = useState<Permisos>(initialPermisos ?? defaultPermisos);
 
   useEffect(() => {
     if (isOpen) {
