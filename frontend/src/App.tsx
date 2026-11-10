@@ -22,6 +22,7 @@ import ConfirmacionCompra from "./pages/pagos/ConfirmacionCompra";
 import SolicitarReembolso from "./pages/mis-viajes/SolicitarReembolso";
 import { ResumenCompraPage } from "./pages/compra/ResumenCompraPage";
 import ConfiguracionPagosPage from "./pages/configuracion/ConfiguracionPagosPage";
+import FrecuenciasPage from "./pages/frecuencias/FrecuenciasPage";
 
 import HojaRutaPage from "./pages/operacion/HojaRutaPage";
 
@@ -83,6 +84,9 @@ export function App() {
         <Route path="/pasajeros" element={<PasajerosPage />} />
         <Route path="/registrarse" element={<RegistroPage />} />
         <Route path="/viajes" element={<ResultadosPage />} />
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/frecuencias" element={<FrecuenciasPage />} />
+        )}
         <Route path="/mi-cuenta" element={<MiCuenta />} />
         <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
         <Route
