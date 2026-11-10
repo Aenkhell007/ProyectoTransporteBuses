@@ -15,6 +15,7 @@ import type { NombreIcono } from "./Icono";
 import { nombreGrupo } from "./TripCard";
 
 import { enlaceArchivo } from "../../features/pagos/pagosApi";
+import { codigoCorto } from "../../features/compra/codigo";
 
 const ESTADOS: Record<
   EstadoMiViaje,
@@ -86,12 +87,14 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
   const listo = viaje.estado_documento === "LISTO" && !!viaje.archivo_id;
   const ubicacion = piso(viaje.pisos, viaje.pisos_asientos);
   const fecha = formatearFechaLarga(diaEnEcuador(viaje.salida));
+  // Código corto visible (#95); el UUID completo queda en el atributo title.
+  const codigo = codigoCorto(viaje.codigo);
   // Vistas de Ángel: 8 (confirmación y boleto) y 9.2 (reembolso); ambas leen reserva_id.
   const reservaParam = `reserva_id=${encodeURIComponent(viaje.reserva_id)}`;
   const enlaceConfirmacion = `/pago/confirmacion?${reservaParam}`;
   const mensajeWhatsApp =
     `Mi viaje con Gran Continental: ${viaje.origen.ciudad} → ${viaje.destino.ciudad}, ` +
-    `${fecha}, salida ${formatearHora(viaje.salida)}. Código de compra ${viaje.codigo}.`;
+    `${fecha}, salida ${formatearHora(viaje.salida)}. Código de compra ${codigo}.`;
 
   return (
     <article
@@ -110,8 +113,11 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
           <span className="block text-xs text-slate-600">
             {enVerificacion ? "Código de la reserva" : "Código de la compra"}
           </span>
-          <span className="break-all text-lg font-bold text-[#08035b]">
-            {viaje.codigo}
+          <span
+            title={viaje.codigo}
+            className="break-all text-lg font-bold text-[#08035b]"
+          >
+            {codigo}
           </span>
         </h3>
         <p className="flex items-center gap-2 text-slate-700">
@@ -232,7 +238,7 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
               className={`${boton} border-red-600 bg-red-600 text-white hover:bg-red-700`}
             >
               <Icono nombre="boleto" /> Ver boleto
-              <span className="sr-only"> {viaje.codigo}</span>
+              <span className="sr-only"> {codigo}</span>
             </Link>
             {listo ? (
               <a
@@ -269,7 +275,7 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
                 className={`${boton} border-slate-400 text-slate-700 hover:bg-slate-50`}
               >
                 <Icono nombre="xCirculo" /> Solicitar reembolso
-                <span className="sr-only"> {viaje.codigo}</span>
+                <span className="sr-only"> {codigo}</span>
               </Link>
             )}
           </>
@@ -284,7 +290,7 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
             className={`${boton} border-blue-700 text-blue-800 hover:bg-blue-50 sm:max-w-xs sm:self-end lg:ml-auto`}
           >
             <Icono nombre="documento" /> Ver reserva
-            <span className="sr-only"> {viaje.codigo}</span>
+            <span className="sr-only"> {codigo}</span>
           </Link>
         )}
         {(viaje.estado === "CANCELADA" || viaje.estado === "REEMBOLSADA") && (
@@ -293,7 +299,7 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
             className={`${boton} border-blue-700 text-blue-800 hover:bg-blue-50 sm:max-w-xs lg:ml-auto`}
           >
             <Icono nombre="documento" /> Ver detalle
-            <span className="sr-only"> {viaje.codigo}</span>
+            <span className="sr-only"> {codigo}</span>
           </Link>
         )}
       </div>
