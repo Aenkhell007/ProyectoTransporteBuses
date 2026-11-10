@@ -27,6 +27,8 @@ import FrecuenciasPage from "./pages/frecuencias/FrecuenciasPage";
 
 import HojaRutaPage from "./pages/operacion/HojaRutaPage";
 
+import ParadasTarifasPage from "./pages/administracion/ParadasTarifasPage";
+
 const homeSections: Record<
   string,
   { title: string; activeItem: string; id?: string }
@@ -128,6 +130,9 @@ export function App() {
 
         {import.meta.env.DEV && (
           <Route path="/vista-previa/hoja-ruta" element={<HojaRutaPage />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/vista-previa/paradas-tarifas" element={<ParadasTarifasPage />} />
         )}
         <Route
           path="*"
