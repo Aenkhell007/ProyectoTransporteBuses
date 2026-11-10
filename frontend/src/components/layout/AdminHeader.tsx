@@ -10,17 +10,11 @@ const fechaDelPanel = new Intl.DateTimeFormat("es-EC", {
 
 interface AdminHeaderProps {
   cabeceraApp?: boolean;
-  cooperativa?: boolean;
   nombreUsuario?: string;
   cargando: boolean;
 }
 
-export function AdminHeader({
-  cabeceraApp = false,
-  cooperativa = false,
-  nombreUsuario,
-  cargando,
-}: AdminHeaderProps) {
+export function AdminHeader({ cabeceraApp = false, nombreUsuario, cargando }: AdminHeaderProps) {
   const hoy = new Date();
   const tituloPanel = "Panel de administración";
   const descripcionPanel = "Gestiona cooperativas, usuarios y accesos al sistema.";
@@ -66,26 +60,16 @@ export function AdminHeader({
   }
 
   return (
-    <header
-      className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-2 bg-white px-4 pt-2 pb-4 text-[#08064e] sm:px-5 lg:py-4 ${cooperativa ? "border-b border-blue-100 lg:min-h-16" : "lg:min-h-24"}`}
-    >
-      {cooperativa ? (
-        <p className="text-lg font-bold text-blue-950 sm:text-xl">
-          Gran Continental <span className="text-sm font-normal">· Cooperativa</span>
-        </p>
-      ) : (
-        <div>
-          <h1 className="text-2xl leading-tight font-bold lg:text-4xl">{tituloPanel}</h1>
-          <p className="mt-1 text-sm text-indigo-900">{descripcionPanel}</p>
-        </div>
-      )}
+    <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 bg-white px-4 pt-2 pb-4 text-[#08064e] sm:px-5 lg:min-h-24 lg:py-4">
+      <div>
+        <h1 className="text-2xl leading-tight font-bold lg:text-4xl">Panel de administración</h1>
+        <p className="mt-1 text-sm text-indigo-900">Gestiona cooperativas, usuarios y accesos al sistema.</p>
+      </div>
       <div className="flex items-center gap-4">
-        {!cooperativa && (
-          <time dateTime={hoy.toISOString()} className="flex items-center gap-2 rounded-lg border border-indigo-100 px-3 py-2 text-sm">
-            <Icono nombre="calendario" className="size-4" />
-            {fechaDelPanel.format(hoy)}
-          </time>
-        )}
+        <time dateTime={hoy.toISOString()} className="flex items-center gap-2 rounded-lg border border-indigo-100 px-3 py-2 text-sm">
+          <Icono nombre="calendario" className="size-4" />
+          {fechaDelPanel.format(hoy)}
+        </time>
         <div className="absolute top-[18px] right-3 z-20 lg:static lg:border-l lg:border-indigo-100 lg:pl-4">
           {cargando ? (
             <span role="status" className="sr-only text-sm text-slate-600 lg:not-sr-only">Consultando sesión…</span>

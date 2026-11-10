@@ -6,7 +6,7 @@ import MiCuenta from "./pages/auth/MiCuenta";
 import RecuperarContrasena from "./pages/auth/RecuperarContrasena";
 import RestablecerContrasena from "./pages/auth/RestablecerContrasena";
 import { useAuth } from "./features/auth/AuthContext";
-import { matchPath, Route, Routes, useLocation } from "react-router";
+import { matchPath, Navigate, Route, Routes, useLocation } from "react-router";
 import { ResultadosPage } from "./pages/compra/ResultadosPage";
 import { PublicLayout } from "./components/layout";
 import AdminLayout from "./layouts/AdminLayout";
@@ -65,10 +65,8 @@ export function App() {
       <Routes>
         <Route
           path="/vista-previa/configuracion/pagos"
-          element={<AdminLayout cooperativa />}
-        >
-          <Route index element={<ConfiguracionPagosPage />} />
-        </Route>
+          element={<Navigate to="/vista-previa/panel/configuracion" replace />}
+        />
       </Routes>
     );
   }
@@ -95,7 +93,7 @@ export function App() {
           />
           <Route
             path="configuracion"
-            element={<SeccionAdminPendiente titulo="Configuración" />}
+            element={<ConfiguracionPagosPage />}
           />
           <Route path="*" element={<p>Sección no encontrada.</p>} />
         </Route>

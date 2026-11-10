@@ -8,11 +8,9 @@ import { useAuth } from "../features/auth/AuthContext";
 
 export default function AdminLayout({
   children,
-  cooperativa = false,
   panelFijo = false,
 }: {
   children?: ReactNode;
-  cooperativa?: boolean;
   panelFijo?: boolean;
 }) {
   const { usuario, cargando, logout } = useAuth();
@@ -52,8 +50,6 @@ export default function AdminLayout({
           >
             <AdminSidebar
               sinLogo={panelFijo}
-             
-              cooperativa={cooperativa}
               puedeSalir={!!usuario}
               saliendo={saliendo}
               onSalir={cerrarSesion}
@@ -63,7 +59,6 @@ export default function AdminLayout({
         <div className="flex min-w-0 flex-col self-stretch">
           {!panelFijo && (
             <AdminHeader
-              cooperativa={cooperativa}
               nombreUsuario={nombreUsuario}
               cargando={cargando}
             />
