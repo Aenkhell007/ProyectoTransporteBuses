@@ -405,8 +405,11 @@ Orden estable por salida y `compra_id` con cursor.
 }
 ```
 
-- `total_pagado_centavos` sale de `compras` y `monto_reportado_centavos` del
-  comprobante: no son lo mismo y se muestran con etiquetas distintas.
+- `total_pagado_centavos` sale de `compras` y se muestra como "Total pagado".
+- `monto_esperado_centavos` sale de `intentos_pago.total_centavos` (o de `reservas.total_centavos`)
+  y se muestra como "Importe por verificar" en una reserva con pago en verificación.
+- `monto_reportado_centavos`: sin uso en el frontend, decisión de #94. `comprobantes` no tiene
+  columna de monto y `backend/src/compra/misViajes.ts` lo envía en `null`.
 - Los datos de viaje y precio salen del snapshot de la compra; no se recalculan con tarifas actuales.
 - Ver boleto, Descargar PDF y Ver reserva abren las vistas 8 y 7.1 de Ángel; la descarga
   es un endpoint de Ángel que vuelve a verificar la propiedad.
