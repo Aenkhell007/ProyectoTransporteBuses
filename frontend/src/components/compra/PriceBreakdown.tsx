@@ -1,3 +1,4 @@
+import { useId, useState } from "react";
 import { NOMBRES_TIPO_PASAJERO } from "../../features/compra/pasajeros";
 import type {
   Cotizacion,
@@ -20,6 +21,8 @@ interface PriceBreakdownProps {
   /** Texto de cada línea; por defecto "Tarifa de asiento (Adulto) · U8". */
   etiquetaLinea?: (linea: LineaCotizacion) => string;
   titulo?: string;
+  /** En pantallas pequeñas agrega un botón para plegar el desglose. No cambia ningún valor. */
+  plegable?: boolean;
 }
 
 export function etiquetaPorDefecto(linea: LineaCotizacion) {
@@ -33,7 +36,11 @@ export function PriceBreakdown({
   cotizacion,
   etiquetaLinea = etiquetaPorDefecto,
   titulo = "Detalle de precios",
+  plegable = false,
 }: PriceBreakdownProps) {
+  const id = useId();
+  const [abierto, setAbierto] = useState(true);
+  const cerrado = plegable && !abierto;
   const { lineas } = cotizacion;
   const iva = `IVA (${formatearPuntosBase(cotizacion.impuesto_bp)})`;
 
@@ -42,17 +49,36 @@ export function PriceBreakdown({
       aria-labelledby="detalle-precios"
       className="rounded-lg border border-indigo-100 bg-white p-4"
     >
-      <h2
-        id="detalle-precios"
-        className="flex items-center gap-2 text-lg font-bold text-[#08035b]"
-      >
-        <span className="flex h-8 w-8 items-center justify-center rounded-md bg-red-600 text-white">
-          <Icono nombre="calculadora" className="h-4 w-4" />
-        </span>
-        {titulo}
-      </h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2
+          id="detalle-precios"
+          className="flex items-center gap-2 text-lg font-bold text-[#08035b]"
+        >
+          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-red-600 text-white">
+            <Icono nombre="calculadora" className="h-4 w-4" />
+          </span>
+          {titulo}
+        </h2>
+        {plegable && (
+          <button
+            type="button"
+            onClick={() => setAbierto(!abierto)}
+            aria-expanded={abierto}
+            aria-controls={`${id}-tabla ${id}-lista`}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-blue-600 lg:hidden"
+          >
+            <Icono nombre={abierto ? "chevronArriba" : "chevronAbajo"} />
+            <span className="sr-only">
+              {abierto ? "Contraer" : "Expandir"} {titulo}
+            </span>
+          </button>
+        )}
+      </div>
 
-      <table className="mt-3 hidden w-full border-collapse text-sm sm:table [&_thead]:bg-blue-50/70 [&_th]:border [&_th]:border-indigo-100 [&_td]:border [&_td]:border-indigo-100 [&_th]:px-3 [&_td]:px-3">
+      <table
+        id={`${id}-tabla`}
+        className={`mt-3 hidden w-full border-collapse text-sm ${cerrado ? "lg:table" : "sm:table"} [&_thead]:bg-blue-50/70 [&_th]:border [&_th]:border-indigo-100 [&_td]:border [&_td]:border-indigo-100 [&_th]:px-3 [&_td]:px-3`}
+      >
         <caption className="sr-only">
           {titulo}, versión {cotizacion.version}, importes en{" "}
           {cotizacion.moneda}
@@ -139,7 +165,10 @@ export function PriceBreakdown({
         </tfoot>
       </table>
 
-      <dl className="mt-3 space-y-1 text-sm sm:hidden">
+      <dl
+        id={`${id}-lista`}
+        className={`mt-3 space-y-1 text-sm sm:hidden ${cerrado ? "hidden" : ""}`}
+      >
         {lineas.map((l) => (
           <div
             key={l.reserva_asiento_id}
