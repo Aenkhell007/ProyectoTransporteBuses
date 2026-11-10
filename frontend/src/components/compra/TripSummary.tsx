@@ -9,7 +9,7 @@ import {
 } from "../../features/compra/fechas";
 import { BusImagen } from "./BusImagen";
 import { Icono } from "./Icono";
-import { SERVICIOS_BUS, nombreGrupo } from "./TripCard";
+import { NOMBRE_CLASE, SERVICIOS_BUS, nombreGrupo } from "./TripCard";
 
 interface TripSummaryProps {
   reserva: ReservaPendiente;
@@ -26,6 +26,7 @@ function pisoLegible(piso: number, pisos: number) {
 export function TripSummary({ reserva, accion }: TripSummaryProps) {
   const { viaje, bus } = reserva;
   const pisos = [...new Set(reserva.asientos.map((a) => a.piso))].sort();
+  const clases = [...new Set(reserva.asientos.map((a) => a.clase))];
   const carroceria = [bus.carroceria, bus.carroceria_modelo]
     .filter(Boolean)
     .join(" ");
@@ -89,7 +90,7 @@ export function TripSummary({ reserva, accion }: TripSummaryProps) {
           </p>
           <ul
             className="mt-2 flex flex-wrap gap-2 text-sm"
-            aria-label="Ubicación de los asientos"
+            aria-label="Ubicación y clase de los asientos"
           >
             {pisos.map((p) => (
               <li
@@ -97,6 +98,14 @@ export function TripSummary({ reserva, accion }: TripSummaryProps) {
                 className="rounded-md bg-slate-100 px-2.5 py-1 text-slate-700"
               >
                 {pisoLegible(p, bus.pisos)}
+              </li>
+            ))}
+            {clases.map((c) => (
+              <li
+                key={c}
+                className="rounded-md bg-blue-50 px-2.5 py-1 text-blue-800"
+              >
+                {NOMBRE_CLASE[c]}
               </li>
             ))}
           </ul>
