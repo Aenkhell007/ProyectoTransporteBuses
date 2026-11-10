@@ -11,12 +11,13 @@ const secciones = [
 ];
 
 interface AdminSidebarProps {
+  sinLogo?: boolean;
   puedeSalir: boolean;
   saliendo: boolean;
   onSalir: () => void;
 }
 
-export function AdminSidebar({ puedeSalir, saliendo, onSalir }: AdminSidebarProps) {
+export function AdminSidebar({ sinLogo = false, puedeSalir, saliendo, onSalir }: AdminSidebarProps) {
   const [abierto, setAbierto] = useState(false);
   const menuId = useId();
   const botonMenu = useRef<HTMLButtonElement>(null);
@@ -31,10 +32,10 @@ export function AdminSidebar({ puedeSalir, saliendo, onSalir }: AdminSidebarProp
         }
       }}
     >
-      <div className="grid min-h-20 grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-2 bg-white px-3 lg:min-h-24 lg:grid-cols-1 lg:justify-items-center">
-        <Link to="." onClick={() => setAbierto(false)} aria-label="Gran Continental, resumen de administración" className="col-start-2 row-start-1 justify-self-center lg:col-start-1">
+      <div className={sinLogo ? "grid min-h-12 items-center bg-white px-3 lg:hidden" : "grid min-h-20 grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-2 bg-white px-3 lg:min-h-24 lg:grid-cols-1 lg:justify-items-center"}>
+        {!sinLogo && <Link to="." onClick={() => setAbierto(false)} aria-label="Gran Continental, resumen de administración" className="col-start-2 row-start-1 justify-self-center lg:col-start-1">
           <img src="/images/Logo G-C.png" alt="Gran Continental" width="160" height="64" className="h-16 w-40 object-contain" />
-        </Link>
+        </Link>}
         <button
           ref={botonMenu}
           type="button"
