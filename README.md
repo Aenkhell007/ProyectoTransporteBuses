@@ -8,18 +8,18 @@ Los requisitos y las vistas numeradas salen del Documento Maestro V3 del 16/10/2
 
 ## Estado del repositorio
 
-Actualizado el 10/11/2026.
+Cifras al 10/11/2026, `develop` en `3c5121b`.
 
 | Rama | Contenido |
 |---|---|
 | `main` | Commit inicial `9b20fa5` del 13/10/2026. Recibe la primera versión con `release/1.0.0`. No hay etiquetas. |
-| `develop` | 62 PR fusionados entre el 15/10/2026 y el 10/11/2026; 275 commits sin contar merges. Último merge: `cb543ef` (PR #112). |
-| `feature/*` | 64 ramas en `origin`. Las ramas integradas no se borran (ver [CONTRIBUTING.md](CONTRIBUTING.md)). |
+| `develop` | 65 PR fusionados entre el 15/10/2026 y el 10/11/2026; 300 commits sin contar merges. Último merge: `3c5121b` (PR #117). |
+| `feature/*` | 65 ramas `feature/` de 68 ramas en `origin` (las otras son `develop`, `main` y `feat/mikel-flota-configuracion`). Las ramas integradas no se borran (ver [CONTRIBUTING.md](CONTRIBUTING.md)). |
 
-PR abiertos el 10/11/2026: #98 (matriz de permisos de usuarios) y #106 (interfaz de la vista 11).
+PR abiertos el 10/11/2026: #114 (`CITATION.cff`), #116 (vista 12 del oficinista) y #118 (flota y configuración de cooperativa).
 
 Pendiente para la primera parte:
-- Dar ruta real a las páginas del personal. La bandeja de revisión de comprobantes no tiene ruta, así que una compra llega a EN REVISIÓN y nadie puede aprobarla desde la interfaz.
+- Conectar las páginas del personal a la API. Desde #117 la bandeja de revisión de comprobantes tiene ruta (`/vista-previa/oficinista/comprobantes`, solo desarrollo), pero es de solo lectura y con datos de ejemplo, así que una compra llega a EN REVISIÓN y nadie puede aprobarla desde la interfaz.
 - Publicar viajes con plano y tarifa para el recorrido completo. Del 08/11 al 11/11/2026 `GET /api/viajes` devolvió 0 viajes.
 - Publicar `release/1.0.0` y la etiqueta `v1.0.0` en `main`.
 
@@ -32,9 +32,9 @@ Pendiente para la primera parte:
 | Reservas, pagos y boletos | 6, 7, 7.1, 8, 9.2, 19.1, 19.1.1 | `/pago`, `/pago/comprobante`, `/pago/seguimiento`, `/pago/confirmacion`, `/mis-viajes/reembolso`; `/vista-previa/panel/configuracion` (solo desarrollo, vistas 19.1 y 19.1.1 desde #104; `/vista-previa/configuracion/pagos` redirige ahí) | Ángel Galarza |
 | Identidad y administración | 0.1, 0.2, 0.3, 10, 11.2, 20, 20.1, 20.2 | `/registrarse`, `/iniciar-sesion`, `/activar-cuenta`, `/reenviar-activacion`, `/recuperar-contrasena`, `/restablecer-contrasena`, `/mi-cuenta` | Matías Mena |
 | Operación | 11.1, 15, 17, 18, 19.2, frecuencias (PR #26 y #99 la llaman V16), paradas y tarifas (ADM06) | `/vista-previa/frecuencias`, `/vista-previa/hoja-ruta`, `/vista-previa/paradas-tarifas` (solo desarrollo) | Benjamín Basurto |
-| Oficina y panel de administración | 11, 12.x, 13, 14 | `/vista-previa/panel/*`, `/vista-previa/oficinista/*` (solo desarrollo, secciones pendientes) | Pablo Yupa |
+| Oficina y panel de administración | 11, 12.x, 13, 14 | `/vista-previa/panel` (resumen de #106, que pide `GET /api/admin/resumen`, sin ruta en el backend) y `/vista-previa/oficinista` (Ventas y Comprobantes de solo lectura desde #117; Reservas y Reembolsos pendientes), solo desarrollo | Pablo Yupa |
 
-Las rutas `/vista-previa/*` solo existen con `import.meta.env.DEV`. Las páginas `flota/BusesPage.tsx`, `flota/PlanosBusPage.tsx`, `flota/PlanoEditorPage.tsx`, `flota/IndisponibilidadesPage.tsx`, `administracion/AdminUsuariosPage.tsx`, `administracion/GestionAccesosPage.tsx`, `administracion/GestionCooperativasPage.tsx`, `oficina/BandejaComprobantes.tsx`, `oficina/VentaPresencial.tsx` y `admin/Dashboard.tsx` existen en `frontend/src/pages/` y no tienen ruta al 10/11/2026.
+Las rutas `/vista-previa/*` solo existen con `import.meta.env.DEV`. Desde #98 y #117, `administracion/GestionCooperativasPage.tsx`, `administracion/AdminUsuariosPage.tsx`, `oficina/VentaPresencial.tsx` y `oficina/BandejaComprobantes.tsx` tienen ruta en esos paneles, con el aviso "Vista previa con datos de ejemplo". Las páginas `flota/BusesPage.tsx`, `flota/PlanosBusPage.tsx`, `flota/PlanoEditorPage.tsx`, `flota/IndisponibilidadesPage.tsx`, `administracion/GestionAccesosPage.tsx`, `admin/Dashboard.tsx` e `identidad/PerfilPage.tsx` existen en `frontend/src/pages/` y no tienen ruta (cifras al 10/11/2026, `develop` en `3c5121b`).
 
 El número de vista de cada módulo sale de la tabla de responsables del equipo; se confirma con el documento maestro. El detalle de cada módulo está en `docs/kt/`, `docs/angel/`, `docs/flota/` y `docs/benjamin/`. Quién hizo cada PR está en [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -128,7 +128,7 @@ Se usa `127.0.0.1` en lugar de `localhost` y el mismo puerto que dice `FRONTEND_
 
 ## Pruebas
 
-| Comando | Qué comprueba | Resultado el 10/11/2026 |
+| Comando | Qué comprueba | Resultado el 10/11/2026 (`develop` en `3c5121b`) |
 |---|---|---|
 | `npm --prefix frontend run build` | Compilación TypeScript y empaquetado con Vite | Correcto |
 | `npm --prefix backend run check:api` | Tipos del servidor | Correcto |
@@ -137,6 +137,7 @@ Se usa `127.0.0.1` en lugar de `localhost` y el mismo puerto que dice `FRONTEND_
 | `npm --prefix backend run test:pagos` | Validación de comprobantes y estados de pago | 6 de 6 |
 | `node backend/node_modules/tsx/dist/cli.mjs --test frontend/tests/edicionPasajeros.test.ts` | Borrador de pasajeros y categorías | 3 de 3 |
 | `node backend/node_modules/tsx/dist/cli.mjs --test frontend/tests/destinoTrasLogin.test.ts` | Redirección después de iniciar sesión | 4 de 4 |
+| `node backend/node_modules/tsx/dist/cli.mjs --test frontend/tests/modalPermisos.test.ts` | Modal y matriz de permisos de usuarios (#98) | 2 de 2 |
 | `PROBAR_PAGOS_DB=1 npm --prefix backend run test:pagos:db` | Reserva, cotización, rechazo, aprobación, PDF/QR y aislamiento entre cuentas contra la base real; revierte la transacción | Requiere `DIRECT_URL` |
 
 `test:compra` necesita que exista `DATABASE_URL` aunque no se conecta a la base.

@@ -19,22 +19,22 @@ Revisión cruzada: Benjamín revisa los PR de KT y KT revisa los de Benjamín. L
 
 ## Aportes por integrante
 
-Datos de `develop` al 10/11/2026, último merge `cb543ef` (PR #112). Los PR son los fusionados con base `develop` según GitHub (62 en total), agrupados por autor. Los commits no cuentan merges (`git shortlog -sn --no-merges origin/develop`, 275 en total).
+Cifras al 10/11/2026, `develop` en `3c5121b` (último merge, PR #117). Los PR son los fusionados con base `develop` según GitHub (65 en total), agrupados por autor. Los commits no cuentan merges (`git shortlog -sn --no-merges origin/develop`, 300 en total).
 
 | Integrante | PR fusionados | Commits | Merges hechos con el botón de GitHub |
 |---|---|---|---|
 | Mikel | 18 | 86 | 11 |
-| Ángel | 14 | 34 | 32 |
-| Kevin | 11 | 60 | 6 |
-| Matías | 10 | 51 | 4 |
+| Ángel | 15 | 37 | 32 |
+| Kevin | 11 | 60 | 9 |
+| Matías | 11 | 71 | 4 |
 | Benjamín | 6 | 36 | 1 |
-| Pablo | 3 | 8 | 7 |
+| Pablo | 4 | 10 | 7 |
 
 Un merge más no tiene autor registrado en GitHub.
 
 ### Ángel Galarza
 
-PR #12 contratos de reservas, pagos y boletos; #16 layout compartido y conexión a Supabase; #25 método de pago; #32 subida de comprobante; #56 integración de identidad con Brevo; #69 seguimiento del pago (vista 7.1); #70 confirmación de compra (vista 8); #71 solicitud de reembolso (vista 9.2); #84 compra, reserva y pagos con PostgreSQL; #85 edición de asientos sin perder pasajeros; #102 layout del panel de administración; #103 layout del panel del oficinista; #104 configuración de pagos en el panel de cooperativa (vistas 19.1 y 19.1.1); #107 cabecera fija y lateral del panel.
+PR #12 contratos de reservas, pagos y boletos; #16 layout compartido y conexión a Supabase; #25 método de pago; #32 subida de comprobante; #56 integración de identidad con Brevo; #69 seguimiento del pago (vista 7.1); #70 confirmación de compra (vista 8); #71 solicitud de reembolso (vista 9.2); #84 compra, reserva y pagos con PostgreSQL; #85 edición de asientos sin perder pasajeros; #102 layout del panel de administración; #103 layout del panel del oficinista; #104 configuración de pagos en el panel de cooperativa (vistas 19.1 y 19.1.1); #107 cabecera fija y lateral del panel; #117 conexión de las vistas de administración y oficina a sus menús.
 
 Documentación: `docs/angel/`, `docs/integracion-pagos-reales.md`, `docs/integracion-compra-real.md`, `docs/edicion-asientos-pasajeros.md`.
 
@@ -52,7 +52,7 @@ Documentación: `docs/flota/`, `docs/api/flota-endpoints.md`, `docs/api/mapa-asi
 
 ### Matías Mena
 
-PR #5 esquema Prisma y estructura inicial del backend; #13 vistas de autenticación; #21 base de datos y vistas 10 y 0.3; #22 vistas de administración de identidad; #29 autenticación con JWT en el backend; #35 administración de identidad en el backend; #48 vistas de identidad y perfil; #65 administración de usuarios y cooperativas; #68 validaciones de gestión de cooperativas; #72 conexión de gestión de buses con la API. Responsable de EC-REQ-01 y EC-DB-01 en el inventario.
+PR #5 esquema Prisma y estructura inicial del backend; #13 vistas de autenticación; #21 base de datos y vistas 10 y 0.3; #22 vistas de administración de identidad; #29 autenticación con JWT en el backend; #35 administración de identidad en el backend; #48 vistas de identidad y perfil; #65 administración de usuarios y cooperativas; #68 validaciones de gestión de cooperativas; #72 conexión de gestión de buses con la API; #98 modal y matriz de permisos de usuarios. Responsable de EC-REQ-01 y EC-DB-01 en el inventario.
 
 ### Benjamín Basurto
 
@@ -62,7 +62,7 @@ Documentación: `docs/benjamin/planificacion-alcance.md`, `docs/benjamin/planifi
 
 ### Pablo Yupa
 
-PR #8 panel preliminar del oficinista; #60 tipos de la vista 11; #87 servicio de API de la vista 11. Archivos: `frontend/src/pages/oficina/BandejaComprobantes.tsx`, `frontend/src/pages/oficina/VentaPresencial.tsx`, `frontend/src/features/administracion/`.
+PR #8 panel preliminar del oficinista; #60 tipos de la vista 11; #87 servicio de API de la vista 11; #106 resumen del panel de administración (vista 11). Archivos: `frontend/src/pages/oficina/BandejaComprobantes.tsx`, `frontend/src/pages/oficina/VentaPresencial.tsx`, `frontend/src/features/administracion/`.
 
 ## Modelo de ramas: Git Flow
 
@@ -101,7 +101,7 @@ gitGraph
 
 `release/1.0.0` y `v1.0.0` todavía no existen; el diagrama muestra cómo se publicará la primera versión.
 
-El número de la rama es el del issue en GitHub y la descripción va en minúsculas con guiones: `feature/46-seleccion-asientos`. Un número de issue por rama: el número 11 se usó en 8 ramas (`feature/11-metodo-pago`, `feature/11-edicion-asientos-pasajeros` y seis más) y desde ahora no se repite. Al 10/11/2026 hay 24 ramas `feature/` sin número de issue (por ejemplo `feature/admin-usuarios` y `feature/integracion-compra-real`); quedan como están y las nuevas llevan número.
+El número de la rama es el del issue en GitHub y la descripción va en minúsculas con guiones: `feature/46-seleccion-asientos`. Un número de issue por rama: el número 11 se usó en 8 ramas (`feature/11-metodo-pago`, `feature/11-edicion-asientos-pasajeros` y seis más) y desde ahora no se repite. Al 10/11/2026 (`develop` en `3c5121b`) hay 26 ramas `feature/` sin número de issue (por ejemplo `feature/admin-usuarios` y `feature/integracion-compra-real`); quedan como están y las nuevas llevan número.
 
 Las ramas no se borran, ni las locales ni las remotas, aunque ya estén integradas. Es una regla del docente: el historial completo de ramas es parte de la evaluación. `develop` y `main` además tienen bloqueado el borrado en GitHub.
 
@@ -156,7 +156,7 @@ Conventional Commits, en español, en minúsculas y con el número del issue al 
 <tipo>(<ámbito>): <descripción en imperativo> (#<issue>)
 ```
 
-Tipos: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `build`, `chore`, `db`. Ámbitos más usados en el historial de `develop` al 10/11/2026: `flota` (65 commits), `compra` (43), `api` (28), `frontend` (24), `backend` (19), `paradas` (18), `frecuencias` (11), y `pagos`, `identidad`, `operacion` y `admin` (7 cada uno). También se usan `historial`, `oficina`, `configuracion`, `prisma`, `auth` y `database`.
+Tipos: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `build`, `chore`, `db`. Ámbitos más usados en el historial de `develop` (cifras al 10/11/2026, `develop` en `3c5121b`): `flota` (65 commits), `compra` (51), `frontend` (44), `api` (28), `backend` (19), `paradas` (18), `frecuencias` (11), `admin` (11), y `pagos`, `identidad`, `operacion` e `historial` (7 cada uno). También se usan `oficina`, `paneles`, `configuracion`, `prisma`, `auth` y `database`.
 
 Ejemplos del historial: `feat(compra): crear la reserva con los asientos elegidos y conservarla al recargar (#80)`, `fix(flota): eliminar marcadores de conflicto de Git y limpiar bloque repetido`.
 
