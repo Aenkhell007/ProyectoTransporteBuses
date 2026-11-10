@@ -5,6 +5,7 @@ import type { Cotizacion } from "./cotizacion";
 
 export type TipoDocumento = "CEDULA" | "PASAPORTE" | "OTRO";
 export type BeneficioCodigo = "NINO" | "TERCERA_EDAD" | "DISCAPACIDAD";
+export type TipoPasajero = "ADULTO" | BeneficioCodigo;
 export type EstadoReserva =
   | "PENDIENTE"
   | "CONFIRMADA"
@@ -40,6 +41,7 @@ export interface ReservaCreada {
 }
 
 export interface PasajeroDatos {
+  tipo_pasajero?: TipoPasajero;
   reserva_asiento_id: string;
   nombres: string;
   apellidos: string;
@@ -64,6 +66,8 @@ export interface SolicitudPasajeros {
 }
 
 export interface ReservaPendiente {
+  edicion_asientos_version: number;
+  asientos_editables: boolean;
   reserva_id: string;
   estado: EstadoReserva;
   expires_at: string;

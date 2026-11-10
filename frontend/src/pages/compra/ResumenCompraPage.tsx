@@ -1,3 +1,4 @@
+import { NOMBRES_TIPO_PASAJERO } from "../../features/compra/pasajeros";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
@@ -187,7 +188,7 @@ export function ResumenCompraPage() {
   );
   const sinRegla = beneficios.filter((b) => !b.activo);
   const tipo = (f: (typeof filas)[number]) =>
-    `${f.linea?.beneficio_nombre ?? "Adulto"}${f.linea?.beneficio_codigo === "NINO" && f.edad !== null ? ` (${f.edad} ${f.edad === 1 ? "año" : "años"})` : ""}`;
+    `${NOMBRES_TIPO_PASAJERO[f.pasajero?.tipo_pasajero ?? f.pasajero?.beneficio_codigo ?? "ADULTO"]}${(f.pasajero?.tipo_pasajero ?? f.pasajero?.beneficio_codigo) === "NINO" && f.edad !== null ? ` (${f.edad} ${f.edad === 1 ? "año" : "años"})` : ""}`;
 
   const editarViaje = async () => {
     try {
