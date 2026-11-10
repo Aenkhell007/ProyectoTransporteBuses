@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ModalPermisos from '../../components/ModalPermisos'; // Integración del modal
 
 export default function GestionCooperativasPage() {
   const [formData, setFormData] = useState({
@@ -9,6 +10,10 @@ export default function GestionCooperativasPage() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // Estado para controlar el modal y guardar la matriz de permisos
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [permisosUsuario, setPermisosUsuario] = useState(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -23,24 +28,18 @@ export default function GestionCooperativasPage() {
 
     const rucRegex = /^\d{13}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    // VALIDACIÓN ESTRICTA DE CÉDULA SOLICITADA EN EL PR 68: Exactamente 10 dígitos numéricos
-    const cedulaRegex = /^[0-9]{10}$/;
 
     if (!rucRegex.test(formData.ruc)) newErrors.ruc = 'El RUC debe tener 13 dígitos numéricos.';
     if (!emailRegex.test(formData.correoContacto)) newErrors.correoContacto = 'Correo inválido.';
     if (!emailRegex.test(formData.correoUser)) newErrors.correoUser = 'Correo inválido.';
-    
-    // Aquí reemplazamos la validación anterior por la expresión regular exacta
-    if (!cedulaRegex.test(formData.cedula)) {
-      newErrors.cedula = 'La cédula debe tener exactamente 10 dígitos numéricos.';
-    }
+    if (formData.cedula.length < 10) newErrors.cedula = 'Cédula incompleta.';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return; 
     }
 
-    console.log('Guardando cooperativa y responsable:', formData);
+    console.log('Guardando cooperativa, responsable y permisos:', { ...formData, permisos: permisosUsuario });
     alert('Validación exitosa. Datos listos para el backend.');
   };
 
@@ -90,17 +89,32 @@ export default function GestionCooperativasPage() {
                 <input type="text" name="cedula" value={formData.cedula} onChange={handleChange} className={`w-full border rounded p-2 ${errors.cedula ? 'border-red-500 bg-red-50' : ''}`} required />
                 {errors.cedula && <p className="text-xs text-red-600 mt-1">{errors.cedula}</p>}
               </div>
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Correo *</label>
-                <input type="email" name="correoUser" value={formData.correoUser} onChange={handleChange} className={`w-full border rounded p-2 ${errors.correoUser ? 'border-red-500 bg-red-50' : ''}`} required />
-                {errors.correoUser && <p className="text-xs text-red-600 mt-1">{errors.correoUser}</p>}
+              
+              {/* Nuevo panel de conexión con el Modal */}
+              <div className="col-span-2 p-4 bg-blue-50 border border-blue-100 rounded-lg flex justify-between items-center mt-2">
+                <div>
+                  <p className="font-bold text-blue-900">Accesos del sistema</p>
+                  <p className="text-sm text-blue-700">{permisosUsuario ? 'Permisos configurados' : 'Sin configurar'}</p>
+                </div>
+                <button type="button" onClick={() => setIsModalOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm font-bold">
+                  ⚙️ Configurar permisos
+                </button>
               </div>
             </div>
+            
             <button type="submit" className="w-full mt-4 bg-red-600 text-white font-bold py-2 rounded hover:bg-red-700">
               👤 Guardar usuario y validar
             </button>
           </div>
         </form>
+
+        {/* Instancia del Modal conectada a la vista */}
+        <ModalPermisos 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          userName={`${formData.nombres} ${formData.apellidos}`}
+          onSave={(permisos: any) => setPermisosUsuario(permisos)}
+        />
       </div>
     </div>
   );
