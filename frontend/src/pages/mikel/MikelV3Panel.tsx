@@ -6,33 +6,14 @@ import SelectorAsientos from '../../components/flota/SelectorAsientos';
 import EditorBus from '../../components/flota/EditorBus';
 import { plantillaEjecutivo, plantillaNormal } from '../../features/flota/plantillasPlano';
 
-import type { CeldaMapa, MapaViaje } from '../../types/mapaViaje';
+
 
 type Seccion = 'inicio' | 'normal' | 'premium' | 'buses' | 'bus-normal' | 'grupos' | 'global' | 'identidad';
 const boton = 'min-h-10 rounded-md border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-950 hover:bg-blue-50';
 const activo = 'min-h-10 rounded-md bg-[#08035b] px-3 py-2 text-sm font-semibold text-white';
 
-function mapa(pisos: number, asientosPorPiso: number, prefijo: string, clase: string): MapaViaje {
-  const celdas: CeldaMapa[] = [];
-  for (let piso = 1; piso <= pisos; piso += 1) {
-    const filas = Math.ceil(asientosPorPiso / 3);
-    for (let fila = 1; fila <= filas; fila += 1) {
-      for (let columna = 1; columna <= 4; columna += 1) {
-        const indice = (fila - 1) * 3 + columna - (columna === 3 ? 0 : columna > 3 ? 1 : 0);
-        if (columna === 2) {
-          celdas.push({ id: `${prefijo}-pasillo-${piso}-${fila}`, piso, fila, columna, tipo: 'PASILLO', codigo: null, clase: null, estado: 'DISPONIBLE' });
-        } else if (indice <= asientosPorPiso) {
-          const codigo = `${prefijo}${indice}`;
-          celdas.push({ id: `${prefijo}-${piso}-${indice}`, piso, fila, columna, tipo: 'ASIENTO', codigo, clase, estado: indice % 11 === 0 ? 'OCUPADO' : 'DISPONIBLE' });
-        }
-      }
-    }
-  }
-  return { planoId: `demo-${prefijo}`, celdas };
-}
-
 function SelectorDemo({ premium = false }: { premium?: boolean }) {
-  const datos = useMemo(() => premium ? mapa(2, 18, 'U', 'EJECUTIVO') : { planoId: 'preview-normal', celdas: plantillaNormal(10, 'preview-normal').map(c => ({ ...c, id: `normal-${c.piso}-${c.fila}-${c.columna}`, clase: c.tipo === 'ASIENTO' ? 'NORMAL' : null, estado: 'DISPONIBLE' as const })) }, [premium]);
+  const datos = useMemo(() => premium ? { planoId: 'preview-premium', celdas: plantillaEjecutivo(6, 'preview-ejecutivo').map(c => ({ ...c, id: [c.piso, c.fila, c.columna].join('-'), clase: c.tipo === 'ASIENTO' ? 'EJECUTIVO' : null, estado: 'DISPONIBLE' as const })) } : { planoId: 'preview-normal', celdas: plantillaNormal(10, 'preview-normal').map(c => ({ ...c, id: `normal-${c.piso}-${c.fila}-${c.columna}`, clase: c.tipo === 'ASIENTO' ? 'NORMAL' : null, estado: 'DISPONIBLE' as const })) }, [premium]);
   const [seleccion, setSeleccion] = useState<string[]>([]);
   return <section className="rounded-lg border border-blue-100 bg-white p-4"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-bold text-blue-950">{premium ? '3.2 · Asientos Ejecutivo Premium' : '3.1 · Asientos Normal'}</h2><p className="text-sm text-slate-600">{premium ? '2 pisos · 18 + 18 · distribución 1 + 2 · códigos L1–L18 / U1–U18' : '1 piso · 2 + 2 · 40 asientos · códigos 1A–10D'}</p></div><span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-900">{seleccion.length} de 2 seleccionados</span></div><SelectorAsientos mapa={datos} cantidad={2} seleccion={seleccion} onChange={setSeleccion}/><div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md bg-slate-50 p-3 text-sm"><span>Resumen: {seleccion.length ? seleccion.map((id) => datos.celdas.find((c) => c.id === id)?.codigo).join(', ') : 'elige tus asientos'}</span><button type="button" className="rounded-md bg-red-600 px-4 py-2 font-semibold text-white" onClick={() => setSeleccion([])}>Limpiar selección</button></div></section>;
 }
@@ -57,5 +38,5 @@ function BusEjecutivoPreview({ normal = false }: { normal?: boolean }) {
 export default function MikelV3Panel({ inicial = 'inicio' }: { inicial?: Seccion }) {
   const [seccion, setSeccion] = useState<Seccion>(inicial);
   const menu: Array<[Seccion, string]> = [['inicio','Resumen'],['normal','3.1 Normal'],['premium','3.2 Premium'],['buses','16 Bus Ejecutivo'],['bus-normal','16.1 Bus Normal'],['grupos','17.1 Grupos'],['global','11.4 Global'],['identidad','19 Identidad']];
-  return <section className="mx-auto my-5 w-[calc(100%-24px)] max-w-[1440px] rounded-lg bg-slate-50 p-4 text-blue-950 sm:p-6"><header className="mb-5"><p className="text-sm font-semibold uppercase tracking-wide text-red-600">MIKEL V3 · Flota y configuración</p><h1 className="mt-1 text-3xl font-bold">Flujo de demostración de las 7 vistas</h1><p className="mt-2 text-slate-600">Selecciona una vista para recorrer el módulo completo. Los mapas reutilizan el selector común y conservan la regla de pasillo separado de asiento.</p></header><nav className="mb-5 flex flex-wrap gap-2" aria-label="Vistas de Mikel">{menu.map(([id, label]) => <button key={id} type="button" className={seccion === id ? activo : boton} onClick={() => setSeccion(id)}>{label}</button>)}</nav>{seccion === 'inicio' && <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{menu.slice(1).map(([id,label]) => <button key={id} type="button" onClick={() => setSeccion(id)} className="rounded-lg border border-blue-100 bg-white p-5 text-left shadow-sm hover:border-red-300"><span className="text-lg font-bold">{label}</span><span className="mt-2 block text-sm text-slate-600">Abrir pantalla y continuar el flujo.</span></button>)}</div>}{seccion === 'normal' && <SelectorDemo/>}{seccion === 'premium' && <SelectorDemo premium/>}{seccion === 'buses' && <BusEjecutivoPreview key="ejecutivo"/>}{seccion === 'bus-normal' && <BusEjecutivoPreview key="normal" normal/>}{seccion === 'grupos' && <GruposHabilitados/>}{seccion === 'global' && <ConfigGlobal/>}{seccion === 'identidad' && <Identidad/>}</section>;
+  return <section className="mx-auto my-5 w-[calc(100%-24px)] max-w-[1440px] rounded-lg bg-slate-50 p-4 text-blue-950 sm:p-6"><header className="mb-5"><p className="text-sm font-semibold uppercase tracking-wide text-red-600">MIKEL V3 · Flota y configuración</p><h1 className="mt-1 text-3xl font-bold">Flujo de demostración de las 7 vistas</h1><p className="mt-2 text-slate-600">Selecciona una vista para recorrer el módulo completo. Los mapas reutilizan el selector común y conservan la regla de pasillo separado de asiento.</p></header><nav className="mb-5 flex flex-wrap gap-2" aria-label="Vistas de Mikel">{menu.map(([id, label]) => <button key={id} type="button" className={seccion === id ? activo : boton} onClick={() => setSeccion(id)}>{label}</button>)}</nav>{seccion === 'inicio' && <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{menu.slice(1).map(([id,label]) => <button key={id} type="button" onClick={() => setSeccion(id)} className="rounded-lg border border-blue-100 bg-white p-5 text-left shadow-sm hover:border-red-300"><span className="text-lg font-bold">{label}</span><span className="mt-2 block text-sm text-slate-600">Abrir pantalla y continuar el flujo.</span></button>)}</div>}{seccion === 'normal' && <SelectorDemo key="normal"/>}{seccion === 'premium' && <SelectorDemo key="premium" premium/>}{seccion === 'buses' && <BusEjecutivoPreview key="ejecutivo"/>}{seccion === 'bus-normal' && <BusEjecutivoPreview key="normal" normal/>}{seccion === 'grupos' && <GruposHabilitados/>}{seccion === 'global' && <ConfigGlobal/>}{seccion === 'identidad' && <Identidad/>}</section>;
 }
