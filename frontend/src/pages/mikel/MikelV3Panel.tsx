@@ -1,3 +1,4 @@
+import GruposHabilitadosEditor from '../../components/flota/GruposHabilitadosEditor';
 import EditorConfiguracionGlobal from '../../components/configuracion/EditorConfiguracionGlobal';
 import { useMemo, useState } from 'react';
 import SelectorAsientos from '../../components/flota/SelectorAsientos';
@@ -35,10 +36,12 @@ function SelectorDemo({ premium = false }: { premium?: boolean }) {
 }
 
 function GruposHabilitados() {
-  const [grupos, setGrupos] = useState([{ id: 'ejecutivo', nombre: 'Ejecutivo Premium', frecuencia: 'F-001', activo: true }, { id: 'normal', nombre: 'Servicio Normal', frecuencia: 'F-002', activo: true }]);
-  return <section className="rounded-lg border border-blue-100 bg-white p-5"><h2 className="text-xl font-bold text-blue-950">17.1 · Grupos habilitados</h2><p className="mt-1 text-sm text-slate-600">Relaciona grupos comerciales con frecuencias. Retirar un grupo no elimina viajes existentes.</p><div className="mt-5 overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr className="border-b"><th className="p-3">Grupo</th><th className="p-3">Frecuencia</th><th className="p-3">Estado</th><th className="p-3">Acción</th></tr></thead><tbody>{grupos.map((g) => <tr key={g.id} className="border-b"><td className="p-3 font-semibold">{g.nombre}</td><td className="p-3">{g.frecuencia}</td><td className="p-3">{g.activo ? 'Habilitado' : 'Retirado'}</td><td className="p-3"><button type="button" className={boton} onClick={() => setGrupos((actual) => actual.map((x) => x.id === g.id ? { ...x, activo: !x.activo } : x))}>{g.activo ? 'Retirar' : 'Habilitar'}</button></td></tr>)}</tbody></table></div><button type="button" className="mt-5 rounded-md bg-red-600 px-4 py-2 font-semibold text-white">Guardar versión</button></section>;
+  return <GruposHabilitadosEditor inicial={{ version: 1, frecuenciaId: 'preview-frecuencia', grupoIds: ['preview-confort'] }} frecuencias={[{ id: 'preview-frecuencia', codigo: 'FRE-008', origen: 'Quito', destino: 'Loja', hora: '07:00', activa: true }]} grupos={[
+    { id: 'preview-ejecutivo', nombre: 'Ejecutivo', descripcion: 'Unidades de dos pisos', activo: true, buses: [], frecuenciaIds: [] },
+    { id: 'preview-confort', nombre: 'Confort', descripcion: 'Unidades de un piso', activo: true, buses: [], frecuenciaIds: ['preview-frecuencia'] },
+    { id: 'preview-regional', nombre: 'Regional', descripcion: 'Servicio regional', activo: false, buses: [], frecuenciaIds: [] },
+  ]} />;
 }
-
 function ConfigGlobal() {
   return <EditorConfiguracionGlobal inicial={{ version: 1, idioma: 'es-EC', moneda: 'USD', zonaHoraria: 'America/Guayaquil', sesionHoras: 8, mfaAdministradores: false, formatos: ['JPG', 'PNG', 'PDF'], maxArchivoMB: 5, correo: false, whatsapp: false }} canales={{ correo: false, whatsapp: false }} admiteMfa={false} />;
 }
