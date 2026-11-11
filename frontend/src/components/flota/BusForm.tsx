@@ -8,7 +8,7 @@ import { botonPrimario, botonSecundario, entrada, etiquetaCampo, textoError } fr
 interface BusFormProps {
   grupos: GrupoBus[];
   existentes: Bus[];
-  onGuardar: (datos: BusFormData) => void;
+  onGuardar: (datos: BusFormData) => void | boolean | Promise<void | boolean>;
   /** Si se pasa un bus, el formulario edita ese bus en lugar de crear uno nuevo. */
   bus?: Bus;
   onCancelar?: () => void;
@@ -39,17 +39,26 @@ function desdeBus(bus: Bus): BusFormData {
 export default function BusForm({ grupos, existentes, onGuardar, bus, onCancelar }: BusFormProps) {
   const [datos, setDatos] = useState<BusFormData>(bus ? desdeBus(bus) : VACIO);
   const [errores, setErrores] = useState<ErroresBus>({});
+  const [guardando, setGuardando] = useState(false);
+  const [errorGuardado, setErrorGuardado] = useState('');
 
   const cambiar = (campo: keyof BusFormData, valor: string) =>
     setDatos((anterior) => ({ ...anterior, [campo]: valor }));
 
-  const enviar = (evento: FormEvent) => {
+  const enviar = async (evento: FormEvent) => {
     evento.preventDefault();
+    if (guardando) return;
     const encontrados = validarBus(datos, existentes, bus?.id);
     setErrores(encontrados);
     if (Object.keys(encontrados).length > 0) return;
-    onGuardar({ ...datos, placa: datos.placa.trim().toUpperCase() });
-    if (!bus) setDatos(VACIO);
+    setGuardando(true);
+    setErrorGuardado('');
+    try {
+      const resultado = await onGuardar({ ...datos, placa: datos.placa.trim().toUpperCase() });
+      if (resultado === false) setErrorGuardado('No se guardó el bus. Conservamos los datos para reintentar.');
+      else if (!bus) setDatos(VACIO);
+    } catch { setErrorGuardado('No se pudo guardar. Conservamos los datos.'); }
+    finally { setGuardando(false); }
   };
 
   const campo = (nombre: keyof BusFormData, etiqueta: string) => (
@@ -70,7 +79,8 @@ export default function BusForm({ grupos, existentes, onGuardar, bus, onCancelar
   );
 
   return (
-    <form className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" onSubmit={enviar} noValidate>
+    <form onSubmit={enviar} noValidate>
+      <fieldset disabled={guardando} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {campo('unidad', 'Unidad *')}
       {campo('placa', 'Placa *')}
       {campo('chasis', 'Chasis *')}
@@ -100,7 +110,7 @@ export default function BusForm({ grupos, existentes, onGuardar, bus, onCancelar
       {campo('correo_contacto', 'Correo de contacto')}
       <div className="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-3">
         <button type="submit" className={botonPrimario}>
-          {bus ? 'Guardar cambios' : 'Agregar bus'}
+          {guardando ? 'Guardando…' : bus ? 'Guardar cambios' : 'Agregar bus'}
         </button>
         {bus && onCancelar && (
           <button type="button" className={botonSecundario} onClick={onCancelar}>
@@ -108,6 +118,8 @@ export default function BusForm({ grupos, existentes, onGuardar, bus, onCancelar
           </button>
         )}
       </div>
+      {errorGuardado && <p role="alert" className="text-sm text-red-700 sm:col-span-2 lg:col-span-3">{errorGuardado}</p>}
+      </fieldset>
     </form>
   );
 }

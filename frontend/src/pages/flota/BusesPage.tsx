@@ -65,21 +65,25 @@ export default function BusesPage() {
     try {
       const nuevo = await crearBus(normalizarDatos(datos));
       setBuses((anteriores) => [...anteriores, nuevo]);
+      return true;
     } catch (err) {
       alert('Error al registrar el bus. Verifica que la placa o unidad no estén duplicadas.');
+      return false;
     }
   };
 
   const guardarEdicion = async (datos: BusFormData) => {
-    if (!editandoId) return;
+    if (!editandoId) return false;
     try {
       const actualizado = await actualizarBus(editandoId, normalizarDatos(datos));
       setBuses((anteriores) =>
         anteriores.map((b) => (b.id === editandoId ? actualizado : b))
       );
       setEditandoId(null);
+      return true;
     } catch (err) {
       alert('Error al actualizar los datos del bus en el servidor.');
+      return false;
     }
   };
 
