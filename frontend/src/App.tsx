@@ -191,7 +191,7 @@ export function App() {
           <Route path="/vista-previa/mikel-v3/asientos-premium" element={<MikelV3Panel inicial="premium" />} />
         )}
         {import.meta.env.DEV && (
-          <Route path="/vista-previa/mikel-v3/buses" element={<MikelV3Panel inicial="buses" />} />
+          <><Route path="/vista-previa/mikel-v3/buses" element={<MikelV3Panel inicial="buses" />} /><Route path="/vista-previa/mikel-v3/bus-normal" element={<MikelV3Panel inicial="bus-normal" />} /></>
         )}
         {import.meta.env.DEV && (
           <Route path="/vista-previa/mikel-v3/grupos" element={<MikelV3Panel inicial="grupos" />} />
