@@ -177,11 +177,14 @@ pagosRouter.post(
           datos.politica.referenciaObligatoria,
         );
         const mime = String(req.headers["content-type"] ?? "").split(";")[0];
+        const limites = (await db.query('SELECT transporte.limites_editor() AS limites')).rows[0]?.limites;
+        const formatos: Record<string, string> = { JPG: 'image/jpeg', PNG: 'image/png', PDF: 'application/pdf' };
+        const mimesGlobales = (limites?.formatos ?? ['JPG','PNG','PDF']).map((f: string) => formatos[f]);
         validarArchivo(
           req.body,
           mime,
-          datos.politica.maxBytes,
-          datos.politica.mimes,
+          Math.min(datos.politica.maxBytes, (limites?.maxArchivoMB ?? 5) * 1024 * 1024),
+          datos.politica.mimes.filter((m: string) => mimesGlobales.includes(m)),
         );
         const hash = createHash("sha256").update(req.body).digest("hex");
         const anterior = await db.query(

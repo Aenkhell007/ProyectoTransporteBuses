@@ -13,7 +13,7 @@ import { correoRecuperacion } from "./correos";
 
 export const authRouter = Router();
 const COOKIE = "transporte_sesion";
-const DURACION = 8 * 60 * 60 * 1000;
+
 const opcionesCookie: CookieOptions = {
   httpOnly: true, sameSite: "strict", secure: process.env.NODE_ENV === "production", path: "/api",
 };
@@ -134,19 +134,21 @@ authRouter.post("/login", async (req, res) => {
     const valida = await verifyPassword(password, credencial?.password_hash ?? HASH_SIN_USUARIO);
     if (!credencial?.activo || !valida) { res.status(401).json({ error: "Correo o contraseña incorrectos." }); return; }
     const token = randomBytes(32).toString("base64url");
+    const limite = (await pool.query('SELECT transporte.limites_editor() AS limites')).rows[0]?.limites;
+    const duracion = Math.min(24, Math.max(1, Number(limite?.sesionHoras) || 8)) * 60 * 60 * 1000;
     // Crear la sesión y cargar el perfil dentro de una única transacción.
     const cliente = await pool.connect();
     let usuario;
     try {
       await cliente.query("BEGIN");
-      await cliente.query("SELECT transporte.emitir_sesion_autenticada($1::uuid,$2::text,$3::timestamptz)", [credencial.usuario_id, hashToken(token), new Date(Date.now() + DURACION)]);
+      await cliente.query("SELECT transporte.emitir_sesion_autenticada($1::uuid,$2::text,$3::timestamptz)", [credencial.usuario_id, hashToken(token), new Date(Date.now() + duracion)]);
       await cliente.query("SELECT transporte.abrir_contexto($1::text,$2::text)", [hashToken(token), randomUUID()]);
       usuario = await perfil(cliente);
       await cliente.query("COMMIT");
     } catch (error) {
       await cliente.query("ROLLBACK").catch(() => {}); throw error;
     } finally { cliente.release(); }
-    res.cookie(COOKIE, token, { ...opcionesCookie, maxAge: DURACION });
+    res.cookie(COOKIE, token, { ...opcionesCookie, maxAge: duracion });
     res.json({ usuario });
   } catch (error) { errorRespuesta(res, error); }
 });

@@ -5,6 +5,7 @@ import { botonConfiguracion, entradaConfiguracion, guardarConfiguracion } from '
 
 export interface IdentidadCooperativaDatos {
   version: number;
+  identidadVersion?: number;
   nombre: string;
   razonSocial: string;
   ruc: string;
@@ -112,7 +113,7 @@ export default function EditorIdentidad({ inicial, onGuardar }: Props) {
         // Mantener el archivo evita convertir una URL temporal en un dato persistido.
         setMensaje('Vista previa confirmada. El logo y los datos siguen en el borrador local; no se publicaron.');
       }
-    } catch { setError('No se pudo guardar. Conservamos el formulario y el logo para que puedas reintentar.'); }
+    } catch (error) { setError(error instanceof Error ? error.message : 'No se pudo guardar. Conservamos el formulario y el logo para que puedas reintentar.'); }
     finally { setOcupado(false); }
   }
   function cancelar() { generacion.current += 1; setDatos(base); setLogo(null); setErrores({}); setLogoError(''); setValidandoLogo(false); setError(''); setMensaje('Se restauró la identidad original.'); }

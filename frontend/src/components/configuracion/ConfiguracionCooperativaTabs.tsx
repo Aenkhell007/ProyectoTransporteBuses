@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import { NavLink } from 'react-router';
+import { NavLink, useLocation } from 'react-router';
 
 export function ConfiguracionCooperativaTabs() {
-  const base = '/vista-previa/cooperativa/configuracion';
+  const base = useLocation().pathname.startsWith('/cooperativa') ? '/cooperativa/configuracion' : '/vista-previa/cooperativa/configuracion';
   return <nav aria-label="Secciones de configuración" className="grid grid-cols-3 gap-1 overflow-hidden rounded-lg bg-blue-50 text-center text-xs sm:text-sm">
     {[[base, 'Identidad y contacto', 'identidad'], [`${base}/pagos`, 'Pagos', 'pagos'], [`${base}/tarifas`, 'Tarifas y descuentos', 'tarifas']].map(([ruta, nombre, icono]) => <NavLink key={ruta} to={ruta} end className={({ isActive }) => `flex min-h-12 items-center justify-center gap-2 border-b-2 px-2 py-2 ${isActive ? 'border-blue-700 bg-white font-bold' : 'border-transparent hover:bg-blue-100'}`}><IconoConfiguracion nombre={icono} /><span>{nombre}</span></NavLink>)}
   </nav>;

@@ -36,9 +36,12 @@ export async function http<T>(ruta: string, opciones: RequestInit = {}): Promise
   });
 
   if (!respuesta.ok) {
+    const detalle = ruta.startsWith('/mikel/') && [403, 409, 422, 503].includes(respuesta.status)
+      ? await respuesta.json().catch(() => null) as { error?: unknown } | null : null;
     throw new ApiError(
       respuesta.status,
-      MENSAJES[respuesta.status] ?? 'Ocurrió un error inesperado.',
+      typeof detalle?.error === 'string' && detalle.error.length <= 300
+        ? detalle.error : MENSAJES[respuesta.status] ?? 'Ocurrió un error inesperado.',
     );
   }
   if (respuesta.status === 204) return undefined as T;

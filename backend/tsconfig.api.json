@@ -19,6 +19,8 @@
     "src/auth/activacion.db.test.ts",
     "src/pagos/pagos.test.ts",
     "src/pagos/pagos.db.test.ts",
-    "src/compra/compra.test.ts"
+    "src/compra/compra.test.ts",
+    "src/flota/editor.test.ts",
+    "src/flota/editor.db.test.ts"
   ]
 }

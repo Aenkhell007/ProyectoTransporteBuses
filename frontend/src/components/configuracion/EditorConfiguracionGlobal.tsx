@@ -55,8 +55,8 @@ export default function EditorConfiguracionGlobal({ inicial, canales, admiteMfa,
       const guardado = onGuardar ? await onGuardar({ ...datos, version: base.version }) : { ...datos };
       setDatos(guardado); setBase(guardado); setImpacto(false);
       setMensaje(onGuardar ? 'Configuración guardada.' : 'Borrador confirmado en esta vista. No se ha publicado en el servidor.');
-    } catch {
-      setError('No se pudo guardar. Conservamos los cambios; revisa tu conexión y vuelve a intentarlo.');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'No se pudo guardar. Conservamos los cambios para reintentar.');
     } finally { setOcupado(false); }
   }
   function cancelar() { setDatos(base); setImpacto(false); setError(''); setMensaje('Se restauraron los últimos valores confirmados.'); }
@@ -72,7 +72,7 @@ export default function EditorConfiguracionGlobal({ inicial, canales, admiteMfa,
         <label className="grid gap-2 text-sm">Zona horaria<select className={entradaConfiguracion} value={datos.zonaHoraria} onChange={e => cambiar('zonaHoraria', e.target.value)}><option>America/Guayaquil</option><option>Pacific/Galapagos</option></select></label>
       </div></BloqueConfiguracion></div>
       <div ref={n => { secciones.current.Seguridad = n; }} className="scroll-mt-36"><BloqueConfiguracion titulo="Seguridad"><div className="grid gap-5 sm:grid-cols-2">
-        <label className="grid gap-2 text-sm">Tiempo de expiración de sesión (horas)<input className={entradaConfiguracion} type="number" min="1" max="24" step="1" required value={datos.sesionHoras} onChange={e => cambiar('sesionHoras', Number(e.target.value))}/><span className="text-xs text-slate-500">Entre 1 y 24 horas. El servidor aplicará este límite al integrarse.</span></label>
+        <label className="grid gap-2 text-sm">Tiempo de expiración de sesión (horas)<input className={entradaConfiguracion} type="number" min="1" max="24" step="1" required value={datos.sesionHoras} onChange={e => cambiar('sesionHoras', Number(e.target.value))}/><span className="text-xs text-slate-500">Entre 1 y 24 horas. Se aplica a las nuevas sesiones al iniciar sesión.</span></label>
         <label className="flex items-start gap-3 rounded-lg bg-blue-50 p-4 text-sm"><input type="checkbox" className="mt-1 size-5" checked={datos.mfaAdministradores} disabled={!admiteMfa} onChange={e => cambiar('mfaAdministradores', e.target.checked)}/><span><strong className="block">Autenticación de dos factores (MFA)</strong><span className="mt-2 block text-xs">{admiteMfa ? 'Verificación adicional para administradores.' : 'Pendiente de integración. No se puede activar todavía.'}</span></span></label>
       </div></BloqueConfiguracion></div>
       <div ref={n => { secciones.current['Archivos y notificaciones'] = n; }} className="scroll-mt-36"><BloqueConfiguracion titulo="Archivos"><div className="grid gap-4 sm:grid-cols-2">
@@ -84,7 +84,7 @@ export default function EditorConfiguracionGlobal({ inicial, canales, admiteMfa,
     {!valido && <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-800">Selecciona al menos un formato, sesión de 1 a 24 horas y archivo de 1 a 5 MB.</p>}
     <div className="rounded-lg bg-blue-50 p-4 text-sm"><p>Los límites de cada cooperativa no podrán superar los globales. Ningún canal se activa sin integración verificada.</p>
       <button type="button" className={`${botonConfiguracion} mt-3`} disabled={!valido || !modificado || ocupado} onClick={() => setImpacto(true)}>Revisar impacto de los cambios</button>
-      {impacto && <div role="status" className="mt-3 space-y-1"><p>Sesión: {base.sesionHoras} → {datos.sesionHoras} horas.</p><p>Archivos: {datos.formatos.join(', ')} · máximo {datos.maxArchivoMB} MB.</p><p>No modifica documentos ni reservas existentes. La validación de versiones y permisos se realizará al integrar el servidor.</p></div>}
+      {impacto && <div role="status" className="mt-3 space-y-1"><p>Sesión: {base.sesionHoras} → {datos.sesionHoras} horas.</p><p>Archivos: {datos.formatos.join(', ')} · máximo {datos.maxArchivoMB} MB.</p><p>No modifica documentos ni reservas existentes. El servidor verifica los permisos y la versión antes de guardar.</p></div>}
     </div>
     {error && <p role="alert" className="text-sm text-red-700">{error}</p>}{mensaje && <p role="status" className="text-sm text-green-800">{mensaje}</p>}
     <footer className="flex flex-wrap justify-end gap-3 border-t border-indigo-100 pt-4"><button type="button" className={botonConfiguracion} onClick={cancelar} disabled={ocupado || !modificado}>Cancelar</button><button type="submit" className={guardarConfiguracion} disabled={!modificado || !valido || !impacto || ocupado}>{ocupado ? 'Guardando…' : onGuardar ? 'Guardar configuración' : 'Confirmar borrador'}</button></footer>
