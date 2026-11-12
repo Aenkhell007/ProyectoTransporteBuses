@@ -41,6 +41,7 @@ import { OficinaResumenPage } from "./features/oficina/OficinaResumenPage";
 import { OficinaReservasPage } from "./features/oficina/OficinaReservasPage";
 import { BandejaComprobantes } from "./pages/oficina/BandejaComprobantes";
 import { VentaPresencial } from "./pages/oficina/VentaPresencial";
+import OficinaReembolsosPage from "./pages/oficina/OficinaReembolsosPage";
 
 const homeSections: Record<
   string,
@@ -138,7 +139,7 @@ export function App() {
           <Route path="ventas" element={<VentaPresencial />} />
           <Route path="reservas" element={<OficinaReservasPage />} />
           <Route path="comprobantes" element={<BandejaComprobantes />} />
-          <Route path="reembolsos" element={<SeccionAdminPendiente titulo="Reembolsos" />} />
+          <Route path="reembolsos" element={<OficinaReembolsosPage />} />
           <Route path="*" element={<p className="p-6 text-gray-500">Sección no encontrada.</p>} />
         </Route>
       </Routes>
