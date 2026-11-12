@@ -1,3 +1,4 @@
+import { ConfiguracionCooperativaTabs } from './components/configuracion/ConfiguracionCooperativaTabs';
 import ActivarCuenta from "./pages/auth/ActivarCuenta";
 import ReenviarActivacion from "./pages/auth/ReenviarActivacion";
 import Login from "./pages/auth/Login";
@@ -6,10 +7,11 @@ import MiCuenta from "./pages/auth/MiCuenta";
 import RecuperarContrasena from "./pages/auth/RecuperarContrasena";
 import RestablecerContrasena from "./pages/auth/RestablecerContrasena";
 import { useAuth } from "./features/auth/AuthContext";
-import { matchPath, Navigate, Route, Routes, useLocation } from "react-router";
+import { Link, matchPath, Navigate, Route, Routes, useLocation } from "react-router";
 import { ResultadosPage } from "./pages/compra/ResultadosPage";
 import { PublicLayout } from "./components/layout";
 import AdminLayout from "./layouts/AdminLayout";
+import CooperativaLayout from "./layouts/CooperativaLayout";
 import AdminResumenPage from "./features/administracion/AdminResumenPage";
 import { MisViajesPage } from "./pages/mis-viajes/MisViajesPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
@@ -29,7 +31,7 @@ import FrecuenciasPage from "./pages/frecuencias/FrecuenciasPage";
 
 import HojaRutaPage from "./pages/operacion/HojaRutaPage";
 import ParadasTarifasPage from "./pages/administracion/ParadasTarifasPage";
-import MikelV3Panel from "./pages/mikel/MikelV3Panel";
+import MikelV3Panel, { VistaMikel } from "./pages/mikel/MikelV3Panel";
 import BusesPage from "./pages/flota/BusesPage";
 import PlanosBusPage from "./pages/flota/PlanosBusPage";
 import ConfiguracionCooperativaPage from "./pages/configuracion/ConfiguracionCooperativaPage";
@@ -85,11 +87,28 @@ export function App() {
   if (
     import.meta.env.DEV &&
     (matchPath("/vista-previa/panel/*", location.pathname) ||
-      matchPath("/vista-previa/oficinista/*", location.pathname))
+      matchPath("/vista-previa/oficinista/*", location.pathname) ||
+      matchPath("/vista-previa/cooperativa/*", location.pathname))
   ) {
     return (
       <Routes>
+        <Route path="/vista-previa/cooperativa" element={<CooperativaLayout />}>
+          <Route index element={<section className="py-5"><h1 className="text-2xl font-bold">Resumen de la cooperativa</h1><p className="mt-3">Falta implementar esta vista. Puedes revisar Buses, Grupos habilitados y Configuración desde el menú lateral.</p></section>} />
+          <Route path="buses" element={<Navigate to="/vista-previa/cooperativa/buses/ejecutivo" replace />} />
+          <Route path="buses/ejecutivo" element={<VistaMikel seccion="buses" />} />
+          <Route path="buses/normal" element={<VistaMikel seccion="bus-normal" />} />
+          <Route path="grupos" element={<section className="space-y-4 py-5"><h1 className="text-2xl font-bold">Gestión de grupos</h1><p>Falta implementar la administración del catálogo de grupos en este panel.</p><Link className="inline-block rounded-md border border-blue-200 px-4 py-3" to="/vista-previa/cooperativa/frecuencias/grupos">Ver grupos habilitados por frecuencia →</Link></section>} />
+          <Route path="configuracion" element={<VistaMikel seccion="identidad" />} />
+          <Route path="configuracion/pagos" element={<ConfiguracionPagosPage panelCooperativa />} />
+          <Route path="configuracion/tarifas" element={<section className="space-y-4 py-5"><h1 className="text-2xl font-bold">Configuración de la cooperativa</h1><ConfiguracionCooperativaTabs /><h2 className="text-xl font-bold">Tarifas y descuentos</h2><p>Falta integrar esta vista en el panel de la cooperativa.</p></section>} />
+          <Route path="frecuencias" element={<Navigate to="/vista-previa/cooperativa/frecuencias/grupos" replace />} />
+          <Route path="frecuencias/grupos" element={<VistaMikel seccion="grupos" />} />
+          <Route path="hoja-ruta" element={<HojaRutaPage />} />
+          <Route path="personal" element={<p className="py-5">La vista de personal está pendiente de integración por su responsable.</p>} />
+          <Route path="*" element={<p>Sección no encontrada.</p>} />
+        </Route>
         <Route path="/vista-previa/panel" element={<AdminLayout panelFijo />}>
+          <Route path="configuracion/global" element={<VistaMikel seccion="global" />} />
           <Route index element={<AdminResumenPage />} />
           <Route
             path="cooperativas"
@@ -105,7 +124,7 @@ export function App() {
           />
           <Route
             path="configuracion"
-            element={<ConfiguracionPagosPage />}
+            element={<><nav aria-label="Configuración de administración" className="flex flex-wrap gap-4 py-4"><Link to="/vista-previa/panel/configuracion/global" className="rounded-md border border-blue-200 px-4 py-2 text-blue-800 hover:bg-blue-50">Configuración global (11.4)</Link></nav><ConfiguracionPagosPage /></>}
           />
           <Route path="*" element={<p>Sección no encontrada.</p>} />
         </Route>
@@ -191,16 +210,16 @@ export function App() {
           <Route path="/vista-previa/mikel-v3/asientos-premium" element={<MikelV3Panel inicial="premium" />} />
         )}
         {import.meta.env.DEV && (
-          <Route path="/vista-previa/mikel-v3/buses" element={<MikelV3Panel inicial="buses" />} />
+          <><Route path="/vista-previa/mikel-v3/buses" element={<Navigate to="/vista-previa/cooperativa/buses/ejecutivo" replace />} /><Route path="/vista-previa/mikel-v3/bus-normal" element={<Navigate to="/vista-previa/cooperativa/buses/normal" replace />} /></>
         )}
         {import.meta.env.DEV && (
-          <Route path="/vista-previa/mikel-v3/grupos" element={<MikelV3Panel inicial="grupos" />} />
+          <Route path="/vista-previa/mikel-v3/grupos" element={<Navigate to="/vista-previa/cooperativa/grupos" replace />} />
         )}
         {import.meta.env.DEV && (
-          <Route path="/vista-previa/mikel-v3/configuracion-global" element={<MikelV3Panel inicial="global" />} />
+          <Route path="/vista-previa/mikel-v3/configuracion-global" element={<Navigate to="/vista-previa/panel/configuracion/global" replace />} />
         )}
         {import.meta.env.DEV && (
-          <Route path="/vista-previa/mikel-v3/identidad" element={<MikelV3Panel inicial="identidad" />} />
+          <Route path="/vista-previa/mikel-v3/identidad" element={<Navigate to="/vista-previa/cooperativa/configuracion" replace />} />
         )}
         <Route
           path="*"
