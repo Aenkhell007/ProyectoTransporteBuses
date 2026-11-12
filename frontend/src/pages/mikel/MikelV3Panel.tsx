@@ -9,7 +9,7 @@ import { plantillaEjecutivo, plantillaNormal } from '../../features/flota/planti
 
 import type { CeldaMapa, MapaViaje } from '../../types/mapaViaje';
 
-type Seccion = 'inicio' | 'normal' | 'premium' | 'buses' | 'bus-normal' | 'grupos' | 'global' | 'identidad';
+type Seccion = 'inicio' | 'normal' | 'premium' | 'buses' | 'bus-normal' | 'bus-normal' | 'grupos' | 'global' | 'identidad';
 const boton = 'min-h-10 rounded-md border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-950 hover:bg-blue-50';
 const activo = 'min-h-10 rounded-md bg-[#08035b] px-3 py-2 text-sm font-semibold text-white';
 
