@@ -1,5 +1,15 @@
 import type { CeldaPlano } from '../../types/plano';
 
+export function plantillaNormal(filas: number, claseId: string): CeldaPlano[] {
+  if (!Number.isInteger(filas) || filas < 1 || filas > 20) throw new Error('Número de filas inválido.');
+  return Array.from({ length: filas }, (_, i) => i + 1).flatMap(fila => [1, 2, 3, 4, 5].map(columna => ({
+    piso: 1, fila, columna,
+    tipo: columna === 3 ? 'PASILLO' as const : 'ASIENTO' as const,
+    codigo: columna === 3 ? null : `${fila}${['A', 'B', '', 'C', 'D'][columna - 1]}`,
+    clase_id: columna === 3 ? null : claseId,
+  })));
+}
+
 /** Plantilla inicial editable; nunca sustituye el plano recibido para un bus existente. */
 export function plantillaEjecutivo(filas: number, claseId: string): CeldaPlano[] {
   if (!Number.isInteger(filas) || filas < 1 || filas > 20) throw new Error('Número de filas inválido.');
@@ -19,6 +29,7 @@ export function numerarPlanoComercial(celdas: CeldaPlano[], pisos: number): Celd
     if (c.tipo !== 'ASIENTO') return { ...c, codigo: null, clase_id: null };
     const numero = (contadores.get(c.piso) ?? 0) + 1;
     contadores.set(c.piso, numero);
-    return { ...c, codigo: pisos === 2 ? `${c.piso === 1 ? 'L' : 'U'}${numero}` : String(numero) };
+    const letra = ['A', 'B', '', 'C', 'D'][c.columna - 1];
+    return { ...c, codigo: pisos === 2 ? `${c.piso === 1 ? 'L' : 'U'}${numero}` : letra ? `${c.fila}${letra}` : `F${c.fila}C${c.columna}` };
   });
 }
