@@ -1,10 +1,12 @@
+import { Link, NavLink } from 'react-router';
+import EditorConfiguracionGlobal from '../../components/configuracion/EditorConfiguracionGlobal';
 import { useMemo, useState } from 'react';
 import SelectorAsientos from '../../components/flota/SelectorAsientos';
 import BusesPage from '../flota/BusesPage';
 import PlanosBusPage from '../flota/PlanosBusPage';
 import type { CeldaMapa, MapaViaje } from '../../types/mapaViaje';
 
-type Seccion = 'inicio' | 'normal' | 'premium' | 'buses' | 'grupos' | 'global' | 'identidad';
+type Seccion = 'inicio' | 'normal' | 'premium' | 'buses' | 'bus-normal' | 'grupos' | 'global' | 'identidad';
 const boton = 'min-h-10 rounded-md border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-950 hover:bg-blue-50';
 const activo = 'min-h-10 rounded-md bg-[#08035b] px-3 py-2 text-sm font-semibold text-white';
 
@@ -39,17 +41,48 @@ function GruposHabilitados() {
 }
 
 function ConfigGlobal() {
-  const [guardado, setGuardado] = useState(false);
-  return <section className="rounded-lg border border-blue-100 bg-white p-5"><h2 className="text-xl font-bold text-blue-950">11.4 · Configuración global</h2><p className="mt-1 text-sm text-slate-600">Parámetros generales administrados por el administrador global. No reemplaza identidad ni cuentas.</p><div className="mt-5 grid gap-4 md:grid-cols-2">{[['General','Límite de pasajeros','10'],['Seguridad','Retención de sesión','480'],['Archivos','Tamaño máximo (MB)','5'],['Notificaciones','Minutos de aviso','30']].map(([grupo, etiqueta, valor]) => <label key={grupo} className="grid gap-1 text-sm font-semibold text-blue-950"><span>{grupo}</span>{etiqueta}<input defaultValue={valor} type="number" min={1} className="rounded border border-blue-200 px-3 py-2" /></label>)}</div><div className="mt-5 flex flex-wrap gap-3"><button type="button" className="rounded-md bg-red-600 px-4 py-2 font-semibold text-white" onClick={() => setGuardado(true)}>Guardar borrador auditado</button><button type="button" className={boton} onClick={() => setGuardado(false)}>Cancelar y restaurar</button>{guardado && <span role="status" className="rounded bg-green-50 px-3 py-2 text-sm text-green-800">Versión 2 guardada · impacto registrado</span>}</div></section>;
+  return <EditorConfiguracionGlobal inicial={{ version: 1, idioma: 'es-EC', moneda: 'USD', zonaHoraria: 'America/Guayaquil', sesionHoras: 8, mfaAdministradores: false, formatos: ['JPG', 'PNG', 'PDF'], maxArchivoMB: 5, correo: false, whatsapp: false }} canales={{ correo: false, whatsapp: false }} admiteMfa={false} />;
 }
-
 function Identidad() {
   const [color, setColor] = useState('#CB102E');
   return <section className="rounded-lg border border-blue-100 bg-white p-5"><h2 className="text-xl font-bold text-blue-950">19 · Configuración de identidad y contacto</h2><div className="mt-5 grid gap-4 md:grid-cols-2"><label className="grid gap-1 text-sm font-semibold">Nombre<input defaultValue="Gran Continental" className="rounded border border-blue-200 px-3 py-2" /></label><label className="grid gap-1 text-sm font-semibold">RUC<input defaultValue="1799999999001" className="rounded border border-blue-200 px-3 py-2" /></label><label className="grid gap-1 text-sm font-semibold">Lema<input defaultValue="Viajamos contigo" className="rounded border border-blue-200 px-3 py-2" /></label><label className="grid gap-1 text-sm font-semibold">Correo de soporte<input defaultValue="soporte@cooperativa.ec" type="email" className="rounded border border-blue-200 px-3 py-2" /></label><label className="grid gap-1 text-sm font-semibold">Color primario<input value={color} onChange={(e) => setColor(e.target.value)} pattern="^#[0-9A-Fa-f]{6}$" className="rounded border border-blue-200 px-3 py-2" /></label><label className="grid gap-1 text-sm font-semibold">Logo PNG/SVG<input type="file" accept="image/png,image/svg+xml" className="rounded border border-blue-200 px-3 py-2" /></label></div><div className="mt-5 rounded-lg p-5 text-white" style={{ backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(color) ? color : '#64748b' }}><strong>Vista previa de la identidad</strong><p className="mt-2">Gran Continental · Viajamos contigo</p></div><button type="button" className="mt-5 rounded-md bg-red-600 px-4 py-2 font-semibold text-white">Guardar identidad y contacto</button></section>;
 }
 
+export function VistaMikel({ seccion }: { seccion: Exclude<Seccion, 'inicio'> }) {
+  return <div className="py-5 text-blue-950">
+    {(seccion === 'buses' || seccion === 'bus-normal') && (
+      <nav aria-label="Tipo de bus" className="mb-4 flex flex-wrap gap-3">
+        <Link to="/vista-previa/cooperativa" className={boton}>← Volver al resumen</Link>
+        {[
+          ['/vista-previa/cooperativa/buses/ejecutivo', 'Ejecutivo · dos pisos'],
+          ['/vista-previa/cooperativa/buses/normal', 'Normal · un piso'],
+        ].map(([ruta, nombre]) => (
+          <NavLink key={ruta} to={ruta} className={({ isActive }) => `${boton} ${isActive ? 'border-blue-700 bg-blue-50 ring-1 ring-blue-700' : ''}`}>{nombre}</NavLink>
+        ))}
+      </nav>
+    )}
+    {seccion === 'normal' && <SelectorDemo key="normal" />}
+    {seccion === 'premium' && <SelectorDemo key="premium" premium />}
+    {seccion === 'buses' && <div className="space-y-5"><BusesPage/><PlanosBusPage/></div>}
+    {seccion === 'bus-normal' && <div className="space-y-5"><BusesPage/><PlanosBusPage/></div>}
+    {seccion === 'grupos' && <GruposHabilitados />}
+    {seccion === 'global' && <ConfigGlobal />}
+    {seccion === 'identidad' && <Identidad />}
+  </div>;
+}
+const enlacesVistas = [
+  ['3.1 · Asientos Normal', '/vista-previa/mikel-v3/asientos-normal', 'Cliente'],
+  ['3.2 · Asientos Premium', '/vista-previa/mikel-v3/asientos-premium', 'Cliente'],
+  ['11.4 · Configuración global', '/vista-previa/panel/configuracion/global', 'Administrador'],
+  ['16 · Bus Ejecutivo', '/vista-previa/cooperativa/buses/ejecutivo', 'Cooperativa'],
+  ['16.1 · Bus Normal', '/vista-previa/cooperativa/buses/normal', 'Cooperativa'],
+  ['17.1 · Grupos habilitados', '/vista-previa/cooperativa/frecuencias/grupos', 'Cooperativa'],
+  ['19 · Identidad y contacto', '/vista-previa/cooperativa/configuracion', 'Cooperativa'],
+];
+export function IndiceCooperativa() {
+  return <section className="py-5"><h2 className="mb-4 text-2xl font-bold text-blue-950">Vistas de la cooperativa</h2><div className="grid gap-4 sm:grid-cols-2">{enlacesVistas.filter(([, , panel]) => panel === 'Cooperativa').map(([titulo, ruta]) => <Link key={ruta} to={ruta} className={boton}>{titulo}</Link>)}</div></section>;
+}
 export default function MikelV3Panel({ inicial = 'inicio' }: { inicial?: Seccion }) {
-  const [seccion, setSeccion] = useState<Seccion>(inicial);
-  const menu: Array<[Seccion, string]> = [['inicio','Resumen'],['normal','3.1 Normal'],['premium','3.2 Premium'],['buses','16 / 16.1 Buses'],['grupos','17.1 Grupos'],['global','11.4 Global'],['identidad','19 Identidad']];
-  return <section className="mx-auto my-5 w-[calc(100%-24px)] max-w-[1440px] rounded-lg bg-slate-50 p-4 text-blue-950 sm:p-6"><header className="mb-5"><p className="text-sm font-semibold uppercase tracking-wide text-red-600">MIKEL V3 · Flota y configuración</p><h1 className="mt-1 text-3xl font-bold">Flujo de demostración de las 7 vistas</h1><p className="mt-2 text-slate-600">Selecciona una vista para recorrer el módulo completo. Los mapas reutilizan el selector común y conservan la regla de pasillo separado de asiento.</p></header><nav className="mb-5 flex flex-wrap gap-2" aria-label="Vistas de Mikel">{menu.map(([id, label]) => <button key={id} type="button" className={seccion === id ? activo : boton} onClick={() => setSeccion(id)}>{label}</button>)}</nav>{seccion === 'inicio' && <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{menu.slice(1).map(([id,label]) => <button key={id} type="button" onClick={() => setSeccion(id)} className="rounded-lg border border-blue-100 bg-white p-5 text-left shadow-sm hover:border-red-300"><span className="text-lg font-bold">{label}</span><span className="mt-2 block text-sm text-slate-600">Abrir pantalla y continuar el flujo.</span></button>)}</div>}{seccion === 'normal' && <SelectorDemo/>}{seccion === 'premium' && <SelectorDemo premium/>}{seccion === 'buses' && <div className="space-y-5"><BusesPage/><PlanosBusPage/></div>}{seccion === 'grupos' && <GruposHabilitados/>}{seccion === 'global' && <ConfigGlobal/>}{seccion === 'identidad' && <Identidad/>}</section>;
+  if (inicial !== 'inicio') return <VistaMikel seccion={inicial} />;
+  return <section className="mx-auto my-5 max-w-[1440px] rounded-lg bg-white p-5 text-blue-950"><h1 className="text-3xl font-bold">Vistas de Mikel</h1><p className="my-4">Cada enlace abre la vista dentro de su panel. Las vistas de asientos conservan el flujo de cliente. Vista previa sin guardado en el servidor.</p><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{enlacesVistas.map(([titulo, ruta, panel]) => <Link key={ruta} to={ruta} className="rounded-lg border border-blue-100 p-5 hover:bg-blue-50"><strong className="block">{titulo}</strong><span className="mt-2 block text-sm">{panel}</span></Link>)}</div></section>;
 }
