@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { sesionOficina, ErrorOficina, fechaConsulta } from './acceso';
-import { accesoOficina, listarReservas } from './consultas';
+import { accesoOficina, listarReservas, alcanceReserva } from './consultas';
 
 export const oficinaRouter = Router();
 oficinaRouter.use('/oficina', (req: Request, res: Response, next: NextFunction) => {
@@ -39,6 +39,21 @@ oficinaRouter.get('/oficina/resumen', async (req,res,next) => {
     }));
   } catch(e) { next(e); }
 });
+
+oficinaRouter.get('/oficina/reservas', async (req,res,next)=>{
+ try { res.json(await sesionOficina(req,async db=>({reservas:await listarReservas(db)}))); } catch(e){next(e);}
+});
+oficinaRouter.get('/oficina/reservas/:id', async(req,res,next)=>{
+ try { res.json(await sesionOficina(req,async db=>{
+ const r=(await db.query(`SELECT r.id FROM transporte.reservas r WHERE r.id=$1 AND ${alcanceReserva()}`,[identificador(req.params.id)])).rows[0];
+ if(!r) throw new ErrorOficina(404,'Reserva no disponible en tu ámbito.');
+ return (await db.query('SELECT transporte.compra_resumen($1) AS datos',[r.id])).rows[0].datos;
+ })); }catch(e){next(e);}
+});
+export function identificador(v:unknown):string {
+ if(typeof v!=='string'||! /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)) throw new ErrorOficina(422,'Identificador no válido.');
+ return v;
+}
 
 oficinaRouter.use((e: unknown,_req: Request,res: Response,_next: NextFunction) => {
   const code = (e as {code?:string})?.code;
