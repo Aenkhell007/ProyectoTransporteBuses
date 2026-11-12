@@ -1,0 +1,47 @@
+import { Router } from 'express';
+import type { Request, Response, NextFunction } from 'express';
+import { sesionOficina, ErrorOficina, fechaConsulta } from './acceso';
+import { accesoOficina, listarReservas } from './consultas';
+
+export const oficinaRouter = Router();
+oficinaRouter.use('/oficina', (req: Request, res: Response, next: NextFunction) => {
+  res.set({'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
+  if (!['GET','HEAD'].includes(req.method)) {
+    const origen = req.get('origin');
+    if (!origen || ![process.env.FRONTEND_URL ?? 'http://127.0.0.1:5173','http://localhost:5173'].includes(origen) || req.get('sec-fetch-site')==='cross-site')
+      return next(new ErrorOficina(403,'Origen no autorizado.'));
+  }
+  next();
+});
+oficinaRouter.get('/oficina/contexto', async (req,res,next) => {
+  try { res.json(await sesionOficina(req, async db => ({oficinas:await accesoOficina(db)}))); } catch(e) { next(e); }
+});
+oficinaRouter.get('/oficina/resumen', async (req,res,next) => {
+  try {
+    const fecha = fechaConsulta(req.query.fecha,new Date().toLocaleDateString('en-CA',{timeZone:'America/Guayaquil'}));
+    res.json(await sesionOficina(req, async db => {
+      const reservas = await listarReservas(db);
+      const hoy = reservas.filter(r => r.confirmado_at && new Date(r.confirmado_at).toLocaleDateString('en-CA',{timeZone:'America/Guayaquil'})===fecha);
+      const pendientes = reservas.filter(r=>r.comprobante_estado==='EN_REVISION');
+      const salidas = (await db.query(`SELECT v.id,b.unidad,v.salida,
+        (SELECT count(*)::int FROM transporte.plano_celdas pc WHERE pc.plano_id=v.plano_id AND pc.tipo='ASIENTO') AS capacidad,
+        (SELECT count(*)::int FROM transporte.reserva_asientos ra WHERE ra.viaje_id=v.id AND ra.estado='CONFIRMADO') AS vendidos,
+        (SELECT ci.nombre FROM transporte.ruta_paradas rp JOIN transporte.terminales t ON t.id=rp.terminal_id JOIN transporte.ciudades ci ON ci.id=t.ciudad_id WHERE rp.ruta_id=f.ruta_id ORDER BY rp.orden LIMIT 1) AS origen,
+        (SELECT ci.nombre FROM transporte.ruta_paradas rp JOIN transporte.terminales t ON t.id=rp.terminal_id JOIN transporte.ciudades ci ON ci.id=t.ciudad_id WHERE rp.ruta_id=f.ruta_id ORDER BY rp.orden DESC LIMIT 1) AS destino
+        FROM transporte.viajes v JOIN transporte.buses b ON b.id=v.bus_id JOIN transporte.frecuencias f ON f.id=v.frecuencia_id
+        WHERE v.estado='PUBLICADO' AND v.salida>now() AND (v.salida AT TIME ZONE 'America/Guayaquil')::date=$1::date
+        AND transporte.puede('cooperativa.leer',v.cooperativa_id) ORDER BY v.salida LIMIT 20`,[fecha])).rows;
+      return {
+        kpis:{ventasHoy:hoy.reduce((s,r)=>s+Number(r.pagado_centavos),0)/100,asientosVendidos:hoy.reduce((s,r)=>s+r.cantidad,0),comprobantesPendientes:pendientes.length,reservasConfirmadas:hoy.length},
+        comprobantesPendientes:pendientes.map(r=>({id:r.comprobante_id,reserva:r.compra_codigo??r.id,cliente:r.cliente,viaje:r.ruta,monto:Number(r.reportado_centavos)/100,estado:'En verificación'})),
+        proximasSalidas:salidas.map(v=>({id:v.id,ruta:`${v.origen} → ${v.destino}`,hora:new Date(v.salida).toLocaleTimeString('es-EC',{timeZone:'America/Guayaquil',hour:'2-digit',minute:'2-digit',hour12:false}),unidad:v.unidad,asientosVendidos:v.vendidos,capacidad:v.capacidad}))
+      };
+    }));
+  } catch(e) { next(e); }
+});
+
+oficinaRouter.use((e: unknown,_req: Request,res: Response,_next: NextFunction) => {
+  const code = (e as {code?:string})?.code;
+  const status = e instanceof ErrorOficina ? e.status : code==='28000'?401:code==='42501'?403:['P0001','23505','23P01'].includes(code??'')?409:['22P02','22007'].includes(code??'')?422:503;
+  res.status(status).json({error:e instanceof ErrorOficina?e.message:status===401?'La sesión venció. Inicia sesión.':status===403?'No tienes permiso para esta operación.':status===409?'El estado cambió. Actualiza la consulta antes de reintentar.':'No se pudo completar la operación.'});
+});

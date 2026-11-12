@@ -22,7 +22,7 @@ export default function AdminLayout({
 }) {
   const { usuario, cargando, logout } = useAuth();
   const ruta = useLocation().pathname;
-  const homeHref = ruta.startsWith('/cooperativa') ? '/cooperativa' : ruta.startsWith('/panel') ? '/panel' : variant === 'cooperativa' ? '/vista-previa/cooperativa' : variant === 'oficina' ? '/vista-previa/oficinista' : '/vista-previa/panel';
+  const homeHref = ruta.startsWith('/oficina') ? '/oficina' : ruta.startsWith('/cooperativa') ? '/cooperativa' : ruta.startsWith('/panel') ? '/panel' : variant === 'cooperativa' ? '/vista-previa/cooperativa' : variant === 'oficina' ? '/vista-previa/oficinista' : '/vista-previa/panel';
   const [saliendo, setSaliendo] = useState(false);
   const [error, setError] = useState("");
   const nombreUsuario = usuario
