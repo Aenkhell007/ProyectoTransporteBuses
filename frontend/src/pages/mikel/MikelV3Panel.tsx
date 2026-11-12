@@ -1,4 +1,5 @@
 import { Link, NavLink } from 'react-router';
+import EditorIdentidad from '../../components/configuracion/EditorIdentidad';
 import GruposHabilitadosEditor from '../../components/flota/GruposHabilitadosEditor';
 import EditorConfiguracionGlobal from '../../components/configuracion/EditorConfiguracionGlobal';
 import { useMemo, useState } from 'react';
@@ -47,10 +48,8 @@ function ConfigGlobal() {
   return <EditorConfiguracionGlobal inicial={{ version: 1, idioma: 'es-EC', moneda: 'USD', zonaHoraria: 'America/Guayaquil', sesionHoras: 8, mfaAdministradores: false, formatos: ['JPG', 'PNG', 'PDF'], maxArchivoMB: 5, correo: false, whatsapp: false }} canales={{ correo: false, whatsapp: false }} admiteMfa={false} />;
 }
 function Identidad() {
-  const [color, setColor] = useState('#CB102E');
-  return <section className="rounded-lg border border-blue-100 bg-white p-5"><h2 className="text-xl font-bold text-blue-950">19 · Configuración de identidad y contacto</h2><div className="mt-5 grid gap-4 md:grid-cols-2"><label className="grid gap-1 text-sm font-semibold">Nombre<input defaultValue="Gran Continental" className="rounded border border-blue-200 px-3 py-2" /></label><label className="grid gap-1 text-sm font-semibold">RUC<input defaultValue="1799999999001" className="rounded border border-blue-200 px-3 py-2" /></label><label className="grid gap-1 text-sm font-semibold">Lema<input defaultValue="Viajamos contigo" className="rounded border border-blue-200 px-3 py-2" /></label><label className="grid gap-1 text-sm font-semibold">Correo de soporte<input defaultValue="soporte@cooperativa.ec" type="email" className="rounded border border-blue-200 px-3 py-2" /></label><label className="grid gap-1 text-sm font-semibold">Color primario<input value={color} onChange={(e) => setColor(e.target.value)} pattern="^#[0-9A-Fa-f]{6}$" className="rounded border border-blue-200 px-3 py-2" /></label><label className="grid gap-1 text-sm font-semibold">Logo PNG/SVG<input type="file" accept="image/png,image/svg+xml" className="rounded border border-blue-200 px-3 py-2" /></label></div><div className="mt-5 rounded-lg p-5 text-white" style={{ backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(color) ? color : '#64748b' }}><strong>Vista previa de la identidad</strong><p className="mt-2">Gran Continental · Viajamos contigo</p></div><button type="button" className="mt-5 rounded-md bg-red-600 px-4 py-2 font-semibold text-white">Guardar identidad y contacto</button></section>;
+  return <EditorIdentidad inicial={{ version: 1, nombre: 'Gran Continental', razonSocial: 'Cooperativa de transporte', ruc: '', lema: 'El camino merece grandeza.', logoUrl: '/images/Logo G-C.png', primario: '#ff0018', secundario: '#00833e', texto: '#08035b', email: '', telefono: '', whatsapp: '', direccion: '', facebook: '', instagram: '' }} />;
 }
-
 export function VistaMikel({ seccion }: { seccion: Exclude<Seccion, 'inicio'> }) {
   return <div className="py-5 text-blue-950">
     {(seccion === 'buses' || seccion === 'bus-normal') && (
