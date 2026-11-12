@@ -1,5 +1,5 @@
-import { Link, NavLink } from 'react-router';
 import { ProgresoCompra } from '../../components/compra/ProgresoCompra';
+import { Link, NavLink } from 'react-router';
 import EditorIdentidad from '../../components/configuracion/EditorIdentidad';
 import GruposHabilitadosEditor from '../../components/flota/GruposHabilitadosEditor';
 import EditorConfiguracionGlobal from '../../components/configuracion/EditorConfiguracionGlobal';
@@ -8,30 +8,10 @@ import SelectorAsientos from '../../components/flota/SelectorAsientos';
 import EditorBus from '../../components/flota/EditorBus';
 import { plantillaEjecutivo, plantillaNormal } from '../../features/flota/plantillasPlano';
 
-import type { CeldaMapa, MapaViaje } from '../../types/mapaViaje';
 
-type Seccion = 'inicio' | 'normal' | 'premium' | 'buses' | 'bus-normal' | 'bus-normal' | 'grupos' | 'global' | 'identidad';
+
+type Seccion = 'inicio' | 'normal' | 'premium' | 'buses' | 'bus-normal' | 'grupos' | 'global' | 'identidad';
 const boton = 'min-h-10 rounded-md border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-950 hover:bg-blue-50';
-const activo = 'min-h-10 rounded-md bg-[#08035b] px-3 py-2 text-sm font-semibold text-white';
-
-function mapa(pisos: number, asientosPorPiso: number, prefijo: string, clase: string): MapaViaje {
-  const celdas: CeldaMapa[] = [];
-  for (let piso = 1; piso <= pisos; piso += 1) {
-    const filas = Math.ceil(asientosPorPiso / 3);
-    for (let fila = 1; fila <= filas; fila += 1) {
-      for (let columna = 1; columna <= 4; columna += 1) {
-        const indice = (fila - 1) * 3 + columna - (columna === 3 ? 0 : columna > 3 ? 1 : 0);
-        if (columna === 2) {
-          celdas.push({ id: `${prefijo}-pasillo-${piso}-${fila}`, piso, fila, columna, tipo: 'PASILLO', codigo: null, clase: null, estado: 'DISPONIBLE' });
-        } else if (indice <= asientosPorPiso) {
-          const codigo = `${prefijo}${indice}`;
-          celdas.push({ id: `${prefijo}-${piso}-${indice}`, piso, fila, columna, tipo: 'ASIENTO', codigo, clase, estado: indice % 11 === 0 ? 'OCUPADO' : 'DISPONIBLE' });
-        }
-      }
-    }
-  }
-  return { planoId: `demo-${prefijo}`, celdas };
-}
 
 function SelectorDemo({ premium = false }: { premium?: boolean }) {
   const datos = useMemo(() => {
