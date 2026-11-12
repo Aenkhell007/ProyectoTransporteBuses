@@ -24,9 +24,19 @@ const seccionesOficina = [
   { ruta: "reembolsos", nombre: "Reembolsos", icono: <path d="M3 4v6h6M3.5 10A8.5 8.5 0 1 1 4 16m8-9v10m2.5-8H11a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3H9.5" /> },
 ];
 
+const seccionesCooperativa = [
+  resumen,
+  { ruta: "buses", nombre: "Buses", icono: <><rect x="4" y="3" width="16" height="16" rx="3" /><path d="M4 9h16M7 19v3m10-3v3M7 14h.01M17 14h.01" /></> },
+  { ruta: "grupos", nombre: "Grupos", icono: null },
+  { ruta: "frecuencias", nombre: "Frecuencias", icono: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4m8-4v4" /></> },
+  { ruta: "hoja-ruta", nombre: "Hoja de ruta", icono: <path d="M9 3 6 21m9-18 3 18M12 5v3m0 4v3m0 4v2" /> },
+  { ruta: "personal", nombre: "Personal", icono: null },
+  seccionesAdmin[4],
+];
+
 interface AdminSidebarProps {
   sinLogo?: boolean;
-  variant: "admin" | "oficina";
+  variant: "admin" | "oficina" | "cooperativa";
   puedeSalir: boolean;
   saliendo: boolean;
   onSalir: () => void;
@@ -37,7 +47,7 @@ export function AdminSidebar({ sinLogo = false, variant, puedeSalir, saliendo, o
   const menuId = useId();
   const botonMenu = useRef<HTMLButtonElement>(null);
   const oficina = variant === "oficina";
-  const secciones = oficina ? seccionesOficina : seccionesAdmin;
+  const secciones = variant === "cooperativa" ? seccionesCooperativa : oficina ? seccionesOficina : seccionesAdmin;
 
   return (
     <aside
@@ -67,9 +77,9 @@ export function AdminSidebar({ sinLogo = false, variant, puedeSalir, saliendo, o
       </div>
 
       <div id={menuId} className={`${abierto ? "flex" : "hidden"} flex-1 flex-col px-3 py-4 lg:flex`}>
-        <nav aria-label={oficina ? "Oficina" : "Administración"}>
+        <nav aria-label={variant === "cooperativa" ? "Cooperativa" : oficina ? "Oficina" : "Administración"}>
           {!oficina && (
-            <p className="px-3 pb-3 text-xs uppercase text-indigo-200">Administración</p>
+            <p className="px-3 pb-3 text-xs uppercase text-indigo-200">{variant === "cooperativa" ? "Cooperativa" : "Administración"}</p>
           )}
           <ul className="space-y-1">
             {secciones.map(({ ruta, nombre, icono }) => (

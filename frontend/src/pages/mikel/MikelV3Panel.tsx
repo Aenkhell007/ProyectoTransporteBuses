@@ -1,3 +1,4 @@
+import { Link, NavLink } from 'react-router';
 import EditorIdentidad from '../../components/configuracion/EditorIdentidad';
 import GruposHabilitadosEditor from '../../components/flota/GruposHabilitadosEditor';
 import EditorConfiguracionGlobal from '../../components/configuracion/EditorConfiguracionGlobal';
@@ -8,7 +9,7 @@ import { plantillaEjecutivo, plantillaNormal } from '../../features/flota/planti
 
 import type { CeldaMapa, MapaViaje } from '../../types/mapaViaje';
 
-type Seccion = 'inicio' | 'normal' | 'premium' | 'buses' | 'bus-normal' | 'grupos' | 'global' | 'identidad';
+type Seccion = 'inicio' | 'normal' | 'premium' | 'buses' | 'bus-normal' | 'bus-normal' | 'grupos' | 'global' | 'identidad';
 const boton = 'min-h-10 rounded-md border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-950 hover:bg-blue-50';
 const activo = 'min-h-10 rounded-md bg-[#08035b] px-3 py-2 text-sm font-semibold text-white';
 
@@ -38,10 +39,10 @@ function SelectorDemo({ premium = false }: { premium?: boolean }) {
 }
 
 function GruposHabilitados() {
-  return <GruposHabilitadosEditor inicial={{ version: 1, frecuenciaId: 'preview-frecuencia', grupoIds: ['preview-confort'] }} frecuencias={[{ id: 'preview-frecuencia', codigo: 'FRE-008', origen: 'Quito', destino: 'Loja', hora: '07:00', activa: true }]} grupos={[
-    { id: 'preview-ejecutivo', nombre: 'Ejecutivo', descripcion: 'Unidades de dos pisos', activo: true, buses: [], frecuenciaIds: [] },
-    { id: 'preview-confort', nombre: 'Confort', descripcion: 'Unidades de un piso', activo: true, buses: [], frecuenciaIds: ['preview-frecuencia'] },
-    { id: 'preview-regional', nombre: 'Regional', descripcion: 'Servicio regional', activo: false, buses: [], frecuenciaIds: [] },
+  return <GruposHabilitadosEditor inicial={{ version: 1, frecuenciaId: 'preview-frecuencia', grupoIds: ['preview-confort'] }} frecuencias={[{ id: 'preview-frecuencia', codigo: 'FRE-008', origen: 'Quito', destino: 'Loja', hora: '07:00', activa: true }, { id: 'preview-ambato', codigo: 'FRE-009', origen: 'Ambato', destino: 'Quito', hora: '09:00', activa: true }]} grupos={[
+    { id: 'preview-ejecutivo', nombre: 'Ejecutivo', descripcion: 'Unidades de dos pisos', activo: true, buses: Array.from({ length: 6 }, (_, i) => ({ id: 'preview-ej-' + i, unidad: String(18 + i).padStart(3, '0'), activo: true })), frecuenciaIds: [] },
+    { id: 'preview-confort', nombre: 'Confort', descripcion: 'Unidades de un piso', activo: true, buses: Array.from({ length: 8 }, (_, i) => ({ id: 'preview-conf-' + i, unidad: String(25 + i).padStart(3, '0'), activo: true })), frecuenciaIds: ['preview-frecuencia', 'preview-ambato'] },
+    { id: 'preview-regional', nombre: 'Regional', descripcion: 'Servicio regional', activo: true, buses: Array.from({ length: 4 }, (_, i) => ({ id: 'preview-reg-' + i, unidad: String(40 + i).padStart(3, '0'), activo: true })), frecuenciaIds: [] },
   ]} />;
 }
 function ConfigGlobal() {
@@ -52,10 +53,43 @@ function Identidad() {
 }
 function BusEjecutivoPreview({ normal = false }: { normal?: boolean }) {
   const [inicial] = useState(() => ({ version: 1, unidad: '', placa: '', chasis: 'Scania', carroceria: normal ? 'Marcopolo Paradiso 1200' : 'Marcopolo Paradiso 1800 DD', correo: '', grupoId: normal ? 'preview-normal' : 'preview-ejecutivo', propietario: '', activo: true, pisos: normal ? 1 : 2, filas: normal ? 10 : 6, celdas: normal ? plantillaNormal(10, 'preview-normal') : plantillaEjecutivo(6, 'preview-ejecutivo'), servicios: ['wifi', 'bano'], fotos: [], planoEnUso: false }));
-  return <EditorBus inicial={inicial} grupos={[{ id: 'preview-ejecutivo', nombre: 'Ejecutivo' }, { id: 'preview-normal', nombre: 'Normal' }]} clases={[{ id: normal ? 'preview-normal' : 'preview-ejecutivo', codigo: normal ? 'NORMAL' : 'EJECUTIVO', nombre: normal ? 'Normal' : 'Ejecutivo' }]} chasis={['Scania', 'Mercedes-Benz']} carrocerias={['Marcopolo Paradiso 1800 DD']} servicios={[{ id: 'wifi', nombre: 'WiFi' }, { id: 'bano', nombre: 'Baño' }, { id: 'climatizacion', nombre: 'Climatización' }, { id: 'usb', nombre: 'USB' }, { id: 'pantallas', nombre: 'Pantallas' }, { id: 'reclinacion', nombre: 'Asientos reclinables' }]} existentes={[]} />;
+  return <EditorBus inicial={inicial} grupos={[{ id: 'preview-ejecutivo', nombre: 'Ejecutivo' }, { id: 'preview-normal', nombre: 'Normal' }]} clases={[{ id: 'preview-normal', codigo: 'NORMAL', nombre: 'Normal' }, { id: 'preview-ejecutivo', codigo: 'EJECUTIVO', nombre: 'Ejecutivo' }]} chasis={['Scania', 'Mercedes-Benz']} carrocerias={['Marcopolo Paradiso 1800 DD', 'Marcopolo Paradiso 1200']} servicios={[{ id: 'wifi', nombre: 'WiFi' }, { id: 'bano', nombre: 'Baño' }, { id: 'climatizacion', nombre: 'Climatización' }, { id: 'usb', nombre: 'USB' }, { id: 'pantallas', nombre: 'Pantallas' }, { id: 'reclinacion', nombre: 'Asientos reclinables' }]} existentes={[]} />;
+}
+export function VistaMikel({ seccion }: { seccion: Exclude<Seccion, 'inicio'> }) {
+  return <div className="py-5 text-blue-950">
+    {(seccion === 'buses' || seccion === 'bus-normal') && (
+      <nav aria-label="Tipo de bus" className="mb-4 flex flex-wrap gap-3">
+        <Link to="/vista-previa/cooperativa" className={boton}>← Volver al resumen</Link>
+        {[
+          ['/vista-previa/cooperativa/buses/ejecutivo', 'Ejecutivo · dos pisos'],
+          ['/vista-previa/cooperativa/buses/normal', 'Normal · un piso'],
+        ].map(([ruta, nombre]) => (
+          <NavLink key={ruta} to={ruta} className={({ isActive }) => `${boton} ${isActive ? 'border-blue-700 bg-blue-50 ring-1 ring-blue-700' : ''}`}>{nombre}</NavLink>
+        ))}
+      </nav>
+    )}
+    {seccion === 'normal' && <SelectorDemo key="normal" />}
+    {seccion === 'premium' && <SelectorDemo key="premium" premium />}
+    {seccion === 'buses' && <BusEjecutivoPreview key="ejecutivo" />}
+    {seccion === 'bus-normal' && <BusEjecutivoPreview key="normal" normal />}
+    {seccion === 'grupos' && <GruposHabilitados />}
+    {seccion === 'global' && <ConfigGlobal />}
+    {seccion === 'identidad' && <Identidad />}
+  </div>;
+}
+const enlacesVistas = [
+  ['3.1 · Asientos Normal', '/vista-previa/mikel-v3/asientos-normal', 'Cliente'],
+  ['3.2 · Asientos Premium', '/vista-previa/mikel-v3/asientos-premium', 'Cliente'],
+  ['11.4 · Configuración global', '/vista-previa/panel/configuracion/global', 'Administrador'],
+  ['16 · Bus Ejecutivo', '/vista-previa/cooperativa/buses/ejecutivo', 'Cooperativa'],
+  ['16.1 · Bus Normal', '/vista-previa/cooperativa/buses/normal', 'Cooperativa'],
+  ['17.1 · Grupos habilitados', '/vista-previa/cooperativa/frecuencias/grupos', 'Cooperativa'],
+  ['19 · Identidad y contacto', '/vista-previa/cooperativa/configuracion', 'Cooperativa'],
+];
+export function IndiceCooperativa() {
+  return <section className="py-5"><h2 className="mb-4 text-2xl font-bold text-blue-950">Vistas de la cooperativa</h2><div className="grid gap-4 sm:grid-cols-2">{enlacesVistas.filter(([, , panel]) => panel === 'Cooperativa').map(([titulo, ruta]) => <Link key={ruta} to={ruta} className={boton}>{titulo}</Link>)}</div></section>;
 }
 export default function MikelV3Panel({ inicial = 'inicio' }: { inicial?: Seccion }) {
-  const [seccion, setSeccion] = useState<Seccion>(inicial);
-  const menu: Array<[Seccion, string]> = [['inicio','Resumen'],['normal','3.1 Normal'],['premium','3.2 Premium'],['buses','16 Bus Ejecutivo'],['bus-normal','16.1 Bus Normal'],['grupos','17.1 Grupos'],['global','11.4 Global'],['identidad','19 Identidad']];
-  return <section className="mx-auto my-5 w-[calc(100%-24px)] max-w-[1440px] rounded-lg bg-slate-50 p-4 text-blue-950 sm:p-6"><header className="mb-5"><p className="text-sm font-semibold uppercase tracking-wide text-red-600">MIKEL V3 · Flota y configuración</p><h1 className="mt-1 text-3xl font-bold">Flujo de demostración de las 7 vistas</h1><p className="mt-2 text-slate-600">Selecciona una vista para recorrer el módulo completo. Los mapas reutilizan el selector común y conservan la regla de pasillo separado de asiento.</p></header><nav className="mb-5 flex flex-wrap gap-2" aria-label="Vistas de Mikel">{menu.map(([id, label]) => <button key={id} type="button" className={seccion === id ? activo : boton} onClick={() => setSeccion(id)}>{label}</button>)}</nav>{seccion === 'inicio' && <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{menu.slice(1).map(([id,label]) => <button key={id} type="button" onClick={() => setSeccion(id)} className="rounded-lg border border-blue-100 bg-white p-5 text-left shadow-sm hover:border-red-300"><span className="text-lg font-bold">{label}</span><span className="mt-2 block text-sm text-slate-600">Abrir pantalla y continuar el flujo.</span></button>)}</div>}{seccion === 'normal' && <SelectorDemo/>}{seccion === 'premium' && <SelectorDemo premium/>}{seccion === 'buses' && <BusEjecutivoPreview key="ejecutivo"/>}{seccion === 'bus-normal' && <BusEjecutivoPreview key="normal" normal/>}{seccion === 'grupos' && <GruposHabilitados/>}{seccion === 'global' && <ConfigGlobal/>}{seccion === 'identidad' && <Identidad/>}</section>;
+  if (inicial !== 'inicio') return <VistaMikel seccion={inicial} />;
+  return <section className="mx-auto my-5 max-w-[1440px] rounded-lg bg-white p-5 text-blue-950"><h1 className="text-3xl font-bold">Vistas de Mikel</h1><p className="my-4">Cada enlace abre la vista dentro de su panel. Las vistas de asientos conservan el flujo de cliente. Vista previa sin guardado en el servidor.</p><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{enlacesVistas.map(([titulo, ruta, panel]) => <Link key={ruta} to={ruta} className="rounded-lg border border-blue-100 p-5 hover:bg-blue-50"><strong className="block">{titulo}</strong><span className="mt-2 block text-sm">{panel}</span></Link>)}</div></section>;
 }

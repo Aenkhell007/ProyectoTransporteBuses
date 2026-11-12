@@ -1,3 +1,4 @@
+import { ConfiguracionCooperativaTabs } from '../../components/configuracion/ConfiguracionCooperativaTabs';
 import { useState } from "react";
 import FormularioCuentaBancaria from "../../components/configuracion/FormularioCuentaBancaria";
 import type { DatosCuentaBancaria } from "../../components/configuracion/FormularioCuentaBancaria";
@@ -138,7 +139,7 @@ function estiloBanco(banco: string) {
   return "bg-emerald-800 text-white";
 }
 
-export default function ConfiguracionPagosPage() {
+export default function ConfiguracionPagosPage({ panelCooperativa = false }: { panelCooperativa?: boolean }) {
   const [configuracion, setConfiguracion] =
     useState<Configuracion>(configuracionInicial);
   const [guardada, setGuardada] = useState<Configuracion>(configuracionInicial);
@@ -380,7 +381,7 @@ export default function ConfiguracionPagosPage() {
         </p>
       </header>
 
-      <ul aria-label="Secciones de configuración" className="mb-4 grid grid-cols-3 gap-1 text-center text-xs sm:text-sm">
+      {panelCooperativa ? <ConfiguracionCooperativaTabs /> : <ul aria-label="Secciones de configuración" className="mb-4 grid grid-cols-3 gap-1 text-center text-xs sm:text-sm">
         <li aria-disabled="true" className="grid min-h-11 place-items-center rounded-md bg-blue-50 px-1 py-2 text-blue-900/80">
           Identidad y contacto
         </li>
@@ -390,7 +391,7 @@ export default function ConfiguracionPagosPage() {
         <li aria-disabled="true" className="grid min-h-11 place-items-center rounded-md bg-blue-50 px-1 py-2 text-blue-900/80">
           Tarifas y descuentos
         </li>
-      </ul>
+      </ul>}
 
       <div className="mb-5 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900">
         Vista previa con datos de demostración. No utilices estas cuentas para
