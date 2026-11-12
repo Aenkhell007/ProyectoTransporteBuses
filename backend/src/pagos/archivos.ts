@@ -20,7 +20,7 @@ export async function guardarArchivo(
   datos: Buffer,
   nombre: string,
   mime: string,
-  categoria: "COMPROBANTE" | "DOCUMENTO" | "RESPALDO",
+  categoria: "COMPROBANTE" | "DOCUMENTO" | "RESPALDO" | "REEMBOLSO",
   creados: string[],
 ) {
   const id = randomUUID();

@@ -1,3 +1,4 @@
+import { reembolsosRouter } from './reembolsos';
 import { leerArchivo } from '../pagos/archivos';
 import { nombreSeguro, ErrorPago } from '../pagos/validacion';
 import { conservarDatosCompra } from '../pagos/datos';
@@ -76,6 +77,7 @@ oficinaRouter.get('/oficina/comprobantes/:id/archivo',async(req,res,next)=>{
  if(!r)throw new ErrorOficina(404,'Archivo no disponible.');return r;
  });res.type(a.mime).set('Content-Disposition',`${req.query.descargar==='1'?'attachment':'inline'}; filename="${nombreSeguro(a.ruta_privada.split('/').pop())}"`).send(await leerArchivo(a.ruta_privada));}catch(e){next(e);}
 });
+oficinaRouter.use(reembolsosRouter);
 oficinaRouter.use((e: unknown,_req: Request,res: Response,_next: NextFunction) => {
   const code = (e as {code?:string})?.code;
   const status = e instanceof ErrorOficina || e instanceof ErrorPago ? e.status : code==='28000'?401:code==='42501'?403:['P0001','23505','23P01'].includes(code??'')?409:['22P02','22007'].includes(code??'')?422:503;

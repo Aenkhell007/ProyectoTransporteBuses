@@ -79,7 +79,7 @@ pagosRouter.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 // Si se pierde la respuesta de COMMIT, el registro puede existir. Nunca se borra a ciegas.
-async function limpiarTrasError(req: Request, claves: string[]) {
+export async function limpiarTrasError(req: Request, claves: string[]) {
   if (!claves.length) return;
   try {
     const registrados = await conSesion(token(req), async (db) =>
@@ -298,7 +298,7 @@ pagosRouter.post("/pagos/comprobantes/:id/revision", async (req, res) => {
     responderError(res, e);
   }
 });
-async function emitir(db: PoolClient, compraId: string, creados: string[]) {
+export async function emitir(db: PoolClient, compraId: string, creados: string[]) {
   await db.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
     compraId,
   ]);
