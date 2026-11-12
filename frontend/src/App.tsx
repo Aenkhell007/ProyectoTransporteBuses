@@ -1,3 +1,4 @@
+import { OficinaComprobantesReal } from './features/oficina/OficinaComprobantesReal';
 import { ConfiguracionCooperativaTabs } from './components/configuracion/ConfiguracionCooperativaTabs';
 import { BusesConectados, BusConectado, IdentidadConectada, GlobalConectada, CompatibilidadesConectadas } from './pages/mikel/EditoresConectados';
 import ActivarCuenta from "./pages/auth/ActivarCuenta";
@@ -83,7 +84,7 @@ export function App() {
         <Route path="frecuencias/grupos" element={<CompatibilidadesConectadas />} />
         <Route path="*" element={<p className="py-6">Esta sección está pendiente de integración por su responsable.</p>} />
       </Route>
-      <Route path="/oficina" element={<AdminLayout variant="oficina" panelFijo />}><Route index element={<OficinaResumenPage />}/><Route path="reservas" element={<OficinaReservasPage />}/><Route path="*" element={<p>Sección pendiente de integración.</p>}/></Route>
+      <Route path="/oficina" element={<AdminLayout variant="oficina" panelFijo />}><Route index element={<OficinaResumenPage />}/><Route path="reservas" element={<OficinaReservasPage />}/><Route path="comprobantes" element={<OficinaComprobantesReal />}/><Route path="*" element={<p>Sección pendiente de integración.</p>}/></Route>
       <Route path="/panel" element={<AdminLayout panelFijo />}>
         <Route index element={<AdminResumenPage />} />
         <Route path="cooperativas" element={<GestionCooperativasPage />} />

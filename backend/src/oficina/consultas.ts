@@ -17,7 +17,7 @@ export async function accesoOficina(db: PoolClient) {
   return oficinas;
 }
 
-export async function listarReservas(db: PoolClient) {
+export async function listarReservas(db: PoolClient, historial = false) {
   await accesoOficina(db);
   return (await db.query(`SELECT r.id,r.cooperativa_id,r.oficina_id,r.viaje_id,r.estado,
     CASE WHEN r.estado='PENDIENTE' AND r.expires_at<=now() THEN 'VENCIDA' ELSE r.estado END AS estado_actual,
@@ -38,7 +38,7 @@ export async function listarReservas(db: PoolClient) {
     JOIN transporte.terminales tde ON tde.id=pd.terminal_id JOIN transporte.ciudades destino ON destino.id=tde.ciudad_id
     JOIN transporte.usuarios u ON u.id=r.cliente_id JOIN transporte.cooperativas co ON co.id=r.cooperativa_id
     LEFT JOIN transporte.compras c ON c.reserva_id=r.id LEFT JOIN transporte.pagos p ON p.reserva_id=r.id
-    LEFT JOIN LATERAL (SELECT * FROM transporte.intentos_pago x WHERE x.reserva_id=r.id ORDER BY x.created_at DESC LIMIT 1) i ON true
+    LEFT JOIN LATERAL (SELECT * FROM transporte.intentos_pago x WHERE x.reserva_id=r.id ORDER BY x.created_at DESC ${historial ? '' : 'LIMIT 1'}) i ON true
     LEFT JOIN transporte.comprobantes cp ON cp.intento_id=i.id LEFT JOIN transporte.archivos a ON a.id=cp.archivo_id
     WHERE ${alcanceReserva()} ORDER BY r.created_at DESC`)).rows;
 }

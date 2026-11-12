@@ -55,6 +55,9 @@ export function identificador(v:unknown):string {
  return v;
 }
 
+oficinaRouter.get('/oficina/comprobantes', async(req,res,next)=>{
+ try {res.json(await sesionOficina(req,async db=>({comprobantes:(await listarReservas(db,true)).filter(r=>r.comprobante_id)})));}catch(e){next(e);}
+});
 oficinaRouter.use((e: unknown,_req: Request,res: Response,_next: NextFunction) => {
   const code = (e as {code?:string})?.code;
   const status = e instanceof ErrorOficina ? e.status : code==='28000'?401:code==='42501'?403:['P0001','23505','23P01'].includes(code??'')?409:['22P02','22007'].includes(code??'')?422:503;
