@@ -4,8 +4,9 @@ import GruposHabilitadosEditor from '../../components/flota/GruposHabilitadosEdi
 import EditorConfiguracionGlobal from '../../components/configuracion/EditorConfiguracionGlobal';
 import { useMemo, useState } from 'react';
 import SelectorAsientos from '../../components/flota/SelectorAsientos';
-import BusesPage from '../flota/BusesPage';
-import PlanosBusPage from '../flota/PlanosBusPage';
+import EditorBus from '../../components/flota/EditorBus';
+import { plantillaEjecutivo, plantillaNormal } from '../../features/flota/plantillasPlano';
+
 import type { CeldaMapa, MapaViaje } from '../../types/mapaViaje';
 
 type Seccion = 'inicio' | 'normal' | 'premium' | 'buses' | 'bus-normal' | 'grupos' | 'global' | 'identidad';
@@ -50,6 +51,10 @@ function ConfigGlobal() {
 function Identidad() {
   return <EditorIdentidad inicial={{ version: 1, nombre: 'Gran Continental', razonSocial: 'Cooperativa de transporte', ruc: '', lema: 'El camino merece grandeza.', logoUrl: '/images/Logo G-C.png', primario: '#ff0018', secundario: '#00833e', texto: '#08035b', email: '', telefono: '', whatsapp: '', direccion: '', facebook: '', instagram: '' }} />;
 }
+function BusEjecutivoPreview({ normal = false }: { normal?: boolean }) {
+  const [inicial] = useState(() => ({ version: 1, unidad: '', placa: '', chasis: 'Scania', carroceria: normal ? 'Marcopolo Paradiso 1200' : 'Marcopolo Paradiso 1800 DD', correo: '', grupoId: normal ? 'preview-normal' : 'preview-ejecutivo', propietario: '', activo: true, pisos: normal ? 1 : 2, filas: normal ? 10 : 6, celdas: normal ? plantillaNormal(10, 'preview-normal') : plantillaEjecutivo(6, 'preview-ejecutivo'), servicios: ['wifi', 'bano'], fotos: [], planoEnUso: false }));
+  return <EditorBus inicial={inicial} grupos={[{ id: 'preview-ejecutivo', nombre: 'Ejecutivo' }, { id: 'preview-normal', nombre: 'Normal' }]} clases={[{ id: 'preview-normal', codigo: 'NORMAL', nombre: 'Normal' }, { id: 'preview-ejecutivo', codigo: 'EJECUTIVO', nombre: 'Ejecutivo' }]} chasis={['Scania', 'Mercedes-Benz']} carrocerias={['Marcopolo Paradiso 1800 DD', 'Marcopolo Paradiso 1200']} servicios={[{ id: 'wifi', nombre: 'WiFi' }, { id: 'bano', nombre: 'Baño' }, { id: 'climatizacion', nombre: 'Climatización' }, { id: 'usb', nombre: 'USB' }, { id: 'pantallas', nombre: 'Pantallas' }, { id: 'reclinacion', nombre: 'Asientos reclinables' }]} existentes={[]} />;
+}
 export function VistaMikel({ seccion }: { seccion: Exclude<Seccion, 'inicio'> }) {
   return <div className="py-5 text-blue-950">
     {(seccion === 'buses' || seccion === 'bus-normal') && (
@@ -65,8 +70,8 @@ export function VistaMikel({ seccion }: { seccion: Exclude<Seccion, 'inicio'> })
     )}
     {seccion === 'normal' && <SelectorDemo key="normal" />}
     {seccion === 'premium' && <SelectorDemo key="premium" premium />}
-    {seccion === 'buses' && <div className="space-y-5"><BusesPage/><PlanosBusPage/></div>}
-    {seccion === 'bus-normal' && <div className="space-y-5"><BusesPage/><PlanosBusPage/></div>}
+    {seccion === 'buses' && <BusEjecutivoPreview key="ejecutivo" />}
+    {seccion === 'bus-normal' && <BusEjecutivoPreview key="normal" normal />}
     {seccion === 'grupos' && <GruposHabilitados />}
     {seccion === 'global' && <ConfigGlobal />}
     {seccion === 'identidad' && <Identidad />}
