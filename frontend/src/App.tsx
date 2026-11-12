@@ -1,4 +1,5 @@
 import { ConfiguracionCooperativaTabs } from './components/configuracion/ConfiguracionCooperativaTabs';
+import { BusesConectados, BusConectado, IdentidadConectada, GlobalConectada, CompatibilidadesConectadas } from './pages/mikel/EditoresConectados';
 import ActivarCuenta from "./pages/auth/ActivarCuenta";
 import ReenviarActivacion from "./pages/auth/ReenviarActivacion";
 import Login from "./pages/auth/Login";
@@ -69,6 +70,28 @@ export function App() {
   const { usuario } = useAuth();
   const location = useLocation();
   const section = homeSections[location.hash] ?? homeSections[""];
+
+  if (matchPath('/cooperativa/*', location.pathname) || matchPath('/panel/*', location.pathname)) {
+    return <Routes>
+      <Route path="/cooperativa" element={<CooperativaLayout />}>
+        <Route index element={<p className="py-6">El resumen de la cooperativa está pendiente. Usa el menú para administrar buses, compatibilidades e identidad.</p>} />
+        <Route path="buses" element={<BusesConectados />} />
+        <Route path="buses/:id" element={<BusConectado />} />
+        <Route path="configuracion" element={<IdentidadConectada />} />
+        <Route path="configuracion/pagos" element={<ConfiguracionPagosPage panelCooperativa />} />
+        <Route path="frecuencias" element={<CompatibilidadesConectadas />} />
+        <Route path="frecuencias/grupos" element={<CompatibilidadesConectadas />} />
+        <Route path="*" element={<p className="py-6">Esta sección está pendiente de integración por su responsable.</p>} />
+      </Route>
+      <Route path="/panel" element={<AdminLayout panelFijo />}>
+        <Route index element={<AdminResumenPage />} />
+        <Route path="cooperativas" element={<GestionCooperativasPage />} />
+        <Route path="configuracion" element={<GlobalConectada />} />
+        <Route path="configuracion/global" element={<GlobalConectada />} />
+        <Route path="*" element={<p className="py-6">Esta sección está pendiente de integración por su responsable.</p>} />
+      </Route>
+    </Routes>;
+  }
 
   if (
     import.meta.env.DEV &&

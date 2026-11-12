@@ -64,7 +64,7 @@ export default function EditorBus({ inicial, grupos, clases, chasis, carrocerias
   function cambiar<K extends keyof BusEditorDatos>(campo: K, valor: BusEditorDatos[K]) { setDatos(d => ({ ...d, [campo]: valor })); setMensaje(''); setErrores([]); }
   function cancelar() { setDistribucionPendiente(null); setConfirmarNuevo(false); generacionFotos.current += 1; setDatos(base); setClaseId(base.celdas.find(c => c.tipo === 'ASIENTO')?.clase_id ?? clases[0]?.id ?? ''); setFotos([]); setErrores([]); setFotoError(''); setValidandoFotos(false); setEditandoPlano(false); setNuevaVersion(false); setMensaje('Se restauraron los datos, fotos y plano originales.'); }
   function aplicarDistribucion(pisos: number, filas: number) {
-    const clase = clases.find(c => c.codigo === (pisos === 1 ? 'NORMAL' : 'EJECUTIVO'));
+    const clase = clases.find(c => (pisos === 1 ? c.codigo === 'NORMAL' : ['VIP', 'EJECUTIVO'].includes(c.codigo)));
     if (!clase) { setErrores(['No hay una clase disponible para esta distribución.']); return; }
     setDatos(d => ({ ...d, pisos, filas, celdas: (pisos === 1 ? plantillaNormal : plantillaEjecutivo)(filas, clase.id) }));
     setClaseId(clase.id); setNuevaVersion(base.planoEnUso && datos.id === base.id); setDistribucionPendiente(null); setMensaje('Plantilla actualizada en el borrador. Revisa el plano antes de guardar.'); setErrores([]);
@@ -110,7 +110,7 @@ export default function EditorBus({ inicial, grupos, clases, chasis, carrocerias
       const payload = { ...datos, unidad: datos.unidad.trim(), placa: datos.placa.trim().toUpperCase(), version: datos.id ? base.version : 1 };
       if (onGuardar) { const respuesta = await onGuardar(payload, fotos, nuevaVersion); setBase(respuesta); setDatos(respuesta); setFotos([]); setNuevaVersion(false); setEditandoPlano(false); setMensaje('Bus guardado correctamente.'); }
       else setMensaje('Borrador validado. Los datos, las fotos y el plano no se enviaron al servidor.');
-    } catch { setErrores(['No se pudo guardar el bus. Conservamos los cambios para reintentar.']); }
+    } catch (error) { setErrores([error instanceof Error ? error.message : 'No se pudo guardar el bus. Conservamos los cambios para reintentar.']); }
     finally { setGuardando(false); }
   }
   function campo(nombre: 'unidad' | 'placa' | 'correo' | 'propietario', texto: string, tipo = 'text') { return <label className="grid gap-1.5 text-sm">{texto}<input className={entradaConfiguracion} type={tipo} value={datos[nombre]} maxLength={120} onChange={e => cambiar(nombre, e.target.value)} /></label>; }

@@ -34,6 +34,7 @@ model abordajes {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model archivos {
+  flota_imagen_contenidos flota_imagen_contenidos?
   id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   propietario_id     String               @db.Uuid
   cooperativa_id     String?              @db.Uuid
@@ -176,6 +177,7 @@ model bus_fotos {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model buses {
+  version                Int                      @default(1)
   id                     String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   cooperativa_id         String                   @db.Uuid
   grupo_id               String                   @db.Uuid
@@ -1373,5 +1375,12 @@ model viajes {
   @@index([bus_id, salida], map: "viajes_bus_fecha")
   @@index([cooperativa_id], map: "viajes_coop_idx")
   @@index([frecuencia_id, salida], map: "viajes_publicados", where: raw("(estado = 'PUBLICADO'::text)"))
+  @@schema("transporte")
+}
+
+model flota_imagen_contenidos {
+  archivo_id String @id @db.Uuid
+  contenido Bytes
+  archivos archivos @relation(fields: [archivo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   @@schema("transporte")
 }

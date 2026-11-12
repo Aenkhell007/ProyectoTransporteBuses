@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { Outlet } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import { AdminHeader } from "../components/layout/AdminHeader";
 import { AdminSidebar } from "../components/layout/AdminSidebar";
 import { SiteFooter } from "../components/layout";
@@ -21,6 +21,8 @@ export default function AdminLayout({
   panelFijo?: boolean;
 }) {
   const { usuario, cargando, logout } = useAuth();
+  const ruta = useLocation().pathname;
+  const homeHref = ruta.startsWith('/cooperativa') ? '/cooperativa' : ruta.startsWith('/panel') ? '/panel' : variant === 'cooperativa' ? '/vista-previa/cooperativa' : variant === 'oficina' ? '/vista-previa/oficinista' : '/vista-previa/panel';
   const [saliendo, setSaliendo] = useState(false);
   const [error, setError] = useState("");
   const nombreUsuario = usuario
@@ -42,7 +44,7 @@ export default function AdminLayout({
   return (
     <div className={panelFijo ? "gc-shell gc-shell--public" : "gc-shell gc-shell--public p-3 sm:p-5"}>
       {panelFijo && (
-        <AdminHeader cabeceraApp {...paneles[variant]} homeHref={variant === "cooperativa" ? "/vista-previa/cooperativa" : variant === "oficina" ? "/vista-previa/oficinista" : "/vista-previa/panel"} nombreUsuario={nombreUsuario} cargando={cargando} />
+        <AdminHeader cabeceraApp {...paneles[variant]} homeHref={homeHref} nombreUsuario={nombreUsuario} cargando={cargando} />
       )}
       <div
         className={`relative mx-auto grid w-full max-w-[1440px] flex-1 items-start rounded-lg bg-white lg:grid-cols-[200px_minmax(0,1fr)] ${panelFijo ? "w-[calc(100%-36px)] max-[960px]:w-full" : ""}`}

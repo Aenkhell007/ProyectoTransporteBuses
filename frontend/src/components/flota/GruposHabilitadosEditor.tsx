@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { IconoConfiguracion } from '../configuracion/ConfiguracionCooperativaTabs';
 import { useState } from 'react';
 import { botonConfiguracion, guardarConfiguracion, entradaConfiguracion } from '../configuracion/EditorConfiguracionGlobal';
@@ -11,7 +11,7 @@ export interface GrupoCompatible {
   buses: { id: string; unidad: string; activo: boolean }[];
   frecuenciaIds: string[];
 }
-export interface FrecuenciaCompatible { id: string; codigo: string; origen: string; destino: string; hora: string; activa: boolean }
+export interface FrecuenciaCompatible { id: string; codigo: string; origen: string; destino: string; hora: string; activa: boolean; version?: number }
 export interface CompatibilidadGrupos { version: number; frecuenciaId: string; grupoIds: string[] }
 
 interface Props {
@@ -22,6 +22,8 @@ interface Props {
 }
 
 export default function GruposHabilitadosEditor({ grupos, frecuencias, inicial, onGuardar }: Props) {
+  const { pathname } = useLocation();
+  const gruposHref = pathname.startsWith('/cooperativa') ? '/cooperativa/grupos' : '/vista-previa/cooperativa/grupos';
   const [base, setBase] = useState(inicial);
   const [confirmados, setConfirmados] = useState<Record<string, CompatibilidadGrupos>>({ [inicial.frecuenciaId]: inicial });
   const [datos, setDatos] = useState(inicial);
@@ -48,7 +50,7 @@ export default function GruposHabilitadosEditor({ grupos, frecuencias, inicial, 
       setBase(respuesta); setDatos(respuesta); setRevisado(false);
       setConfirmados(actual => ({ ...actual, [respuesta.frecuenciaId]: respuesta }));
       setMensaje(onGuardar ? 'Compatibilidades guardadas.' : 'Borrador de compatibilidades confirmado en esta vista. No se publicó en el servidor.');
-    } catch { setError('No se pudo guardar. Conservamos tu selección para reintentar; puede ser necesario actualizar la versión.'); }
+    } catch (error) { setError(error instanceof Error ? error.message : 'No se pudo guardar. Conservamos tu selección para reintentar; puede ser necesario actualizar la versión.'); }
     finally { setGuardando(false); }
   }
   return <section className="space-y-4 text-[#08035b]">
@@ -56,7 +58,7 @@ export default function GruposHabilitadosEditor({ grupos, frecuencias, inicial, 
     {!onGuardar && <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">Vista previa con datos de ejemplo. Los cambios se conservan en esta pantalla; integración con el servidor pendiente.</p>}
     <div role="tablist" aria-label="Frecuencias y compatibilidades" className="flex border-b border-indigo-100">{[['frecuencias', 'Frecuencias'], ['grupos', 'Grupos habilitados']].map(([id, nombre]) => <button key={id} type="button" role="tab" id={'tab-' + id} aria-controls={'panel-' + id} aria-selected={tab === id} onClick={() => setTab(id)} className={'min-h-12 px-5 text-sm ' + (tab === id ? 'border-b-2 border-blue-600 font-bold' : '')}>{nombre}</button>)}</div>
     <div role="tabpanel" id="panel-frecuencias" aria-labelledby="tab-frecuencias" hidden={tab !== 'frecuencias'} className="space-y-3">
-      {frecuencias.map(f => <article key={f.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-indigo-100 p-4"><div><h2 className="font-bold">{f.codigo} · {f.origen} → {f.destino}</h2><p className="mt-1 text-sm">{f.hora} · {f.activa ? 'Activa' : 'Inactiva'}</p></div><button type="button" className={botonConfiguracion} disabled={modificado || guardando} onClick={() => { const ids = grupos.filter(g => g.frecuenciaIds.includes(f.id)).map(g => g.id); const siguiente = confirmados[f.id] ?? { version: inicial.version, frecuenciaId: f.id, grupoIds: ids }; setDatos(siguiente); setBase(siguiente); setTab('grupos'); setGrupoId(null); setMensaje(''); setError(''); setRevisado(false); }}>Ver grupos</button></article>)}
+      {frecuencias.map(f => <article key={f.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-indigo-100 p-4"><div><h2 className="font-bold">{f.codigo} · {f.origen} → {f.destino}</h2><p className="mt-1 text-sm">{f.hora} · {f.activa ? 'Activa' : 'Inactiva'}</p></div><button type="button" className={botonConfiguracion} disabled={modificado || guardando} onClick={() => { const ids = grupos.filter(g => g.frecuenciaIds.includes(f.id)).map(g => g.id); const siguiente = confirmados[f.id] ?? { version: f.version ?? inicial.version, frecuenciaId: f.id, grupoIds: ids }; setDatos(siguiente); setBase(siguiente); setTab('grupos'); setGrupoId(null); setMensaje(''); setError(''); setRevisado(false); }}>Ver grupos</button></article>)}
       {frecuencias.length === 0 && <p>No hay frecuencias disponibles.</p>}
       {modificado && <p role="status" className="text-sm text-amber-900">Confirma o cancela los cambios antes de abrir otra frecuencia.</p>}
 
@@ -65,7 +67,7 @@ export default function GruposHabilitadosEditor({ grupos, frecuencias, inicial, 
       {frecuencia ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-blue-200 bg-gradient-to-r from-sky-100 to-blue-50 p-4"><strong className="flex flex-wrap items-center gap-3 text-lg sm:text-xl"><IconoConfiguracion nombre="bus" className="h-8 w-8"/>{frecuencia.codigo}<span aria-hidden="true">·</span>{frecuencia.origen} → {frecuencia.destino}<span aria-hidden="true">·</span>{frecuencia.hora}</strong><span className={'rounded-full px-4 py-1.5 text-sm ' + (frecuencia.activa ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800')}>● {frecuencia.activa ? 'Activa' : 'Inactiva'}</span></div> : <p role="alert">Selecciona una frecuencia válida.</p>}
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
         <section className="min-w-0 rounded-lg border border-blue-100 p-4 sm:p-5"><h2 className="mb-4 flex items-center gap-2 text-lg font-bold"><IconoConfiguracion nombre="personas"/>Grupos compatibles</h2>
-          <div className="mb-4 flex flex-wrap gap-3"><label className="relative min-w-40 flex-1"><span className="sr-only">Buscar grupo por nombre</span><IconoConfiguracion nombre="lupa" className="absolute left-3 top-3 h-5 w-5 text-indigo-400"/><input type="search" placeholder="Buscar grupo por nombre" className={entradaConfiguracion + ' pl-10'} value={busqueda} onChange={e => setBusqueda(e.target.value)} /></label><Link to="/vista-previa/cooperativa/grupos" className={botonConfiguracion + ' inline-flex items-center gap-2'}><IconoConfiguracion nombre="ajustes" className="h-5 w-5"/>Gestionar grupos</Link></div>
+          <div className="mb-4 flex flex-wrap gap-3"><label className="relative min-w-40 flex-1"><span className="sr-only">Buscar grupo por nombre</span><IconoConfiguracion nombre="lupa" className="absolute left-3 top-3 h-5 w-5 text-indigo-400"/><input type="search" placeholder="Buscar grupo por nombre" className={entradaConfiguracion + ' pl-10'} value={busqueda} onChange={e => setBusqueda(e.target.value)} /></label><Link to={gruposHref} className={botonConfiguracion + ' inline-flex items-center gap-2'}><IconoConfiguracion nombre="ajustes" className="h-5 w-5"/>Gestionar grupos</Link></div>
           <div className="overflow-x-auto rounded-lg border border-blue-100"><table className="w-full text-left text-sm"><thead className="bg-sky-100/80"><tr><th className="p-3"><span className="sr-only">Habilitar</span></th><th className="py-4 pr-3">Grupo</th><th className="hidden py-4 pr-3 sm:table-cell">Buses miembros</th><th className="py-4 pr-3">Habilitación</th><th className="p-3"><span className="sr-only">Detalle</span></th></tr></thead><tbody>{visibles.map(g => <tr key={g.id} className={'border-t border-blue-100 ' + (grupoId === g.id ? 'bg-sky-100/80' : '')}><td className="p-3"><input aria-label={'Habilitar ' + g.nombre} type="checkbox" className="h-5 w-5 accent-blue-600" checked={datos.grupoIds.includes(g.id)} disabled={guardando || !frecuencia?.activa || (!g.activo && !datos.grupoIds.includes(g.id))} onChange={() => { alternar(g.id); setGrupoId(g.id); }} /></td><th scope="row" className="py-5 pr-3">{g.nombre}<small className="block font-normal sm:hidden">{g.buses.filter(b => b.activo).length} buses</small>{!g.activo && <small className="block font-normal text-red-700">Grupo inactivo</small>}</th><td className="hidden pr-3 sm:table-cell">{g.buses.filter(b => b.activo).length} buses</td><td className="pr-2 text-xs sm:whitespace-nowrap sm:pr-3 sm:text-sm"><span className={datos.grupoIds.includes(g.id) ? 'text-green-700' : 'text-slate-500'}>●</span> {datos.grupoIds.includes(g.id) ? 'Habilitado' : 'No habilitado'}</td><td className="pr-2"><button type="button" aria-label={'Ver detalle de ' + g.nombre} className="min-h-11 min-w-9 rounded text-xl text-blue-700 hover:bg-blue-100" onClick={() => setGrupoId(g.id)}>›</button></td></tr>)}</tbody></table></div>
           {visibles.length === 0 && <p className="py-4 text-sm text-slate-500">No se encontraron grupos.</p>}
         </section>
