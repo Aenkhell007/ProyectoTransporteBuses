@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import { resumenDemo } from "./AdminResumenPage.demo";
 import { fetchAdminResumenData, mensajeErrorResumen } from "./AdminResumenPage.service";
 import type { AdminResumenResponse } from "./AdminResumenPage.types";
@@ -9,6 +10,7 @@ type EstadoResumen =
   | { tipo: "listo"; datos: AdminResumenResponse };
 
 export function AdminResumenPage() {
+  const navigate = useNavigate();
   const [estado, setEstado] = useState<EstadoResumen>({ tipo: "cargando" });
   const [intento, setIntento] = useState(0);
   const [demostracion, setDemostracion] = useState(false);
@@ -85,7 +87,7 @@ export function AdminResumenPage() {
         </div>
       )}
       {/* Tarjetas KPI */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
           <div className="p-3 bg-emerald-100 text-emerald-600 rounded-lg text-xl">👥</div>
           <div>
@@ -130,10 +132,10 @@ export function AdminResumenPage() {
         </div>
         <button
           type="button"
-          disabled
+          onClick={() => navigate("/panel/cooperativas")}
           className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          👥 Ver cooperativas (pendiente)
+          👥 Ver cooperativas
         </button>
       </div>
 
@@ -197,10 +199,10 @@ export function AdminResumenPage() {
           </h2>
           <button
             type="button"
-            disabled
+            onClick={() => navigate("/panel/cooperativas")}
             className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium shadow flex items-center gap-2 transition disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <span>+</span> Nueva cooperativa (pendiente)
+            <span>+</span> Nueva cooperativa
           </button>
         </div>
 
@@ -238,10 +240,10 @@ export function AdminResumenPage() {
                   <td className="py-3 px-4 text-center">
                     <button
                       type="button"
-                      disabled
+                      onClick={() => navigate("/panel/cooperativas")}
                       className="border border-blue-600 text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-md text-xs font-medium transition disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      Ver detalle (pendiente)
+                      Ver detalle
                     </button>
                   </td>
                 </tr>
