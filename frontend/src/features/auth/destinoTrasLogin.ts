@@ -4,8 +4,11 @@ const rutasPermitidas = new Set([
   '/pago', '/pago/comprobante', '/pago/seguimiento', '/pago/confirmacion', '/mis-viajes',
 ]);
 
-export function destinoTrasLogin(origen: unknown) {
-  const inicio = { pathname: '/', search: '', hash: '', state: null as unknown };
+export function destinoTrasLogin(origen: unknown, roles: readonly string[] = []) {
+  const pathname = roles.includes('ADMIN_SISTEMA') ? '/panel'
+    : roles.includes('OFICINISTA') ? '/oficina'
+    : roles.includes('COOPERATIVA') ? '/cooperativa' : '/';
+  const inicio = { pathname, search: '', hash: '', state: null as unknown };
   if (!origen || typeof origen !== 'object') return inicio;
   const valor = origen as Record<string, unknown>;
   if (typeof valor.pathname !== 'string' || !rutasPermitidas.has(valor.pathname)) return inicio;
