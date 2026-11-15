@@ -4,7 +4,7 @@ export const resumenDemo: AdminResumenResponse = {
   kpis: {
     cooperativasActivas: 6,
     usuariosRegistrados: 248,
-    oficinistas: 12,
+    oficinas: 12,
     busesRegistrados: 84,
   },
   tendenciaUsuarios: [

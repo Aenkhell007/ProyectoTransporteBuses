@@ -2,6 +2,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { destinoTrasLogin } from '../src/features/auth/destinoTrasLogin.ts';
 
+test('usa el panel correspondiente a los roles devueltos por el servidor', () => {
+  assert.equal(destinoTrasLogin(undefined, ['CLIENTE', 'OFICINISTA']).pathname, '/oficina');
+  assert.equal(destinoTrasLogin(undefined, ['ADMIN_SISTEMA']).pathname, '/panel');
+  assert.equal(destinoTrasLogin(undefined, ['COOPERATIVA']).pathname, '/cooperativa');
+  assert.equal(destinoTrasLogin(undefined, ['CLIENTE']).pathname, '/');
+  assert.equal(destinoTrasLogin(undefined, ['OFICINISTA', 'ADMIN_SISTEMA']).pathname, '/panel');
+});
+
+test('conserva una compra pendiente para un oficinista y rechaza destinos externos', () => {
+  const from = { pathname: '/pasajeros', search: '?reserva_id=abc', hash: '', state: null };
+  assert.deepEqual(destinoTrasLogin(from, ['OFICINISTA']), from);
+  assert.equal(destinoTrasLogin({ pathname: 'https://otro.test' }, ['OFICINISTA']).pathname, '/oficina');
+});
+
 test('sin acción pendiente vuelve al inicio', () => {
   for (const valor of [null, undefined, '', {}, { pathname: '/iniciar-sesion' }]) {
     assert.equal(destinoTrasLogin(valor).pathname, '/');

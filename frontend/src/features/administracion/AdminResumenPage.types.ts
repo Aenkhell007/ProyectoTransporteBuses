@@ -2,7 +2,7 @@
 export interface ResumenKPIs {
   cooperativasActivas: number;
   usuariosRegistrados: number;
-  oficinistas: number;
+  oficinas: number;
   busesRegistrados: number;
 }
 
