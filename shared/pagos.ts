@@ -73,6 +73,7 @@ export interface DatosPago {
     estado: "PENDIENTE" | "EN_REVISION" | "APROBADO" | "RECHAZADO" | "ANULADO";
     cuentaId: string | null;
     cuentaSnapshot: {
+      qr_archivo_id?: string | null;
       numero: string;
       tipo: string;
       titular: string;

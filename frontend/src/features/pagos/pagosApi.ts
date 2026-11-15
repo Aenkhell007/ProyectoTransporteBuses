@@ -1,6 +1,9 @@
 import type { DatosPago } from "../../../../shared/pagos";
 export type { DatosPago };
 const base = (import.meta.env.VITE_API_URL ?? "/api").replace(/\/$/, "");
+export function enlaceQrCuenta(reserva: string, cuenta: string) {
+  return `${base}/reservas/${encodeURIComponent(reserva)}/cuentas/${encodeURIComponent(cuenta)}/qr`;
+}
 export class ErrorPagoApi extends Error {
   constructor(
     public status: number,

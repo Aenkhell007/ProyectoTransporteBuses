@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
-import { pagosApi, ErrorPagoApi, enlaceArchivo, enlaceQr } from "./pagosApi";
+import { pagosApi, ErrorPagoApi, enlaceArchivo, enlaceQr, enlaceQrCuenta } from "./pagosApi";
 import type { DatosPago } from "./pagosApi";
 
 export function useFlujoPago() {
@@ -78,7 +78,7 @@ export function useFlujoPago() {
     datos?.cuentas.map((c) => ({
       ...c,
       qrSrc: c.qrArchivoId
-        ? enlaceArchivo(reservaId!, c.qrArchivoId, true)
+        ? enlaceQrCuenta(reservaId!, c.id)
         : undefined,
     })) ?? [];
   const snapshot = datos?.intento?.cuentaSnapshot;
@@ -96,8 +96,8 @@ export function useFlujoPago() {
       numero: snapshot.numero,
       titular: snapshot.titular,
       ruc: snapshot.documento_titular,
-      qrArchivoId: actual?.qrArchivoId ?? null,
-      qrSrc: actual?.qrSrc,
+      qrArchivoId: snapshot.qr_archivo_id ?? null,
+      qrSrc: snapshot.qr_archivo_id ? enlaceQrCuenta(reservaId!, datos.intento.cuentaId) : undefined,
     };
     if (i < 0) cuentas.push(cuenta);
     else cuentas[i] = cuenta;

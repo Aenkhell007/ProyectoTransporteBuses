@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "tsx --test src/auth/auth.test.ts src/auth/activacion.test.ts src/sesion.test.ts src/compra/compra.test.ts src/pagos/pagos.test.ts src/flota/editor.test.ts",
+    "test": "tsx --test src/auth/auth.test.ts src/auth/activacion.test.ts src/sesion.test.ts src/compra/compra.test.ts src/pagos/pagos.test.ts src/flota/editor.test.ts src/pagos/configuracion.test.ts",
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
     "check:api": "tsc -p tsconfig.api.json",
@@ -14,7 +14,8 @@
     "test:pagos:db": "tsx --test src/pagos/pagos.db.test.ts",
     "test:compra": "tsx --test src/compra/compra.test.ts",
     "test:editores": "tsx --test src/flota/editor.test.ts",
-    "test:editores:db": "tsx --test src/flota/editor.db.test.ts"
+    "test:editores:db": "tsx --test src/flota/editor.db.test.ts",
+    "test:configuracion:db": "tsx --test src/pagos/configuracion.db.test.ts"
   },
   "keywords": [],
   "author": "",
