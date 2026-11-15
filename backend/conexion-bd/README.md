@@ -1,6 +1,6 @@
 # Conexión PostgreSQL del backend
 
-Este módulo está dentro del backend del proyecto. Conserva los archivos iniciales de `backend/src` y el esquema anterior de `backend/prisma`. El esquema PostgreSQL instalado en Supabase es la fuente de este cliente de 61 modelos; el esquema inicial de dos modelos todavía requiere integración con el equipo.
+Este módulo contiene el esquema Prisma vigente (`prisma/schema.prisma`), las migraciones y las herramientas de conexión al esquema PostgreSQL `transporte`. La API activa se inicia desde `backend/src/server.ts`; los controladores y el esquema inicial de dos modelos, que ya no se utilizaban, se retiraron en la limpieza del 14/11/2026.
 
 ## Conectar
 
