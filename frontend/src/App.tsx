@@ -1,3 +1,4 @@
+import { RevisionComprobanteEjemplo } from "./features/oficina/RevisionComprobanteEjemplo";
 import { ReembolsosReal } from './features/oficina/ReembolsosReal';
 import { RevisionComprobanteReal } from './features/oficina/RevisionComprobanteReal';
 import { OficinaComprobantesReal } from './features/oficina/OficinaComprobantesReal';
@@ -86,7 +87,7 @@ export function App() {
         <Route path="frecuencias/grupos" element={<CompatibilidadesConectadas />} />
         <Route path="*" element={<p className="py-6">Esta sección está pendiente de integración por su responsable.</p>} />
       </Route>
-      <Route path="/oficina" element={<AdminLayout variant="oficina" panelFijo />}><Route index element={<OficinaResumenPage />}/><Route path="reservas" element={<OficinaReservasPage />}/><Route path="comprobantes" element={<OficinaComprobantesReal />}/><Route path="comprobantes/:id" element={<RevisionComprobanteReal />}/><Route path="reembolsos" element={<ReembolsosReal />}/><Route path="*" element={<p>Sección pendiente de integración.</p>}/></Route>
+      <Route path="/oficina" element={<AdminLayout variant="oficina" panelFijo />}><Route index element={<OficinaResumenPage />}/><Route path="reservas" element={<OficinaReservasPage />}/><Route path="comprobantes" element={<OficinaComprobantesReal />}/><Route path="comprobantes/ejemplo" element={<RevisionComprobanteEjemplo />} /><Route path="comprobantes/:id" element={<RevisionComprobanteReal />}/><Route path="reembolsos" element={<ReembolsosReal />}/><Route path="*" element={<p>Sección pendiente de integración.</p>}/></Route>
       <Route path="/panel" element={<AdminLayout panelFijo />}>
         <Route index element={<AdminResumenPage />} />
         <Route path="cooperativas" element={<GestionCooperativasPage />} />

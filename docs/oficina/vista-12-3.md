@@ -4,4 +4,4 @@ Reutiliza el layout de oficina. Consulta solicitudes autorizadas, filtra y muest
 
 Depende de las ramas de las vistas 11, 12, 12.1, 12.2 y 13 de esta serie. No aplica migraciones nuevas: utiliza las funciones existentes del esquema transporte.
 
-Pruebas: revisión de tipos frontend/backend; las consultas SELECT se validaron con EXPLAIN contra Supabase en transacción de solo lectura. La prueba de pagos existente pasó en PostgreSQL y revirtió sus fixtures. Falta probar el recorrido completo de devolución con sesión de oficinista y comprobar visualmente escritorio/móvil. No se acredita finalizada ni lista para producción mientras falten esas pruebas.
+Pruebas: revisión de tipos y compilación del frontend. La integración en PostgreSQL comprueba solicitud, decisión, registro del abono con respaldo, idempotencia y rechazo del acceso desde otra oficina. Los datos temporales y la migración de prueba se revierten al terminar. Falta la revisión visual completa con una sesión de oficinista en escritorio y móvil.
