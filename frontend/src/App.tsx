@@ -1,4 +1,8 @@
 import { RevisionComprobanteEjemplo } from "./features/oficina/RevisionComprobanteEjemplo";
+import {VentaOficinaReal} from './features/oficina/VentaOficinaReal';
+import { ReembolsosReal } from './features/oficina/ReembolsosReal';
+import { RevisionComprobanteReal } from './features/oficina/RevisionComprobanteReal';
+import { OficinaComprobantesReal } from './features/oficina/OficinaComprobantesReal';
 import { ConfiguracionCooperativaTabs } from './components/configuracion/ConfiguracionCooperativaTabs';
 import { BusesConectados, BusConectado, IdentidadConectada, GlobalConectada, CompatibilidadesConectadas } from './pages/mikel/EditoresConectados';
 import ActivarCuenta from "./pages/auth/ActivarCuenta";
@@ -41,8 +45,7 @@ import ConfiguracionCooperativaPage from "./pages/configuracion/ConfiguracionCoo
 // Importaciones de los submódulos de la Vista 12 y páginas oficiales de oficina
 import { OficinaResumenPage } from "./features/oficina/OficinaResumenPage";
 import { OficinaReservasPage } from "./features/oficina/OficinaReservasPage";
-import { BandejaComprobantes } from "./pages/oficina/BandejaComprobantes";
-import { VentaPresencial } from "./pages/oficina/VentaPresencial";
+
 
 const homeSections: Record<
   string,
@@ -84,7 +87,7 @@ export function App() {
         <Route path="frecuencias/grupos" element={<CompatibilidadesConectadas />} />
         <Route path="*" element={<p className="py-6">Esta sección está pendiente de integración por su responsable.</p>} />
       </Route>
-      <Route path="/oficina" element={<AdminLayout variant="oficina" panelFijo />}><Route index element={<OficinaResumenPage />}/><Route path="reservas" element={<OficinaReservasPage />}/><Route path="*" element={<p>Sección pendiente de integración.</p>}/></Route>
+      <Route path="/oficina" element={<AdminLayout variant="oficina" panelFijo />}><Route index element={<OficinaResumenPage />}/><Route path="ventas" element={<VentaOficinaReal />}/><Route path="reservas" element={<OficinaReservasPage />}/><Route path="comprobantes" element={<OficinaComprobantesReal />}/><Route path="comprobantes/ejemplo" element={<RevisionComprobanteEjemplo />} /><Route path="comprobantes/:id" element={<RevisionComprobanteReal />}/><Route path="reembolsos" element={<ReembolsosReal />}/><Route path="*" element={<p>Sección pendiente de integración.</p>}/></Route>
       <Route path="/panel" element={<AdminLayout panelFijo />}>
         <Route index element={<AdminResumenPage />} />
         <Route path="cooperativas" element={<GestionCooperativasPage />} />
@@ -160,10 +163,10 @@ export function App() {
           element={<AdminLayout variant="oficina" panelFijo />}
         >
           <Route index element={<OficinaResumenPage />} />
-          <Route path="ventas" element={<VentaPresencial />} />
+          <Route path="ventas" element={<VentaOficinaReal />} />
           <Route path="reservas" element={<OficinaReservasPage />} />
-          <Route path="comprobantes" element={<BandejaComprobantes />} />
-          <Route path="reembolsos" element={<SeccionAdminPendiente titulo="Reembolsos" />} />
+          <Route path="comprobantes" element={<OficinaComprobantesReal />} /><Route path="comprobantes/ejemplo" element={<RevisionComprobanteEjemplo />} /><Route path="comprobantes/:id" element={<RevisionComprobanteReal />} />
+          <Route path="reembolsos" element={<ReembolsosReal />} />
           <Route path="*" element={<p className="p-6 text-gray-500">Sección no encontrada.</p>} />
         </Route>
       </Routes>
