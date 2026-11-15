@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "tsx --test src/auth/auth.test.ts src/auth/activacion.test.ts src/sesion.test.ts src/compra/compra.test.ts src/pagos/pagos.test.ts src/flota/editor.test.ts",
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
     "check:api": "tsc -p tsconfig.api.json",

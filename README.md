@@ -6,22 +6,11 @@ Proyecto grupal de la asignatura Manejo y Configuración del Software, cuarto se
 
 Los requisitos y las vistas numeradas salen del Documento Maestro V3 del 16/10/2026, de 355 páginas; las 163 primeras son la versión vigente. <!-- PENDIENTE: dónde lo puede consultar el docente (enlace o carpeta compartida). -->
 
-## Estado del repositorio
+## Estado al 14/11/2026
 
-Cifras al 10/11/2026, `develop` en `3c5121b`.
+`develop` incorpora la integración de Pablo del PR #143. Los paneles de administración y oficina usan servicios reales para resumen, reservas, comprobantes, revisión, reembolsos y venta presencial. Ver [integración de Pablo](docs/oficina/integracion-pablo.md).
 
-| Rama | Contenido |
-|---|---|
-| `main` | Commit inicial `9b20fa5` del 13/10/2026. Recibe la primera versión con `release/1.0.0`. No hay etiquetas. |
-| `develop` | 65 PR fusionados entre el 15/10/2026 y el 10/11/2026; 300 commits sin contar merges. Último merge: `3c5121b` (PR #117). |
-| `feature/*` | 65 ramas `feature/` de 68 ramas en `origin` (las otras son `develop`, `main` y `feat/mikel-flota-configuracion`). Las ramas integradas no se borran (ver [CONTRIBUTING.md](CONTRIBUTING.md)). |
-
-PR abiertos el 10/11/2026: #114 (`CITATION.cff`), #116 (vista 12 del oficinista) y #118 (flota y configuración de cooperativa).
-
-Pendiente para la primera parte:
-- Conectar las páginas del personal a la API. Desde #117 la bandeja de revisión de comprobantes tiene ruta (`/vista-previa/oficinista/comprobantes`, solo desarrollo), pero es de solo lectura y con datos de ejemplo, así que una compra llega a EN REVISIÓN y nadie puede aprobarla desde la interfaz.
-- Publicar viajes con plano y tarifa para el recorrido completo. Del 08/11 al 11/11/2026 `GET /api/viajes` devolvió 0 viajes.
-- Publicar `release/1.0.0` y la etiqueta `v1.0.0` en `main`.
+La limpieza local retiró implementaciones reemplazadas y archivos sin uso. Ver [informe de limpieza](docs/limpieza-local.md). Las funcionalidades pendientes de otros módulos siguen indicadas en sus pantallas y documentación.
 
 ## Módulos y responsables
 
@@ -32,9 +21,9 @@ Pendiente para la primera parte:
 | Reservas, pagos y boletos | 6, 7, 7.1, 8, 9.2, 19.1, 19.1.1 | `/pago`, `/pago/comprobante`, `/pago/seguimiento`, `/pago/confirmacion`, `/mis-viajes/reembolso`; `/vista-previa/panel/configuracion` (solo desarrollo, vistas 19.1 y 19.1.1 desde #104; `/vista-previa/configuracion/pagos` redirige ahí) | Ángel Galarza |
 | Identidad y administración | 0.1, 0.2, 0.3, 10, 11.2, 20, 20.1, 20.2 | `/registrarse`, `/iniciar-sesion`, `/activar-cuenta`, `/reenviar-activacion`, `/recuperar-contrasena`, `/restablecer-contrasena`, `/mi-cuenta` | Matías Mena |
 | Operación | 11.1, 15, 17, 18, 19.2, frecuencias (PR #26 y #99 la llaman V16), paradas y tarifas (ADM06) | `/vista-previa/frecuencias`, `/vista-previa/hoja-ruta`, `/vista-previa/paradas-tarifas` (solo desarrollo) | Benjamín Basurto |
-| Oficina y panel de administración | 11, 12.x, 13, 14 | `/vista-previa/panel` (resumen de #106, que pide `GET /api/admin/resumen`, sin ruta en el backend) y `/vista-previa/oficinista` (Ventas y Comprobantes de solo lectura desde #117; Reservas y Reembolsos pendientes), solo desarrollo | Pablo Yupa |
+| Oficina y panel de administración | 11, 12.x, 13, 14 | `/panel`, `/oficina`, `/oficina/ventas`, `/oficina/reservas`, `/oficina/comprobantes`, `/oficina/comprobantes/:id`, `/oficina/reembolsos` | Pablo Yupa |
 
-Las rutas `/vista-previa/*` solo existen con `import.meta.env.DEV`. Desde #98 y #117, `administracion/GestionCooperativasPage.tsx`, `administracion/AdminUsuariosPage.tsx`, `oficina/VentaPresencial.tsx` y `oficina/BandejaComprobantes.tsx` tienen ruta en esos paneles, con el aviso "Vista previa con datos de ejemplo". Las páginas `flota/BusesPage.tsx`, `flota/PlanosBusPage.tsx`, `flota/PlanoEditorPage.tsx`, `flota/IndisponibilidadesPage.tsx`, `administracion/GestionAccesosPage.tsx`, `admin/Dashboard.tsx` e `identidad/PerfilPage.tsx` existen en `frontend/src/pages/` y no tienen ruta (cifras al 10/11/2026, `develop` en `3c5121b`).
+Las rutas `/vista-previa/*` se conservan solo en desarrollo para los ejemplos utilizados. Los paneles reales están en `/panel`, `/oficina` y `/cooperativa`. Las pantallas antiguas que no tenían ruta ni consumidores se retiraron en la limpieza del 14/11/2026.
 
 El número de vista de cada módulo sale de la tabla de responsables del equipo; se confirma con el documento maestro. El detalle de cada módulo está en `docs/kt/`, `docs/angel/`, `docs/flota/` y `docs/benjamin/`. Quién hizo cada PR está en [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -67,8 +56,9 @@ backend/
   src/auth/            registro, activación, inicio de sesión, recuperación
   src/compra/          19 rutas: catálogos, viajes, reservas, pasajeros, cotización, contacto, Mis viajes
   src/pagos/           comprobantes, revisión, boleto PDF/QR
-  src/controllers/     usuarios, cooperativas, flota
-  src/server.ts        Express: monta /api/auth, /api (compra y pagos) y /api/health
+  src/flota/           flota, planos, fotos y configuración
+  src/oficina/         resumen, reservas, comprobantes, ventas y reembolsos
+  src/server.ts        Express: autenticación, compra, pagos, oficina, flota y /api/health
   conexion-bd/         Prisma: schema.prisma, migraciones, scripts db:*
   .data/pagos/         comprobantes y boletos generados en local (no se versiona)
 frontend/
@@ -82,6 +72,8 @@ frontend/
 shared/                tipos comunes entre frontend y backend (pagos.ts)
 docs/                  contratos de API, guías de integración y documentación por módulo
 ```
+
+Para actualizar un equipo existente, sigue [Actualizar y probar la integración](docs/actualizar-equipo.md).
 
 ## Instalación
 
@@ -128,21 +120,17 @@ Se usa `127.0.0.1` en lugar de `localhost` y el mismo puerto que dice `FRONTEND_
 
 ## Pruebas
 
-| Comando | Qué comprueba | Resultado el 10/11/2026 (`develop` en `3c5121b`) |
-|---|---|---|
-| `npm --prefix frontend run build` | Compilación TypeScript y empaquetado con Vite | Correcto |
-| `npm --prefix backend run check:api` | Tipos del servidor | Correcto |
-| `npm --prefix backend run test:auth` | Registro, activación, sesión y validación de cédula | 15 de 15 |
-| `npm --prefix backend run test:compra` | Validación de pasajeros y rutas HTTP de compra | 3 de 3 |
-| `npm --prefix backend run test:pagos` | Validación de comprobantes y estados de pago | 6 de 6 |
-| `node backend/node_modules/tsx/dist/cli.mjs --test frontend/tests/edicionPasajeros.test.ts` | Borrador de pasajeros y categorías | 3 de 3 |
-| `node backend/node_modules/tsx/dist/cli.mjs --test frontend/tests/destinoTrasLogin.test.ts` | Redirección después de iniciar sesión | 4 de 4 |
-| `node backend/node_modules/tsx/dist/cli.mjs --test frontend/tests/modalPermisos.test.ts` | Modal y matriz de permisos de usuarios (#98) | 2 de 2 |
-| `PROBAR_PAGOS_DB=1 npm --prefix backend run test:pagos:db` | Reserva, cotización, rechazo, aprobación, PDF/QR y aislamiento entre cuentas contra la base real; revierte la transacción | Requiere `DIRECT_URL` |
+Comprobaciones locales del 14/11/2026:
 
-`test:compra` necesita que exista `DATABASE_URL` aunque no se conecta a la base.
+| Comando | Resultado |
+|---|---|
+| `npm --prefix frontend run build` | Compila con comprobación de variables y parámetros sin uso |
+| `npm --prefix backend run check:api` | Tipos correctos |
+| `npm --prefix backend/conexion-bd run check` | Tipos correctos |
+| `node backend/node_modules/tsx/dist/cli.mjs --tsconfig frontend/tsconfig.json --test frontend/tests/*.test.*` | 56 pruebas aprobadas |
+| `npm --prefix backend test` | 28 pruebas aprobadas |
 
-Para el recorrido manual se usan cédulas de prueba que pasan el dígito verificador y un correo propio de cada integrante. Los datos se guardan en la base compartida: no se registran cédulas ni teléfonos reales de otras personas.
+Las pruebas contra PostgreSQL mantienen sus comandos separados (`test:pagos:db`, `test:activacion:db`, `test:editores:db`) y requieren configuración privada. La limpieza no ejecuta migraciones ni modifica los datos compartidos.
 
 ## Errores frecuentes
 

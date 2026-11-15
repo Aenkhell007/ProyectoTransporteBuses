@@ -210,9 +210,7 @@ export function App() {
         <Route path="/pago/confirmacion" element={<ConfirmacionCompra />} />
         <Route path="/mis-viajes" element={<MisViajesPage />} />
         <Route path="/mis-viajes/reembolso" element={<SolicitarReembolso />} />
-        {import.meta.env.DEV && (
-          <Route path="/vista-previa/frecuencias" element={<FrecuenciasPage />} />
-        )}
+
         {import.meta.env.DEV && (
           <Route path="/vista-previa/flota/buses" element={<BusesPage />} />
         )}
