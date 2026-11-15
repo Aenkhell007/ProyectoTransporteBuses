@@ -12,11 +12,14 @@ export type DatosCuentaBancaria = {
   activa: boolean;
   predeterminada: boolean;
   qr: File | null;
+  quitarQr?: boolean;
 };
 
 type Props = {
-  onGuardar: (cuenta: DatosCuentaBancaria) => string | undefined;
+  onGuardar: (cuenta: DatosCuentaBancaria) => string | undefined | Promise<string | undefined>;
   onCancelar: () => void;
+  iniciales?: DatosCuentaBancaria & { qrSrc?: string };
+  bancosDisponibles?: string[];
 };
 
 const bancos = [
@@ -44,8 +47,13 @@ const datosIniciales: DatosCuentaBancaria = {
 export default function FormularioCuentaBancaria({
   onGuardar,
   onCancelar,
+  iniciales,
+  bancosDisponibles,
 }: Props) {
-  const [datos, setDatos] = useState(datosIniciales);
+  const [datos, setDatos] = useState(iniciales ?? datosIniciales);
+  const [guardando, setGuardando] = useState(false);
+  const [qrQuitado, setQrQuitado] = useState(false);
+  const enviando = useRef(false);
   const [otroBanco, setOtroBanco] = useState("");
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [errorQR, setErrorQR] = useState("");
@@ -66,7 +74,7 @@ export default function FormularioCuentaBancaria({
 
   useEffect(() => {
     if (!datos.qr) {
-      setVistaQR("");
+      setVistaQR(qrQuitado ? "" : iniciales?.qrSrc ?? "");
       return;
     }
 
@@ -74,7 +82,7 @@ export default function FormularioCuentaBancaria({
     setVistaQR(url);
 
     return () => URL.revokeObjectURL(url);
-  }, [datos.qr]);
+  }, [datos.qr, iniciales?.qrSrc, qrQuitado]);
 
   function actualizar<K extends keyof DatosCuentaBancaria>(
     campoNombre: K,
@@ -106,7 +114,7 @@ export default function FormularioCuentaBancaria({
       return;
     }
 
-    if (archivo.size > 5 * 1024 * 1024) {
+    if (archivo.size === 0 || archivo.size > 5 * 1024 * 1024) {
       setErrorQR("La imagen no puede superar los 5 MB.");
 
       if (archivoRef.current) {
@@ -120,6 +128,7 @@ export default function FormularioCuentaBancaria({
   }
 
   function quitarQR() {
+    setQrQuitado(true);
     actualizar("qr", null);
     setErrorQR("");
 
@@ -128,8 +137,9 @@ export default function FormularioCuentaBancaria({
     }
   }
 
-  function guardar(evento: FormEvent<HTMLFormElement>) {
+  async function guardar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
+    if (enviando.current) return;
 
     const nuevosErrores: Record<string, string> = {};
 
@@ -156,8 +166,12 @@ export default function FormularioCuentaBancaria({
       return;
     }
 
-    const errorGuardado = onGuardar({
+    enviando.current = true;
+    setGuardando(true);
+    try {
+    const errorGuardado = await onGuardar({
       ...datos,
+      quitarQr: qrQuitado,
       banco: nombreBanco,
       numero: datos.numero.trim(),
       titular: datos.titular.trim(),
@@ -167,6 +181,8 @@ export default function FormularioCuentaBancaria({
     });
 
     if (errorGuardado) setErrores({ numero: errorGuardado });
+    } catch (error) { setErrores({ numero: error instanceof Error ? error.message : 'No se pudo guardar la cuenta.' }); }
+    finally { enviando.current = false; setGuardando(false); }
   }
 
   function mensajeError(nombre: string) {
@@ -179,10 +195,11 @@ export default function FormularioCuentaBancaria({
 
   return (
     <form onSubmit={guardar} noValidate className="text-blue-950">
+      <fieldset disabled={guardando} className="min-w-0">
       <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 id="titulo-formulario-cuenta" className="text-2xl font-bold">
-            Agregar cuenta bancaria
+            {iniciales ? 'Editar cuenta bancaria' : 'Agregar cuenta bancaria'}
           </h2>
 
           <p className="mt-2 text-sm text-slate-600">
@@ -224,7 +241,7 @@ export default function FormularioCuentaBancaria({
               >
                 <option value="">Selecciona un banco</option>
 
-                {bancos.map((banco) => (
+                {(bancosDisponibles ?? bancos).map((banco) => (
                   <option key={banco} value={banco}>
                     {banco}
                   </option>
@@ -542,9 +559,10 @@ export default function FormularioCuentaBancaria({
           type="submit"
           className="min-h-11 rounded-md bg-red-600 px-6 py-2 text-sm font-semibold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
         >
-          Guardar cuenta
+          {guardando ? 'Guardando…' : 'Guardar cuenta'}
         </button>
       </div>
+      </fieldset>
     </form>
   );
 }

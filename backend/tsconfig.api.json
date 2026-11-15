@@ -23,6 +23,8 @@
     "src/pagos/pagos.db.test.ts",
     "src/compra/compra.test.ts",
     "src/flota/editor.test.ts",
-    "src/flota/editor.db.test.ts"
+    "src/flota/editor.db.test.ts",
+    "src/pagos/configuracion.test.ts",
+    "src/pagos/configuracion.db.test.ts"
   ]
 }

@@ -16,7 +16,7 @@ Si Windows informa archivos bloqueados, detén únicamente los servidores de est
 
 ## Base de datos
 
-El esquema vigente está en `backend/conexion-bd/prisma/schema.prisma`; su historial reproducible está en `backend/conexion-bd/prisma/migrations/`. Hay siete migraciones, incluida `20261112_venta_oficina_idempotente`. Las siete estaban aplicadas en la base compartida al comprobarla el 14/11/2026.
+El esquema vigente está en `backend/conexion-bd/prisma/schema.prisma`; su historial reproducible está en `backend/conexion-bd/prisma/migrations/`. Hay ocho migraciones, incluidas `20261112_venta_oficina_idempotente` y `20261114_configuracion_pagos`. Esta última conecta las vistas 19.1 y 19.1.1 y añade la persistencia de QR y cuenta predeterminada. Consulta [configuración de pagos real](configuracion-pagos-real.md).
 
 Git distribuye el código SQL y el esquema. Los datos compartidos permanecen en PostgreSQL/Supabase. Cada compañero debe recibir por el canal privado del equipo su configuración de conexión y CA. No se necesitan Supabase Auth ni Storage.
 

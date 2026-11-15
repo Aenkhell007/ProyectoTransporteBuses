@@ -1,375 +1,87 @@
 import { ConfiguracionCooperativaTabs } from '../../components/configuracion/ConfiguracionCooperativaTabs';
-import { useState } from "react";
-import FormularioCuentaBancaria from "../../components/configuracion/FormularioCuentaBancaria";
-import type { DatosCuentaBancaria } from "../../components/configuracion/FormularioCuentaBancaria";
-
-type CuentaBancaria = {
-  ruc?: string;
-  alias?: string;
-  moneda?: "USD";
-  qr?: File | null;
-  id: string;
-  banco: string;
-  tipo: "Corriente" | "Ahorros";
-  numero: string;
-  titular: string;
-  activa: boolean;
-  predeterminada: boolean;
-};
-
-type MetodoPago = {
-  codigo: string;
-  nombre: string;
-  descripcion: string;
-  habilitado: boolean;
-  disponible: boolean;
-  estado?: string;
-};
-
-type Configuracion = {
-  cuentas: CuentaBancaria[];
-  metodos: MetodoPago[];
-  formatos: string[];
-  maximoMB: number;
-};
-
-type FormularioCuenta = {
-  id: string;
-  banco: string;
-  tipo: CuentaBancaria["tipo"];
-  numero: string;
-  titular: string;
-};
-
-const configuracionInicial: Configuracion = {
-  cuentas: [
-    {
-      id: "demo-pichincha",
-      banco: "Banco Pichincha",
-      tipo: "Corriente",
-      numero: "DEMO-5432",
-      titular: "Cooperativa de ejemplo",
-      activa: true,
-      predeterminada: true,
-    },
-    {
-      id: "demo-guayaquil",
-      banco: "Banco Guayaquil",
-      tipo: "Ahorros",
-      numero: "DEMO-9876",
-      titular: "Cooperativa de ejemplo",
-      activa: true,
-      predeterminada: false,
-    },
-    {
-      id: "demo-produbanco",
-      banco: "Produbanco",
-      tipo: "Corriente",
-      numero: "DEMO-3210",
-      titular: "Cooperativa de ejemplo",
-      activa: false,
-      predeterminada: false,
-    },
-  ],
-  metodos: [
-    {
-      codigo: "BANCO",
-      nombre: "Transferencia / Depósito",
-      descripcion: "Pagos mediante transferencia o depósito bancario.",
-      habilitado: true,
-      disponible: true,
-    },
-    {
-      codigo: "EFECTIVO",
-      nombre: "Pago en oficina",
-      descripcion: "Pago presencial en una oficina habilitada.",
-      habilitado: true,
-      disponible: true,
-    },
-    {
-      codigo: "PAYPHONE",
-      nombre: "PayPhone",
-      descripcion: "Pagos mediante PayPhone.",
-      habilitado: false,
-      disponible: false,
-      estado: "Pendiente de conexión",
-    },
-    {
-      codigo: "TARJETA",
-      nombre: "Tarjeta de crédito / débito",
-      descripcion: "Pagos con tarjeta de crédito o débito.",
-      habilitado: false,
-      disponible: false,
-      estado: "Próximamente",
-    },
-    {
-      codigo: "PAYPAL",
-      nombre: "PayPal",
-      descripcion: "Pagos mediante PayPal.",
-      habilitado: false,
-      disponible: false,
-      estado: "Próximamente",
-    },
-  ],
-  formatos: ["JPG", "PNG", "PDF"],
-  maximoMB: 5,
-};
-
-const formularioVacio: FormularioCuenta = {
-  id: "",
-  banco: "",
-  tipo: "Corriente",
-  numero: "",
-  titular: "",
-};
-
-function numeroOculto(numero: string) {
-  return `•••• ${numero.slice(-4)}`;
-}
-
-function estiloBanco(banco: string) {
-  if (banco === "Banco Pichincha") {
-    return "bg-yellow-300 text-blue-950";
-  }
-
-  if (banco === "Banco Guayaquil") {
-    return "bg-pink-700 text-white";
-  }
-
-  return "bg-emerald-800 text-white";
-}
-
+import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router';
+import FormularioCuentaBancaria from '../../components/configuracion/FormularioCuentaBancaria';
+import type { DatosCuentaBancaria } from '../../components/configuracion/FormularioCuentaBancaria';
+import { configuracionPagosApi } from '../../features/pagos/configuracionApi';
+import type { ConfiguracionPagos, CuentaConfigurada } from '../../features/pagos/configuracionApi';
+type CuentaBancaria = CuentaConfigurada;
+const vacia: ConfiguracionPagos = { cooperativa: {id:'',nombre:''}, version:0, cuentas:[], metodos:[], formatos:[], maximoMB:5, referenciaObligatoria:false, bancos:[], limites:{formatos:[],maximoMB:5} };
+function numeroOculto(numero: string) { return '•••• ' + numero.slice(-4); }
+function estiloBanco(banco: string) { return banco === 'Banco Pichincha' ? 'bg-yellow-300 text-blue-950' : banco === 'Banco Guayaquil' ? 'bg-pink-700 text-white' : 'bg-emerald-800 text-white'; }
 export default function ConfiguracionPagosPage({ panelCooperativa = false }: { panelCooperativa?: boolean }) {
-  const [configuracion, setConfiguracion] =
-    useState<Configuracion>(configuracionInicial);
-  const [guardada, setGuardada] = useState<Configuracion>(configuracionInicial);
-  const [mensaje, setMensaje] = useState("");
-  const [error, setError] = useState("");
-  const [modalAbierto, setModalAbierto] = useState(false);
-  const [agregandoCuenta, setAgregandoCuenta] = useState(false);
-  const [formulario, setFormulario] =
-    useState<FormularioCuenta>(formularioVacio);
-  const [errorCuenta, setErrorCuenta] = useState("");
-  const [cuentaVistaPrevia, setCuentaVistaPrevia] = useState(
-    configuracionInicial.cuentas[0].id,
-  );
-
-  const panel = "min-w-0 rounded-lg border border-blue-100 bg-white p-4";
-
-  const botonSecundario =
-    "inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-900 transition hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 disabled:cursor-not-allowed disabled:opacity-50";
-
-  const campo =
-    "mt-1 min-h-11 w-full rounded-md border border-blue-200 bg-white px-3 py-2 text-sm text-blue-950 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100";
-
-  const cuentasActivas = configuracion.cuentas.filter(
-    (cuenta) => cuenta.activa,
-  );
-
-  const transferenciaHabilitada = configuracion.metodos.some(
-    (metodo) => metodo.codigo === "BANCO" && metodo.habilitado,
-  );
-
-  const cuentaPrevia =
-    cuentasActivas.find((cuenta) => cuenta.id === cuentaVistaPrevia) ??
-    cuentasActivas.find((cuenta) => cuenta.predeterminada) ??
-    cuentasActivas[0];
-
-  function limpiarMensajes() {
-    setMensaje("");
-    setError("");
+  const [configuracion, setConfiguracion] = useState<ConfiguracionPagos>(vacia);
+  const [guardada, setGuardada] = useState<ConfiguracionPagos>(vacia);
+  const [cooperativas, setCooperativas] = useState<Array<{id:string;nombre:string}>>([]);
+  const [cargando, setCargando] = useState(true);
+  const [ocupado, setOcupado] = useState(false);
+  const bloqueo = useRef(false);
+  const carga = useRef(0);
+  const [mensaje, setMensaje] = useState('');
+  const [error, setError] = useState('');
+  const [params, setParams] = useSearchParams();
+  const agregandoCuenta = params.has('cuenta');
+  function setAgregandoCuenta(abierto: boolean, id = 'nueva') { const siguientes = new URLSearchParams(params); if (abierto) siguientes.set('cuenta', id); else siguientes.delete('cuenta'); setParams(siguientes); }
+  const [editando, setEditando] = useState<CuentaBancaria | undefined>();
+  const [cuentaVistaPrevia, setCuentaVistaPrevia] = useState('');
+  const panel = 'min-w-0 rounded-lg border border-blue-100 bg-white p-4';
+  const botonSecundario = 'inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-900 transition hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 disabled:cursor-not-allowed disabled:opacity-50';
+  const campo = 'mt-1 min-h-11 w-full rounded-md border border-blue-200 bg-white px-3 py-2 text-sm text-blue-950 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100';
+  const cuentasActivas = configuracion.cuentas.filter(c => c.activa);
+  const transferenciaHabilitada = configuracion.metodos.some(m => m.codigo === 'BANCO' && m.habilitado);
+  const cuentaPrevia = cuentasActivas.find(c => c.id === cuentaVistaPrevia) ?? cuentasActivas.find(c => c.predeterminada) ?? cuentasActivas[0];
+  const hayCambios = configuracion !== guardada;
+  useEffect(() => {
+    let activo = true;
+    configuracionPagosApi.cooperativas().then(async r => {
+      if (!activo) return;
+      setCooperativas(r.cooperativas);
+      if (!r.cooperativas.length) throw new Error('Tu cuenta no tiene permiso para configurar pagos en ninguna cooperativa.');
+      const datos = await configuracionPagosApi.consultar(r.cooperativas[0].id);
+      if (activo) { setConfiguracion(datos); setGuardada(datos); }
+    }).catch(e => { if (activo) setError(e instanceof Error ? e.message : 'No se pudo cargar la configuración.'); })
+      .finally(() => { if (activo) setCargando(false); });
+    return () => { activo = false; };
+  }, []);
+  async function cargar(id: string) {
+    const numero = ++carga.current; setCargando(true); setError(''); setMensaje('');
+    try { const d = await configuracionPagosApi.consultar(id); if(numero === carga.current) {setConfiguracion(d); setGuardada(d); setCuentaVistaPrevia('');} }
+    catch(e) { if(numero === carga.current) setError(e instanceof Error ? e.message : 'No se pudo cargar la configuración.'); }
+    finally { if(numero === carga.current) setCargando(false); }
   }
-
-  function cambiarEstadoCuenta(id: string) {
-    limpiarMensajes();
-
-    setConfiguracion((actual) => ({
-      ...actual,
-      cuentas: actual.cuentas.map((cuenta) =>
-        cuenta.id === id
-          ? {
-              ...cuenta,
-              activa: !cuenta.activa,
-              predeterminada: cuenta.activa ? false : cuenta.predeterminada,
-            }
-          : cuenta,
-      ),
-    }));
+  function recargar() { if (!hayCambios || window.confirm('¿Descartar los cambios pendientes y cargar los datos guardados?')) void cargar(configuracion.cooperativa.id); }
+  function cambiarCooperativa(id: string) { if(!hayCambios || window.confirm('¿Descartar los cambios pendientes y cambiar de cooperativa?')) void cargar(id); }
+  function limpiarMensajes() {setError(''); setMensaje('');}
+  function cambiarEstadoCuenta(id:string) { limpiarMensajes(); setConfiguracion(a=>({...a,cuentas:a.cuentas.map(c=>c.id===id?{...c,activa:!c.activa,predeterminada:c.activa?false:c.predeterminada}:c)})); }
+  function establecerPredeterminada(id:string) { limpiarMensajes(); setConfiguracion(a=>({...a,cuentas:a.cuentas.map(c=>({...c,predeterminada:c.activa && c.id===id}))})); }
+  function cambiarMetodo(codigo:string) { limpiarMensajes(); setConfiguracion(a=>({...a,metodos:a.metodos.map(m=>m.codigo===codigo && m.disponible?{...m,habilitado:!m.habilitado}:m)})); }
+  function cambiarFormato(formato:string) { limpiarMensajes(); setConfiguracion(a=>({...a,formatos:a.formatos.includes(formato)?a.formatos.filter(f=>f!==formato):[...a.formatos,formato]})); }
+  function abrirFormulario(c?:CuentaBancaria) {setEditando(c);setAgregandoCuenta(true,c?.id);}
+  async function persistir(datos:ConfiguracionPagos) {
+    if (bloqueo.current) throw new Error('Espera a que termine el guardado.');
+    bloqueo.current=true; setOcupado(true); limpiarMensajes();
+    try { const guardado = await configuracionPagosApi.guardar(datos); setConfiguracion(guardado);setGuardada(guardado);setMensaje('Configuración guardada en PostgreSQL.'); }
+    finally {bloqueo.current=false;setOcupado(false);}
   }
-
-  function establecerPredeterminada(id: string) {
-    limpiarMensajes();
-
-    setConfiguracion((actual) => ({
-      ...actual,
-      cuentas: actual.cuentas.map((cuenta) => ({
-        ...cuenta,
-        predeterminada: cuenta.activa && cuenta.id === id,
-      })),
-    }));
+  async function agregarCuenta(datos:DatosCuentaBancaria):Promise<string|undefined> {
+    const banco = configuracion.bancos.find(b=>b.nombre===datos.banco);
+    if(!banco) return 'Selecciona un banco del catálogo.';
+    const actualEditando = editando ?? configuracion.cuentas.find(c=>c.id===params.get('cuenta'));
+    if(configuracion.cuentas.some(c=>c.id!==actualEditando?.id && c.bancoId===banco.id && c.tipo===datos.tipo && c.numero===datos.numero)) return 'Esta cuenta bancaria ya está agregada.';
+    const cuenta:CuentaBancaria={...actualEditando,...datos,id:actualEditando?.id??crypto.randomUUID(),bancoId:banco.id};
+    const cuentas = actualEditando ? configuracion.cuentas.map(c=>c.id===actualEditando.id?cuenta:c) : [...configuracion.cuentas,cuenta];
+    try {await persistir({...configuracion,cuentas:cuentas.map(c=>datos.predeterminada?{...c,predeterminada:c.id===cuenta.id}:c)});setAgregandoCuenta(false);setEditando(undefined);}
+    catch(e) {return e instanceof Error?e.message:'No se pudo guardar la cuenta.';}
   }
-
-  function cambiarMetodo(codigo: string) {
-    limpiarMensajes();
-
-    setConfiguracion((actual) => ({
-      ...actual,
-      metodos: actual.metodos.map((metodo) =>
-        metodo.codigo === codigo && metodo.disponible
-          ? { ...metodo, habilitado: !metodo.habilitado }
-          : metodo,
-      ),
-    }));
-  }
-
-  function cambiarFormato(formato: string) {
-    limpiarMensajes();
-
-    setConfiguracion((actual) => ({
-      ...actual,
-      formatos: actual.formatos.includes(formato)
-        ? actual.formatos.filter((item) => item !== formato)
-        : [...actual.formatos, formato],
-    }));
-  }
-
-  function abrirFormulario(cuenta?: CuentaBancaria) {
-    setFormulario(
-      cuenta
-        ? {
-            id: cuenta.id,
-            banco: cuenta.banco,
-            tipo: cuenta.tipo,
-            numero: cuenta.numero,
-            titular: cuenta.titular,
-          }
-        : { ...formularioVacio },
-    );
-
-    setErrorCuenta("");
-    setModalAbierto(true);
-  }
-
-  function guardarCuenta(evento: React.FormEvent<HTMLFormElement>) {
-    evento.preventDefault();
-
-    const datos = {
-      ...formulario,
-      numero: formulario.numero.trim(),
-      titular: formulario.titular.trim(),
-    };
-
-    if (!datos.banco || !datos.numero || !datos.titular) {
-      setErrorCuenta("Completa el banco, número de cuenta y titular.");
-      return;
-    }
-
-    const duplicada = configuracion.cuentas.some(
-      (cuenta) =>
-        cuenta.id !== datos.id &&
-        cuenta.banco === datos.banco &&
-        cuenta.tipo === datos.tipo &&
-        cuenta.numero.toLowerCase() === datos.numero.toLowerCase(),
-    );
-
-    if (duplicada) {
-      setErrorCuenta("Esta cuenta bancaria ya está agregada.");
-      return;
-    }
-
-    limpiarMensajes();
-
-    setConfiguracion((actual) => ({
-      ...actual,
-      cuentas: datos.id
-        ? actual.cuentas.map((cuenta) =>
-            cuenta.id === datos.id ? { ...cuenta, ...datos } : cuenta,
-          )
-        : [
-            ...actual.cuentas,
-            {
-              ...datos,
-              id: crypto.randomUUID(),
-              activa: false,
-              predeterminada: false,
-            },
-          ],
-    }));
-
-    setModalAbierto(false);
-    setMensaje(
-      datos.id
-        ? "Cuenta actualizada en la vista previa. Guarda la configuración para conservar el cambio en esta sesión."
-        : "Cuenta agregada como inactiva. Revisa sus datos antes de activarla.",
-    );
-  }
-
-  function agregarCuenta(datos: DatosCuentaBancaria): string | undefined {
-    const duplicada = configuracion.cuentas.some(
-      (cuenta) =>
-        cuenta.banco.trim().toLowerCase() === datos.banco.trim().toLowerCase() &&
-        cuenta.tipo === datos.tipo &&
-        cuenta.numero === datos.numero,
-    );
-
-    if (duplicada) return "Esta cuenta bancaria ya está agregada.";
-
-    const nuevaCuenta = { ...datos, id: crypto.randomUUID() };
-    setConfiguracion((actual) => ({
-      ...actual,
-      cuentas: [
-        ...actual.cuentas.map((cuenta) =>
-          datos.predeterminada ? { ...cuenta, predeterminada: false } : cuenta,
-        ),
-        nuevaCuenta,
-      ],
-    }));
-    if (datos.activa) setCuentaVistaPrevia(nuevaCuenta.id);
-    setAgregandoCuenta(false);
-    setError("");
-    setMensaje("Cuenta agregada. Guarda la configuración para conservar los cambios en esta sesión de prueba.");
-  }
-
-  function guardarConfiguracion() {
-    limpiarMensajes();
-
-    if (transferenciaHabilitada && cuentasActivas.length === 0) {
-      setError(
-        "Activa al menos una cuenta bancaria para habilitar Transferencia / Depósito.",
-      );
-      return;
-    }
-
-    if (transferenciaHabilitada && configuracion.formatos.length === 0) {
-      setError("Selecciona al menos un formato de comprobante.");
-      return;
-    }
-
-    setGuardada(configuracion);
-    setMensaje(
-      "Configuración conservada en esta sesión de prueba. Todavía no se guarda en la base de datos.",
-    );
-  }
-
-  function cancelarCambios() {
-    setConfiguracion(guardada);
-    setError("");
-    setMensaje("Se restauró la última configuración guardada en esta sesión.");
-  }
-
-  if (agregandoCuenta) {
-    return (
-      <section className="mx-auto my-6 max-w-7xl rounded-lg bg-white p-4 text-blue-950 sm:p-6">
-        <FormularioCuentaBancaria
-          onGuardar={agregarCuenta}
-          onCancelar={() => setAgregandoCuenta(false)}
-        />
-      </section>
-    );
-  }
-
+  async function guardarConfiguracion() {try {await persistir(configuracion);} catch(e) {setError(e instanceof Error?e.message:'No se pudo guardar.');}}
+  function cancelarCambios() {setConfiguracion(guardada);limpiarMensajes();setMensaje('Se restauró la configuración guardada en PostgreSQL.');}
+  if(cargando) return <p role="status" className="p-6 text-blue-950">Consultando configuración de pagos…</p>;
+  if(!configuracion.cooperativa.id) return <section className="p-6 text-blue-950"><h1 className="text-2xl font-bold">Configuración de pagos</h1><p role="alert" className="mt-4">{error || 'No hay una cooperativa autorizada.'}</p><button className={botonSecundario} onClick={()=>window.location.reload()}>Reintentar</button></section>;
+  const cuentaEdicion = editando ?? configuracion.cuentas.find(c => c.id === params.get('cuenta'));
+  if(agregandoCuenta) return <section className="mx-auto my-6 max-w-7xl rounded-lg bg-white p-4 text-blue-950 sm:p-6"><p className="mb-4 text-sm">Cooperativa: {configuracion.cooperativa.nombre}</p><FormularioCuentaBancaria key={cuentaEdicion?.id??'nueva'} iniciales={cuentaEdicion} bancosDisponibles={configuracion.bancos.map(b=>b.nombre)} onGuardar={agregarCuenta} onCancelar={()=>{if(!ocupado){setAgregandoCuenta(false);setEditando(undefined);}}} /></section>;
   return (
     <section className="py-4 text-blue-950">
+      <fieldset disabled={ocupado} className="min-w-0">
       <header className="mb-4">
         <h1 className="text-2xl font-bold sm:text-3xl">
           Configuración de la cooperativa
@@ -393,9 +105,10 @@ export default function ConfiguracionPagosPage({ panelCooperativa = false }: { p
         </li>
       </ul>}
 
-      <div className="mb-5 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900">
-        Vista previa con datos de demostración. No utilices estas cuentas para
-        realizar pagos.
+      <div className="mb-5 flex flex-wrap items-end gap-3 rounded-md bg-blue-50 p-4 text-sm text-blue-900">
+        <label className="grid min-w-48 flex-1 gap-1">Cooperativa<select className={campo} value={configuracion.cooperativa.id} onChange={e => cambiarCooperativa(e.target.value)}>{cooperativas.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</select></label>
+        <button className={botonSecundario} onClick={() => recargar()}>Recargar datos</button>
+        <p className="w-full">{hayCambios ? 'Hay cambios pendientes de guardar.' : 'Configuración consultada en PostgreSQL.'}</p>
       </div>
 
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.8fr)_minmax(280px,1fr)]">
@@ -417,6 +130,7 @@ export default function ConfiguracionPagosPage({ panelCooperativa = false }: { p
               className={botonSecundario}
               onClick={() => {
                 limpiarMensajes();
+                setEditando(undefined);
                 setAgregandoCuenta(true);
               }}
             >
@@ -426,6 +140,7 @@ export default function ConfiguracionPagosPage({ panelCooperativa = false }: { p
           </div>
 
           <div className="mt-4 space-y-3">
+            {!configuracion.cuentas.length && <p className="rounded-md bg-blue-50 p-4 text-sm">Todavía no hay cuentas bancarias. Agrega una para habilitar las transferencias.</p>}
             {configuracion.cuentas.map((cuenta) => (
               <article
                 key={cuenta.id}
@@ -486,7 +201,7 @@ export default function ConfiguracionPagosPage({ panelCooperativa = false }: { p
                 </div>
 
                 <p className="mt-3 text-xs text-slate-500">
-                  QR bancario: {cuenta.qr ? `imagen adjunta (${cuenta.qr.name})` : "sin configurar"}
+                  QR bancario: {cuenta.qrId ? "guardado" : "sin configurar"}
                 </p>
 
                 <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -553,6 +268,7 @@ export default function ConfiguracionPagosPage({ panelCooperativa = false }: { p
                     {metodo.descripcion}
                   </p>
 
+                  {metodo.disponible && <label className="mt-2 block text-xs">Instrucciones<textarea maxLength={1000} value={metodo.instrucciones} onChange={e => setConfiguracion(actual => ({...actual, metodos: actual.metodos.map(m => m.codigo === metodo.codigo ? {...m, instrucciones: e.target.value} : m)}))} className={campo} /></label>}
                   {metodo.estado && (
                     <span className="mt-2 inline-block rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-600">
                       {metodo.estado}
@@ -605,7 +321,7 @@ export default function ConfiguracionPagosPage({ panelCooperativa = false }: { p
             </legend>
 
             <div className="mt-2 flex flex-wrap gap-4">
-              {["JPG", "PNG", "PDF"].map((formato) => (
+              {configuracion.limites.formatos.map((formato) => (
                 <label
                   key={formato}
                   className="flex cursor-pointer items-center gap-2 text-sm"
@@ -637,12 +353,11 @@ export default function ConfiguracionPagosPage({ panelCooperativa = false }: { p
                   }));
                 }}
               >
-                <option value={1}>1 MB</option>
-                <option value={2}>2 MB</option>
-                <option value={5}>5 MB</option>
+                {[1, 2, 5].filter(m => m <= configuracion.limites.maximoMB).map(m => <option key={m} value={m}>{m} MB</option>)}
               </select>
             </label>
 
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={configuracion.referenciaObligatoria} onChange={e => setConfiguracion(actual => ({...actual, referenciaObligatoria: e.target.checked}))} />Referencia de transferencia obligatoria</label>
             <div className="rounded-md border border-blue-100 p-3">
               <p className="text-sm font-semibold">Revisión de comprobantes</p>
 
@@ -760,136 +475,11 @@ export default function ConfiguracionPagosPage({ panelCooperativa = false }: { p
           onClick={guardarConfiguracion}
           className="min-h-11 rounded-md bg-red-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
         >
-          Guardar configuración
+          {ocupado ? "Guardando…" : "Guardar configuración"}
         </button>
       </div>
 
-      {modalAbierto && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/50 p-4">
-          <dialog
-            open
-            aria-labelledby="titulo-formulario-cuenta"
-            onCancel={(evento) => {
-              evento.preventDefault();
-              setModalAbierto(false);
-            }}
-            className="relative mx-auto my-8 w-full max-w-lg rounded-xl bg-white p-5 text-blue-950 shadow-xl sm:my-16 sm:p-6"
-          >
-            <h2 id="titulo-formulario-cuenta" className="text-xl font-bold">
-              {formulario.id
-                ? "Editar cuenta bancaria"
-                : "Agregar cuenta bancaria"}
-            </h2>
-
-            <p className="mt-2 text-sm text-slate-600">
-              Formulario provisional para probar esta vista con datos de
-              ejemplo.
-            </p>
-
-            <form onSubmit={guardarCuenta} className="mt-5 space-y-4">
-              <label className="block text-sm font-semibold">
-                Banco
-                <select
-                  autoFocus
-                  required
-                  value={formulario.banco}
-                  onChange={(evento) =>
-                    setFormulario((actual) => ({
-                      ...actual,
-                      banco: evento.target.value,
-                    }))
-                  }
-                  className={campo}
-                >
-                  <option value="">Selecciona un banco</option>
-                  <option value="Banco Pichincha">Banco Pichincha</option>
-                  <option value="Banco Guayaquil">Banco Guayaquil</option>
-                  <option value="Produbanco">Produbanco</option>
-                  {!["Banco Pichincha", "Banco Guayaquil", "Produbanco"].includes(formulario.banco) && (
-                    <option value={formulario.banco}>{formulario.banco}</option>
-                  )}
-                </select>
-              </label>
-
-              <label className="block text-sm font-semibold">
-                Tipo de cuenta
-                <select
-                  value={formulario.tipo}
-                  onChange={(evento) =>
-                    setFormulario((actual) => ({
-                      ...actual,
-                      tipo: evento.target.value as CuentaBancaria["tipo"],
-                    }))
-                  }
-                  className={campo}
-                >
-                  <option value="Corriente">Corriente</option>
-                  <option value="Ahorros">Ahorros</option>
-                </select>
-              </label>
-
-              <label className="block text-sm font-semibold">
-                Número de cuenta
-                <input
-                  required
-                  maxLength={50}
-                  value={formulario.numero}
-                  onChange={(evento) =>
-                    setFormulario((actual) => ({
-                      ...actual,
-                      numero: evento.target.value,
-                    }))
-                  }
-                  placeholder="Ej. DEMO-5432"
-                  className={campo}
-                />
-              </label>
-
-              <label className="block text-sm font-semibold">
-                Titular
-                <input
-                  required
-                  maxLength={200}
-                  value={formulario.titular}
-                  onChange={(evento) =>
-                    setFormulario((actual) => ({
-                      ...actual,
-                      titular: evento.target.value,
-                    }))
-                  }
-                  className={campo}
-                />
-              </label>
-
-              {errorCuenta && (
-                <p
-                  role="alert"
-                  className="rounded-md bg-red-50 p-3 text-sm text-red-800"
-                >
-                  {errorCuenta}
-                </p>
-              )}
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setModalAbierto(false)}
-                  className={botonSecundario}
-                >
-                  Cancelar
-                </button>
-
-                <button
-                  type="submit"
-                  className="min-h-10 rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
-                >
-                  {formulario.id ? "Actualizar cuenta" : "Agregar cuenta"}
-                </button>
-              </div>
-            </form>
-          </dialog>
-        </div>
-      )}
+      </fieldset>
     </section>
   );
 }

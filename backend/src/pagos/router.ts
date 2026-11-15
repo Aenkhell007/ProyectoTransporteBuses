@@ -96,14 +96,24 @@ export async function limpiarTrasError(req: Request, claves: string[]) {
   }
 }
 async function consultar(db: PoolClient, id: string) {
-  return conservarDatosCompra(
+  const datos = conservarDatosCompra(
     (
       await db.query("SELECT transporte.consultar_pago_cliente($1) AS datos", [
         id,
       ])
     ).rows[0].datos as DatosPago,
   );
+  const predeterminada = (await db.query('SELECT transporte.cuenta_predeterminada_cliente($1) AS id', [id])).rows[0]?.id;
+  datos.cuentas.sort((a, b) => Number(b.id === predeterminada) - Number(a.id === predeterminada));
+  return datos;
 }
+pagosRouter.get('/reservas/:id/cuentas/:cuenta/qr', async (req, res) => {
+  try {
+    const contenido = await conSesion(token(req), async db => (await db.query('SELECT transporte.qr_cuenta_cliente($1,$2) AS contenido', [uuid(req.params.id), uuid(req.params.cuenta)])).rows[0]?.contenido);
+    if (!contenido) throw new ErrorPago(404, 'QR no disponible.');
+    res.type('png').send(contenido);
+  } catch (e) { responderError(res, e); }
+});
 pagosRouter.get("/reservas/:id/pago", async (req, res) => {
   try {
     res.json(

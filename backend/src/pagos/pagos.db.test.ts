@@ -62,6 +62,9 @@ test(
         await db.query(readFileSync(resolve(carpeta,'prisma/migrations/20261112_venta_oficina_idempotente/migration.sql'),'utf8').replace(/^BEGIN;\s*/, '').replace(/COMMIT;\s*$/, ''));
       }
       await db.query("GRANT transporte_runtime TO CURRENT_USER"); // Solo en esta transacción; ROLLBACK restaura la membresía.
+      if (!(await db.query("SELECT to_regclass('transporte.pagos_qr_contenidos') AS tabla")).rows[0].tabla) {
+        await db.query(readFileSync(resolve(carpeta,'prisma/migrations/20261114_configuracion_pagos/migration.sql'),'utf8').replace(/^BEGIN;\s*/, '').replace(/COMMIT;\s*$/, ''));
+      }
       const marca = randomUUID();
       const insertar = async (
         tabla: string,
@@ -266,6 +269,15 @@ test(
       ]);
       await db.query("SELECT transporte.cotizar($1)", [reserva]);
       await db.query("SELECT transporte.aceptar_cotizacion($1,1)", [reserva]);
+      await sesion(admin.hash);
+      await db.query('UPDATE transporte.cuentas_bancarias SET predeterminada=true WHERE id=$1', [cuenta]);
+      const qrContenido = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a3ioAAAAASUVORK5CYII=', 'base64');
+      const qrId = await insertar('archivos','propietario_id,cooperativa_id,categoria,ruta_privada,mime,bytes,sha256,validado_servidor', [admin.id,coop,'QR_BANCARIO',`qr-test/${randomUUID()}`,'image/png',qrContenido.length,createHash('sha256').update(qrContenido).digest('hex'),true]);
+      await db.query('INSERT INTO transporte.pagos_qr_contenidos(archivo_id,cooperativa_id,contenido) VALUES($1,$2,$3)', [qrId,coop,qrContenido]);
+      await db.query('UPDATE transporte.cuentas_bancarias SET qr_archivo_id=$2 WHERE id=$1', [cuenta,qrId]);
+      await sesion(cliente.hash);
+      assert.equal((await db.query('SELECT transporte.cuenta_predeterminada_cliente($1) AS id',[reserva])).rows[0].id,cuenta);
+      assert.deepEqual((await db.query('SELECT transporte.qr_cuenta_cliente($1,$2) AS qr',[reserva,cuenta])).rows[0].qr,qrContenido);
       const consultar = async () =>
         (
           await db.query(
@@ -276,6 +288,7 @@ test(
       assert.equal((await consultar()).reserva.total_centavos, 2345);
       assert.equal((await consultar()).cuentas[0].numero, "SOLO-PRUEBA");
       await sesion(otro.hash);
+      await rechaza('SELECT transporte.qr_cuenta_cliente($1,$2)', [reserva,cuenta], '42501');
       await rechaza(
         "SELECT transporte.consultar_pago_cliente($1)",
         [reserva],
@@ -298,6 +311,14 @@ test(
         ).rows[0].id,
         intento,
       );
+      await sesion(admin.hash);
+      await db.query("UPDATE transporte.cuentas_bancarias SET activa=false,predeterminada=false,qr_archivo_id=null,numero='MODIFICADO-PRUEBA' WHERE id=$1",[cuenta]);
+      await sesion(cliente.hash);
+      assert.equal((await consultar()).intento.cuentaSnapshot.numero,'SOLO-PRUEBA');
+      assert.deepEqual((await db.query('SELECT transporte.qr_cuenta_cliente($1,$2) AS qr',[reserva,cuenta])).rows[0].qr,qrContenido);
+      await sesion(admin.hash);
+      await db.query("UPDATE transporte.cuentas_bancarias SET activa=true,predeterminada=true,qr_archivo_id=$2,numero='SOLO-PRUEBA' WHERE id=$1",[cuenta,qrId]);
+      await sesion(cliente.hash);
       async function archivo(categoria: string, mime: string) {
         return insertar(
           "archivos",

@@ -91,8 +91,9 @@ export function App() {
       <Route path="/panel" element={<AdminLayout panelFijo />}>
         <Route index element={<AdminResumenPage />} />
         <Route path="cooperativas" element={<GestionCooperativasPage />} />
-        <Route path="configuracion" element={<GlobalConectada />} />
+        <Route path="configuracion" element={<><nav className="px-4 pt-4"><Link className="inline-flex rounded-md border border-blue-200 px-4 py-2 text-blue-900" to="/panel/configuracion/pagos">Pagos y cuentas bancarias →</Link></nav><GlobalConectada /></>} />
         <Route path="configuracion/global" element={<GlobalConectada />} />
+        <Route path="configuracion/pagos" element={<ConfiguracionPagosPage />} />
         <Route path="*" element={<p className="py-6">Esta sección está pendiente de integración por su responsable.</p>} />
       </Route>
     </Routes>;
