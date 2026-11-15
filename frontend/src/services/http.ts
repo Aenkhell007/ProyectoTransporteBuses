@@ -30,13 +30,13 @@ export async function http<T>(ruta: string, opciones: RequestInit = {}): Promise
   }
 
   const respuesta = await fetch(`${BASE_URL}/${ruta.replace(/^\/+/, '')}`, {
-    credentials: 'include', // PENDIENTE: confirmar con backend si la sesión va en cookie
+    credentials: 'include',
     ...opciones,
     headers,
   });
 
   if (!respuesta.ok) {
-    const detalle = ruta.startsWith('/mikel/') && [403, 409, 422, 503].includes(respuesta.status)
+    const detalle = ['/mikel/','/oficina/','/admin/'].some(prefijo=>ruta.startsWith(prefijo)) && [403, 409, 422, 503].includes(respuesta.status)
       ? await respuesta.json().catch(() => null) as { error?: unknown } | null : null;
     throw new ApiError(
       respuesta.status,

@@ -10,7 +10,7 @@ import { PresentacionAuth, IconoClave, campoAuth, botonAuth } from "../../compon
 export default function Login() {
   const { usuario, cargando, login } = useAuth();
   const location = useLocation();
-  const destino = destinoTrasLogin(location.state?.from);
+  const destino = destinoTrasLogin(location.state?.from, usuario?.roles);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [visible, setVisible] = useState(false);
