@@ -58,6 +58,9 @@ test(
       await db.query(compraSql.replace(/CREATE FUNCTION/g,"CREATE OR REPLACE FUNCTION").replace(/ADD COLUMN /g,"ADD COLUMN IF NOT EXISTS ").replace(/^BEGIN;\s*/, "").replace(/COMMIT;\s*$/, ""));
       const edicionSql=readFileSync(resolve(carpeta,"prisma/migrations/20261106_edicion_asientos_pasajeros/migration.sql"),"utf8");
       await db.query(edicionSql.replace(/CREATE FUNCTION/g,"CREATE OR REPLACE FUNCTION").replace(/ADD COLUMN /g,"ADD COLUMN IF NOT EXISTS ").replace(/^BEGIN;\s*/, "").replace(/COMMIT;\s*$/, ""));
+      if (!(await db.query("SELECT to_regclass('transporte.ventas_oficina_peticiones') AS tabla")).rows[0].tabla) {
+        await db.query(readFileSync(resolve(carpeta,'prisma/migrations/20261112_venta_oficina_idempotente/migration.sql'),'utf8').replace(/^BEGIN;\s*/, '').replace(/COMMIT;\s*$/, ''));
+      }
       await db.query("GRANT transporte_runtime TO CURRENT_USER"); // Solo en esta transacción; ROLLBACK restaura la membresía.
       const marca = randomUUID();
       const insertar = async (
@@ -451,9 +454,13 @@ test(
       apiPool.query=((sql: string, params?: unknown[])=>db.query(sql,params)) as typeof apiPool.query;
       const { compraRouter } = await import("../compra/router.js");
       const { pagosRouter } = await import("./router.js");
+      const {oficinaRouter}=await import('../oficina/router.js');
+      const {adminResumenRouter}=await import('../oficina/admin.js');
       const app = express();
       app.use(express.json());
       app.use(cookieParser());
+      app.use("/api", oficinaRouter);
+      app.use("/api", adminResumenRouter);
       app.use("/api", compraRouter);
       app.use("/api", pagosRouter);
       const servidor = app.listen(0, "127.0.0.1");
@@ -475,6 +482,72 @@ test(
         });
       }
       try {
+        // Operaciones de oficina reales con ámbitos distintos y fixtures reversibles.
+        await db.query('RESET ROLE');
+        const oficina=await insertar('oficinas','cooperativa_id,nombre,direccion',[coop,'Oficina prueba','Solo prueba']);
+        const oficinaAjena=await insertar('oficinas','cooperativa_id,nombre,direccion',[coop,'Otra oficina','Solo prueba']);
+        const oficinista=await usuario(),ajeno=await usuario();
+        for(const [u,o] of [[oficinista.id,oficina],[ajeno.id,oficinaAjena]])await db.query("INSERT INTO transporte.membresias(cooperativa_id,usuario_id,rol_id,oficina_id) SELECT $1,$2,id,$3 FROM transporte.roles WHERE codigo='OFICINISTA'",[coop,u,o]);
+        await db.query("INSERT INTO transporte.cooperativa_metodos_pago(cooperativa_id,metodo_id,habilitado) SELECT $1,id,true FROM transporte.metodos_pago WHERE codigo='EFECTIVO' ON CONFLICT(cooperativa_id,metodo_id) DO UPDATE SET habilitado=true",[coop]);
+        assert.equal((await peticion('/admin/resumen',cliente.token)).status,403);
+        const adminRespuesta=await peticion('/admin/resumen',admin.token);assert.equal(adminRespuesta.status,200);assert.equal(typeof (await adminRespuesta.json()).kpis.oficinas,'number');
+        const diaOficina=(await db.query("SELECT (salida AT TIME ZONE 'America/Guayaquil')::date::text fecha FROM transporte.viajes WHERE id=$1",[viaje])).rows[0].fecha;
+        const resumenOficina=await peticion('/oficina/resumen?fecha='+diaOficina,oficinista.token);assert.equal(resumenOficina.status,200,await resumenOficina.clone().text());assert.ok((await resumenOficina.json()).proximasSalidas.some((v:{id:string})=>v.id===viaje));
+        assert.equal((await peticion('/oficina/contexto',cliente.token)).status,403);
+        assert.equal((await peticion('/oficina/contexto',oficinista.token)).status,200);
+        const ventaBody={oficina_id:oficina,viaje_id:viaje,origen_orden:1,destino_orden:2,asiento_ids:[adicionales[0]],clave:randomUUID()};
+        assert.equal((await peticion('/oficina/ventas/reservas',ajeno.token,ventaBody)).status,403);
+        const ventaResp=await peticion('/oficina/ventas/reservas',oficinista.token,ventaBody);
+        assert.equal(ventaResp.status,201,await ventaResp.clone().text());const venta=await ventaResp.json();
+        const repetida=await peticion('/oficina/ventas/reservas',oficinista.token,ventaBody);
+        assert.equal(repetida.status,201);assert.equal((await repetida.json()).reserva_id,venta.reserva_id);
+        assert.equal((await peticion('/oficina/ventas/reservas',oficinista.token,{...ventaBody,asiento_ids:[adicionales[1]]})).status,409);
+        assert.equal((await peticion('/oficina/reservas/'+venta.reserva_id,ajeno.token)).status,404);
+        assert.equal((await peticion('/oficina/reservas/'+venta.reserva_id,cliente.token)).status,404);
+        const pasajeroVenta={contacto:{email:'venta@example.com',telefono:'+593990000000'},pasajeros:[{reserva_asiento_id:venta.asientos[0].reserva_asiento_id,nombres:'Comprador',apellidos:'Presencial',tipo_documento:'OTRO',documento:'OFICINA-PRUEBA',nacimiento:'1990-01-01',beneficio_codigo:null,respaldo_archivo_id:null,email:'venta@example.com',telefono:'+593990000000'}]};
+        const pasajerosVenta=await peticion('/reservas/'+venta.reserva_id+'/pasajeros',oficinista.token,pasajeroVenta,'PUT');
+        assert.equal(pasajerosVenta.status,200,await pasajerosVenta.clone().text());
+        const precioResp=await peticion('/reservas/'+venta.reserva_id+'/cotizacion',oficinista.token,{});assert.equal(precioResp.status,201);const precio=await precioResp.json();
+        assert.equal((await peticion('/reservas/'+venta.reserva_id+'/aceptar-cotizacion',oficinista.token,{version:precio.version})).status,204);
+        const cobro={recibidoCentavos:2500,clave:randomUUID()};
+        assert.equal((await peticion('/oficina/ventas/'+venta.reserva_id+'/cobro',ajeno.token,cobro)).status,404);
+        const cobrada=await peticion('/oficina/ventas/'+venta.reserva_id+'/cobro',oficinista.token,cobro);assert.equal(cobrada.status,200,await cobrada.clone().text());
+        const compraVenta=await cobrada.json();
+        const retryCobro=await peticion('/oficina/ventas/'+venta.reserva_id+'/cobro',oficinista.token,cobro);assert.equal(retryCobro.status,200);assert.equal((await retryCobro.json()).compra_id,compraVenta.compra_id);
+        assert.equal((await peticion('/oficina/ventas/'+venta.reserva_id+'/cobro',oficinista.token,{...cobro,recibidoCentavos:2600})).status,409);
+        const pagoVenta=await (await peticion('/reservas/'+venta.reserva_id+'/pago',oficinista.token)).json();assert.equal(pagoVenta.documento.estado,'LISTO');
+        assert.equal((await peticion('/reservas/'+venta.reserva_id+'/archivos/'+pagoVenta.documento.archivoId,oficinista.token)).status,200);
+        assert.equal((await peticion('/oficina/reservas',oficinista.token)).status,200);
+        assert.equal((await peticion('/oficina/comprobantes',oficinista.token)).status,200);
+        assert.equal((await peticion('/oficina/reembolsos',oficinista.token)).status,200);
+        const listaVenta=await (await peticion('/oficina/reservas',oficinista.token)).json();
+        assert.equal(listaVenta.reservas.find((r:{id:string})=>r.id===venta.reserva_id).cliente,'Comprador Presencial');
+        // Política de prueba y devolución completa; todo permanece en la transacción reversible.
+        await db.query('RESET ROLE');
+        const politica=await insertar('politicas_reembolso','cooperativa_id,numero_version,condiciones,plazo_abono_dias',[coop,991,'Política temporal de prueba',5]);
+        await insertar('reglas_reembolso','cooperativa_id,politica_id,minutos_desde,porcentaje_bp',[coop,politica,0,5000]);
+        await db.query("UPDATE transporte.politicas_reembolso SET estado='PUBLICADA',publicada_at=now() WHERE id=$1",[politica]);
+        await db.query('UPDATE transporte.compras SET politica_reembolso_id=$1 WHERE id=$2',[politica,compraVenta.compra_id]);
+        const elegible=await peticion('/oficina/reembolsos/elegibilidad/'+compraVenta.compra_id,oficinista.token);assert.equal(elegible.status,200);assert.equal((await elegible.json()).elegible,true);
+        const solicitudBody={compraId:compraVenta.compra_id,motivo:'Solicitud de devolución de prueba',clave:randomUUID()};
+        assert.equal((await peticion('/oficina/reembolsos',ajeno.token,solicitudBody)).status,404);
+        const solicitada=await peticion('/oficina/reembolsos',oficinista.token,solicitudBody);assert.equal(solicitada.status,201,await solicitada.clone().text());const solicitudId=(await solicitada.json()).id;
+        assert.equal((await (await peticion('/oficina/reembolsos',oficinista.token,solicitudBody)).json()).id,solicitudId);
+        assert.equal((await peticion('/oficina/reembolsos/'+solicitudId+'/decision',ajeno.token,{aprobar:true,motivo:'Validación de prueba'})).status,404);
+        assert.equal((await peticion('/oficina/reembolsos/'+solicitudId+'/decision',oficinista.token,{aprobar:true,motivo:''})).status,422);
+        assert.equal((await peticion('/oficina/reembolsos/'+solicitudId+'/decision',oficinista.token,{aprobar:true,motivo:'Validación de prueba'})).status,204);
+        const abonoUrl='/oficina/reembolsos/'+solicitudId+'/abono?clave='+randomUUID()+'&referencia=ABONO-PRUEBA';
+        const evidencia=Buffer.from('%PDF-1.4\nPrueba de respaldo\n%%EOF');
+        async function abonar(token:string,cuerpo= evidencia){return fetch(base+abonoUrl,{method:'POST',headers:{Cookie:'transporte_sesion='+token,Origin:process.env.FRONTEND_URL??'http://127.0.0.1:5173','Content-Type':'application/pdf','X-File-Name':'respaldo.pdf'},body:cuerpo});}
+        assert.equal((await abonar(ajeno.token)).status,404);
+        const abonada=await abonar(oficinista.token);assert.equal(abonada.status,200,await abonada.clone().text());const abonoId=(await abonada.json()).id;
+        assert.equal((await (await abonar(oficinista.token)).json()).id,abonoId);
+        assert.equal((await abonar(oficinista.token,Buffer.from('%PDF-1.4\nOtro respaldo\n%%EOF'))).status,409);
+        assert.equal((await peticion('/oficina/reembolsos/'+solicitudId+'/respaldo',oficinista.token)).status,200);
+        assert.equal((await peticion('/oficina/reembolsos/'+solicitudId+'/respaldo',ajeno.token)).status,404);
+        // El asiento vuelve a estar disponible para los escenarios de compra de abajo.
+        await db.query('RESET ROLE');
+        await db.query("UPDATE transporte.reserva_asientos SET estado='LIBERADO' WHERE reserva_id=$1",[venta.reserva_id]);
         const ciudadesRespuesta=await peticion("/catalogos/ciudades",cliente.token);
         assert.equal(ciudadesRespuesta.status,200);
         assert.ok((await ciudadesRespuesta.json()).data.some((x:{id:string})=>x.id===ciudad1));
