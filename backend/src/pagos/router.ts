@@ -1,3 +1,4 @@
+import { alcanceReserva } from '../oficina/consultas';
 import express, { Router } from "express";
 import type { Request, Response, NextFunction } from "express";
 import type { PoolClient } from "pg";
@@ -283,9 +284,10 @@ pagosRouter.post("/pagos/comprobantes/:id/revision", async (req, res) => {
       );
     const resultado = await conSesion(token(req), async (db) => {
       const r = await db.query(
-        "SELECT transporte.decidir_comprobante($1,$2,$3,$4) AS compra_id",
+        `SELECT transporte.decidir_comprobante($1,$2,$3,$4) AS compra_id FROM transporte.comprobantes cp JOIN transporte.intentos_pago i ON i.id=cp.intento_id JOIN transporte.reservas r ON r.id=i.reserva_id WHERE cp.id=$1 AND ${alcanceReserva('pagos.revisar')}`,
         [id, aprobar, motivo, version],
       );
+      if (!r.rows[0]) throw new ErrorPago(404,"Comprobante no disponible en tu ámbito.");
       const compraId = r.rows[0].compra_id;
       if (aprobar && compraId) await emitir(db, compraId, creados);
       return { compraId };

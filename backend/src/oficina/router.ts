@@ -1,3 +1,7 @@
+import { leerArchivo } from '../pagos/archivos';
+import { nombreSeguro, ErrorPago } from '../pagos/validacion';
+import { conservarDatosCompra } from '../pagos/datos';
+import type { DatosPago } from '../../../shared/pagos';
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { sesionOficina, ErrorOficina, fechaConsulta } from './acceso';
@@ -58,8 +62,23 @@ export function identificador(v:unknown):string {
 oficinaRouter.get('/oficina/comprobantes', async(req,res,next)=>{
  try {res.json(await sesionOficina(req,async db=>({comprobantes:(await listarReservas(db,true)).filter(r=>r.comprobante_id)})));}catch(e){next(e);}
 });
+oficinaRouter.get('/oficina/comprobantes/:id', async(req,res,next)=>{
+ try {res.json(await sesionOficina(req,async db=>{
+ const fila=(await listarReservas(db,true)).find(r=>r.comprobante_id===identificador(req.params.id));
+ if(!fila) throw new ErrorOficina(404,'Comprobante no disponible.');
+ const d=(await db.query('SELECT transporte.consultar_pago_cliente($1) AS datos',[fila.id])).rows[0].datos as DatosPago;
+ return {comprobante:fila,compra:conservarDatosCompra(d)};
+ }));}catch(e){next(e);}
+});
+oficinaRouter.get('/oficina/comprobantes/:id/archivo',async(req,res,next)=>{
+ try {const a=await sesionOficina(req,async db=>{
+ const r=(await db.query(`SELECT a.ruta_privada,a.mime FROM transporte.comprobantes cp JOIN transporte.intentos_pago i ON i.id=cp.intento_id JOIN transporte.reservas r ON r.id=i.reserva_id JOIN transporte.archivos a ON a.id=cp.archivo_id WHERE cp.id=$1 AND ${alcanceReserva()}`,[identificador(req.params.id)])).rows[0];
+ if(!r)throw new ErrorOficina(404,'Archivo no disponible.');return r;
+ });res.type(a.mime).set('Content-Disposition',`${req.query.descargar==='1'?'attachment':'inline'}; filename="${nombreSeguro(a.ruta_privada.split('/').pop())}"`).send(await leerArchivo(a.ruta_privada));}catch(e){next(e);}
+});
 oficinaRouter.use((e: unknown,_req: Request,res: Response,_next: NextFunction) => {
   const code = (e as {code?:string})?.code;
-  const status = e instanceof ErrorOficina ? e.status : code==='28000'?401:code==='42501'?403:['P0001','23505','23P01'].includes(code??'')?409:['22P02','22007'].includes(code??'')?422:503;
+  const status = e instanceof ErrorOficina || e instanceof ErrorPago ? e.status : code==='28000'?401:code==='42501'?403:['P0001','23505','23P01'].includes(code??'')?409:['22P02','22007'].includes(code??'')?422:503;
   res.status(status).json({error:e instanceof ErrorOficina?e.message:status===401?'La sesión venció. Inicia sesión.':status===403?'No tienes permiso para esta operación.':status===409?'El estado cambió. Actualiza la consulta antes de reintentar.':'No se pudo completar la operación.'});
 });
+
