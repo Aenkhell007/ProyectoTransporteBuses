@@ -1062,6 +1062,7 @@ model reserva_asientos {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model reservas {
+  ventas_oficina_peticiones ventas_oficina_peticiones[]
   id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   cooperativa_id     String             @db.Uuid
   cliente_id         String             @db.Uuid
@@ -1311,6 +1312,7 @@ model usuario_roles_globales {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model usuarios {
+  ventas_oficina_peticiones ventas_oficina_peticiones[]
   id                                                                   String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   nombres                                                              String                   @db.VarChar(100)
   apellidos                                                            String                   @db.VarChar(100)
@@ -1383,4 +1385,17 @@ model flota_imagen_contenidos {
   contenido Bytes
   archivos archivos @relation(fields: [archivo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   @@schema("transporte")
+}
+
+/// Peticiones de venta con RLS; la política se define en la migración SQL.
+model ventas_oficina_peticiones {
+ usuario_id String @db.Uuid
+ clave String @db.Uuid
+ reserva_id String @db.Uuid
+ huella String @db.Char(64)
+ created_at DateTime @default(now()) @db.Timestamptz(6)
+ usuarios usuarios @relation(fields:[usuario_id],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ reservas reservas @relation(fields:[reserva_id],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ @@id([usuario_id,clave])
+ @@schema("transporte")
 }

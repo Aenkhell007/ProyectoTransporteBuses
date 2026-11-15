@@ -1,5 +1,8 @@
 // Iconos de trazo en SVG para el módulo de compra, sin librerías externas.
 const trazos = {
+  dinero: <><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M7 6V3h10v3M9 12h6M12 9v6" /><circle cx="12" cy="12" r="4" /></>,
+  oficina: <><circle cx="12" cy="6" r="3" /><path d="M7 14v-1a5 5 0 0 1 10 0v1M4 14h16v6H4zM8 18h8" /></>,
+  grafico: <><path d="M4 20V10h4v10M10 20V5h4v15M16 20V2h4v18" /></>,
   ubicacion: (
     <>
       <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z" />
