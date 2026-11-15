@@ -1,213 +1,42 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
-import { fetchOficinaResumenData } from './OficinaResumenPage.service';
-import { OficinaResumenResponse } from './OficinaResumenPage.types';
+import { useState, type ReactNode } from "react";
+import { Link } from "react-router";
+import { Icono, type NombreIcono } from "../../components/compra/Icono";
+import type { OficinaResumenResponse } from "./OficinaResumenPage.types";
+import { ConsultaEstado, dinero, Estado, useConsulta } from "./ui";
 
-export const OficinaResumenPage: React.FC = () => {
-  const navigate = useNavigate();
-  const [data, setData] = useState<OficinaResumenResponse | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    const cargarDatos = async () => {
-      try {
-        setLoading(true);
-        const res = await fetchOficinaResumenData();
-        setData(res);
-      } catch (err) {
-        console.error('Error al cargar resumen de oficina:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    cargarDatos();
-  }, []);
-
-  if (loading || !data) {
-    return (
-      <div className="flex justify-center items-center h-64 text-gray-500">
-        <p className="animate-pulse text-lg font-medium">Cargando panel del oficinista...</p>
-      </div>
-    );
-  }
-
-  const { kpis, comprobantesPendientes, proximasSalidas } = data;
-
-  // Manejadores de navegación basados en el flujo de la Vista 12
-  const handleRevisarComprobantes = () => {
-    navigate('/vista-previa/oficinista/comprobantes');
-  };
-
-  const handleNuevaVenta = () => {
-    navigate('/vista-previa/oficinista/ventas');
-  };
-
-  const handleVerComprobante = (_reserva: string) => {
-    navigate('/vista-previa/oficinista/comprobantes');
-  };
-
-  const handleVerDetallesSalida = (_ruta: string) => {
-    navigate('/vista-previa/oficinista/reservas');
-  };
-
-  return (
-    <div className="space-y-6">
-      {/* Tarjetas KPI */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-emerald-100 text-emerald-600 rounded-lg text-xl">💵</div>
-          <div>
-            <p className="text-xs text-gray-500 font-medium">Ventas de hoy</p>
-            <p className="text-2xl font-bold text-gray-800">${kpis.ventasHoy.toFixed(2)}</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-blue-100 text-blue-600 rounded-lg text-xl">💺</div>
-          <div>
-            <p className="text-xs text-gray-500 font-medium">Asientos vendidos</p>
-            <p className="text-2xl font-bold text-gray-800">{kpis.asientosVendidos}</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-amber-100 text-amber-600 rounded-lg text-xl">📄</div>
-          <div>
-            <p className="text-xs text-gray-500 font-medium">Comprobantes pendientes</p>
-            <p className="text-2xl font-bold text-gray-800">{kpis.comprobantesPendientes}</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-purple-100 text-purple-600 rounded-lg text-xl">🎫</div>
-          <div>
-            <p className="text-xs text-gray-500 font-medium">Reservas confirmadas</p>
-            <p className="text-2xl font-bold text-gray-800">{kpis.reservasConfirmadas}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Alerta de Comprobantes Pendientes */}
-      <div className="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-xl flex justify-between items-center flex-wrap gap-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <span className="text-amber-600 text-2xl">⚠️</span>
-          <div>
-            <p className="font-semibold text-sm">{kpis.comprobantesPendientes} comprobantes esperan revisión.</p>
-            <p className="text-xs text-amber-700">Revisa y valida los comprobantes pendientes de la oficina.</p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={handleRevisarComprobantes}
-          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow"
-        >
-          Revisar comprobantes
-        </button>
-      </div>
-
-      {/* Tabla de Comprobantes Pendientes */}
-      <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm space-y-4">
-        <div className="flex justify-between items-center flex-wrap gap-4">
-          <h2 className="text-base font-bold text-indigo-950 flex items-center gap-2">
-            📄 Comprobantes pendientes
-          </h2>
-          <button
-            type="button"
-            onClick={handleNuevaVenta}
-            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium shadow flex items-center gap-2 transition"
-          >
-            <span>+</span> Nueva venta en oficina
-          </button>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-600">
-            <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
-              <tr>
-                <th className="py-3 px-4">Reserva</th>
-                <th className="py-3 px-4">Cliente</th>
-                <th className="py-3 px-4">Viaje</th>
-                <th className="py-3 px-4">Monto</th>
-                <th className="py-3 px-4">Estado</th>
-                <th className="py-3 px-4 text-center">Acción</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {comprobantesPendientes.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50/50 transition">
-                  <td className="py-3 px-4 font-semibold text-gray-800">{item.reserva}</td>
-                  <td className="py-3 px-4 text-gray-600">{item.cliente}</td>
-                  <td className="py-3 px-4 text-gray-600">{item.viaje}</td>
-                  <td className="py-3 px-4 font-bold text-gray-800">${item.monto.toFixed(2)}</td>
-                  <td className="py-3 px-4">
-                    <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${
-                      item.estado === 'En verificación' ? 'text-amber-700 bg-amber-50' : 'text-emerald-700 bg-emerald-50'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${
-                        item.estado === 'En verificación' ? 'bg-amber-500' : 'bg-emerald-500'
-                      }`}></span>
-                      {item.estado}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <button
-                      type="button"
-                      onClick={() => handleVerComprobante(item.reserva)}
-                      className="border border-blue-600 text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-md text-xs font-medium transition inline-flex items-center gap-1"
-                    >
-                      📄 Ver comprobante
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Tabla de Próximas Salidas */}
-      <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm space-y-4">
-        <h2 className="text-base font-bold text-indigo-950 flex items-center gap-2">
-          🚌 Próximas salidas
-        </h2>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-600">
-            <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
-              <tr>
-                <th className="py-3 px-4">Ruta</th>
-                <th className="py-3 px-4">Hora</th>
-                <th className="py-3 px-4">Unidad</th>
-                <th className="py-3 px-4">Asientos vendidos</th>
-                <th className="py-3 px-4">Capacidad</th>
-                <th className="py-3 px-4 text-center">Acción</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {proximasSalidas.map((salida) => (
-                <tr key={salida.id} className="hover:bg-gray-50/50 transition">
-                  <td className="py-3 px-4 font-semibold text-gray-800">{salida.ruta}</td>
-                  <td className="py-3 px-4 text-gray-600">{salida.hora}</td>
-                  <td className="py-3 px-4 text-gray-600">{salida.unidad}</td>
-                  <td className="py-3 px-4 font-medium text-gray-800">{salida.asientosVendidos}</td>
-                  <td className="py-3 px-4 text-gray-600">{salida.capacidad}</td>
-                  <td className="py-3 px-4 text-center">
-                    <button
-                      type="button"
-                      onClick={() => handleVerDetallesSalida(salida.ruta)}
-                      className="border border-blue-600 text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-md text-xs font-medium transition inline-flex items-center gap-1"
-                    >
-                      Ver detalles
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default OficinaResumenPage;
+const accion = "inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-[#ff0018] bg-[#ff0018] px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 sm:min-h-12";
+const enlace = "inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-blue-500 px-3 py-1.5 text-sm text-blue-700 hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-blue-600";
+function Bloque({titulo, icono, accion: boton, children}: {titulo:string; icono:NombreIcono; accion?:ReactNode; children:ReactNode}) {
+ return <section className="min-w-0 rounded-lg border border-blue-100 bg-white p-3 sm:p-4"><div className="mb-3 flex flex-wrap items-center justify-between gap-3"><h2 className="flex items-center gap-3 text-xl font-bold tracking-tight text-[#1002b4] sm:text-2xl"><Icono nombre={icono} className="size-8 sm:size-9" />{titulo}</h2>{boton}</div>{children}</section>;
+}
+export function OficinaResumenPage() {
+ const [fecha,setFecha]=useState(new Date().toLocaleDateString("en-CA",{timeZone:"America/Guayaquil"}));
+ const c=useConsulta<OficinaResumenResponse>("/oficina/resumen?fecha="+fecha);
+ const d=c.datos;
+ const pendientes=d?.kpis.comprobantesPendientes ?? 0;
+ return <div className="of-vista space-y-4 pb-2 text-[#0b1248]">
+  <div className="flex justify-end"><label className="flex items-center gap-2 text-xs text-blue-900"><span>Fecha de consulta</span><input aria-label="Fecha de consulta" type="date" required value={fecha} onChange={e=>{if(e.target.value)setFecha(e.target.value)}} className="h-9 rounded-md border border-blue-200 bg-white px-2 text-sm focus-visible:outline-2 focus-visible:outline-blue-600" /></label></div>
+  <ConsultaEstado {...c} />
+  {d && <>
+   <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-3">
+    {([
+      {nombre:"Ventas de hoy",valor:dinero(d.kpis.ventasHoy),icono:"dinero",color:"bg-green-100 text-green-700"},
+      {nombre:"Asientos vendidos",valor:d.kpis.asientosVendidos,icono:"asiento",color:"bg-blue-100 text-blue-600"},
+      {nombre:"Comprobantes pendientes",valor:pendientes,icono:"documento",color:"bg-amber-100 text-amber-500"},
+      {nombre:"Reservas confirmadas",valor:d.kpis.reservasConfirmadas,icono:"calendario",color:"bg-violet-100 text-violet-700"}
+    ] satisfies {nombre:string;valor:string|number;icono:NombreIcono;color:string}[]).map(i=><div key={i.nombre} className="flex min-w-0 items-center gap-2 rounded-md border border-blue-100 bg-white p-3 sm:gap-3 sm:p-4 lg:min-h-28"><span className={"grid size-11 shrink-0 place-items-center rounded-full sm:size-16 "+i.color}><Icono nombre={i.icono} className="size-7 sm:size-9" /></span><div className="min-w-0"><p className="text-xs leading-snug text-blue-700 sm:text-sm">{i.nombre}</p><strong className="mt-1 block text-2xl leading-tight font-bold tracking-tight text-[#10069b] tabular-nums sm:text-3xl">{i.valor}</strong></div></div>)}
+   </div>
+   <div className="flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-linear-to-r from-amber-50 to-orange-50/50 p-3 sm:gap-4 sm:p-4"><span className="grid size-12 shrink-0 place-items-center rounded-full bg-amber-100 text-amber-500"><Icono nombre="alerta" className="size-9" /></span><div className="min-w-0 flex-1"><h2 className="text-base font-bold tracking-tight text-red-600 sm:text-xl">{pendientes === 0 ? "No hay comprobantes pendientes de revisión." : pendientes+" "+(pendientes === 1 ? "comprobante espera revisión." : "comprobantes esperan revisión.")}</h2><p className="mt-1 text-sm text-blue-900">Revisa y valida los comprobantes pendientes de la oficina.</p></div><Link className={accion+" w-full sm:w-auto"} to="comprobantes"><Icono nombre="documento" />Revisar comprobantes</Link></div>
+   <Bloque titulo="Comprobantes pendientes" icono="documento" accion={<Link className={accion+" w-full sm:w-auto"} to="ventas"><span className="grid size-5 place-items-center rounded-full bg-white text-lg leading-none text-red-600" aria-hidden="true">+</span>Nueva venta en oficina</Link>}>
+    <div className="hidden grid-cols-[1.15fr_1.3fr_1.15fr_.6fr_1fr_1.2fr] items-center gap-3 rounded-md bg-linear-to-r from-blue-50 to-blue-100/70 px-3 py-3 text-sm font-semibold text-blue-800 lg:grid" aria-hidden="true">{["Reserva","Cliente","Viaje","Monto","Estado","Acción"].map(t=><span key={t}>{t}</span>)}</div>
+    {!d.comprobantesPendientes.length && <p className="rounded-md border border-dashed border-blue-100 px-4 py-6 text-center text-sm text-blue-900">No hay comprobantes pendientes para esta oficina.</p>}
+    {d.comprobantesPendientes.map(p=><article key={p.id} className="mt-2 grid min-w-0 grid-cols-2 items-center gap-2 rounded-md border border-blue-100 p-3 text-sm text-blue-700 lg:mt-0 lg:grid-cols-[1.15fr_1.3fr_1.15fr_.6fr_1fr_1.2fr] lg:gap-3 lg:rounded-none lg:border-0 lg:border-b lg:py-4"><strong className="min-w-0 wrap-anywhere lg:font-normal">{p.reserva}</strong><div className="justify-self-end lg:order-5 lg:justify-self-start"><Estado valor={p.estado} /></div><span className="col-span-2 lg:order-2 lg:col-span-1">{p.cliente}</span><span className="lg:order-3">{p.viaje}</span><strong className="justify-self-end lg:order-4 lg:justify-self-start">{dinero(p.monto)}</strong><Link className={enlace+" col-span-2 lg:order-6 lg:col-span-1"} to={"comprobantes/"+p.id}><Icono nombre="documento" className="size-4" />Ver comprobante</Link></article>)}
+   </Bloque>
+   <Bloque titulo="Próximas salidas" icono="bus">
+    <div className="hidden grid-cols-[1.3fr_.55fr_.8fr_1fr_.65fr_1fr] items-center gap-3 rounded-md bg-linear-to-r from-blue-50 to-blue-100/70 px-3 py-3 text-sm font-semibold text-blue-800 lg:grid" aria-hidden="true">{["Ruta","Hora","Unidad","Asientos vendidos","Capacidad","Acción"].map(t=><span key={t}>{t}</span>)}</div>
+    {!d.proximasSalidas.length && <p className="rounded-md border border-dashed border-blue-100 px-4 py-6 text-center text-sm text-blue-900">No hay próximas salidas publicadas para esta fecha.</p>}
+    {d.proximasSalidas.map(v=><article key={v.id} className="mt-2 grid grid-cols-2 items-center gap-2 rounded-md border border-blue-100 p-3 text-sm text-blue-700 lg:mt-0 lg:grid-cols-[1.3fr_.55fr_.8fr_1fr_.65fr_1fr] lg:gap-3 lg:rounded-none lg:border-0 lg:border-b lg:py-4"><strong className="text-base">{v.ruta}</strong><span>{v.hora}</span><span>Unidad {v.unidad}</span><span className="font-semibold text-green-700">{v.asientosVendidos}<span className="lg:hidden"> / {v.capacidad} vendidos</span></span><span className="hidden lg:inline">{v.capacidad}</span><Link className={enlace+" col-span-2 lg:col-span-1"} to={"reservas?viaje="+v.id}><Icono nombre="bus" className="size-4" />Ver detalles</Link></article>)}
+   </Bloque>
+  </>}
+ </div>;
+}

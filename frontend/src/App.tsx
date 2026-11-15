@@ -72,7 +72,7 @@ export function App() {
   const location = useLocation();
   const section = homeSections[location.hash] ?? homeSections[""];
 
-  if (matchPath('/cooperativa/*', location.pathname) || matchPath('/panel/*', location.pathname)) {
+  if (matchPath('/oficina/*', location.pathname) || matchPath('/cooperativa/*', location.pathname) || matchPath('/panel/*', location.pathname)) {
     return <Routes>
       <Route path="/cooperativa" element={<CooperativaLayout />}>
         <Route index element={<p className="py-6">El resumen de la cooperativa está pendiente. Usa el menú para administrar buses, compatibilidades e identidad.</p>} />
@@ -84,6 +84,7 @@ export function App() {
         <Route path="frecuencias/grupos" element={<CompatibilidadesConectadas />} />
         <Route path="*" element={<p className="py-6">Esta sección está pendiente de integración por su responsable.</p>} />
       </Route>
+      <Route path="/oficina" element={<AdminLayout variant="oficina" panelFijo />}><Route index element={<OficinaResumenPage />}/><Route path="*" element={<p>Sección pendiente de integración.</p>}/></Route>
       <Route path="/panel" element={<AdminLayout panelFijo />}>
         <Route index element={<AdminResumenPage />} />
         <Route path="cooperativas" element={<GestionCooperativasPage />} />
