@@ -1,3 +1,4 @@
+import { RevisionComprobanteEjemplo } from "./features/oficina/RevisionComprobanteEjemplo";
 import { OficinaComprobantesReal } from './features/oficina/OficinaComprobantesReal';
 import { ConfiguracionCooperativaTabs } from './components/configuracion/ConfiguracionCooperativaTabs';
 import { BusesConectados, BusConectado, IdentidadConectada, GlobalConectada, CompatibilidadesConectadas } from './pages/mikel/EditoresConectados';
