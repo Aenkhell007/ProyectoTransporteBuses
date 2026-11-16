@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {persona,texto,version}from'./validacion';
+const datos={nombres:'Prueba',apellidos:'Usuario',tipoDocumento:'OTRO',documento:'TEST',email:' TEST@example.invalid ',telefono:'+593991234567'};
+test('identidad: normaliza correo y valida documento y teléfono',()=>{assert.equal(persona(datos).email,'test@example.invalid');for(const d of [{email:'mal'},{nombres:''},{tipoDocumento:'ADMIN'},{tipoDocumento:'CEDULA',documento:'0000000000'},{telefono:'1234'}])assert.throws(()=>persona({...datos,...d}));});
+test('identidad: rechaza versión y textos ejecutables o sobredimensionados',()=>{assert.equal(version(1),1);assert.throws(()=>version(0));assert.throws(()=>version('1'));assert.throws(()=>texto('<script>','Texto'));assert.throws(()=>texto('a'.repeat(101),'Nombre'));});

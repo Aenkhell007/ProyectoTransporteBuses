@@ -742,6 +742,8 @@ model intentos_pago {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model membresias {
+  version Int @default(1)
+  usuario_permisos usuario_permisos[]
   id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   cooperativa_id String       @db.Uuid
   usuario_id     String       @db.Uuid
@@ -882,6 +884,7 @@ model pasajeros {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model permisos {
+  usuario_permisos usuario_permisos[]
   id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   codigo      String        @unique
   descripcion String
@@ -1316,6 +1319,7 @@ model usuario_roles_globales {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model usuarios {
+  version Int @default(1)
   ventas_oficina_peticiones ventas_oficina_peticiones[]
   id                                                                   String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   nombres                                                              String                   @db.VarChar(100)
@@ -1412,4 +1416,14 @@ model pagos_qr_contenidos {
   archivos archivos @relation(fields: [archivo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   cooperativas cooperativas @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   @@schema("transporte")
+}
+
+model usuario_permisos {
+ membresia_id String @db.Uuid
+ permiso_id String @db.Uuid
+ habilitado Boolean
+ membresias membresias @relation(fields:[membresia_id],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ permisos permisos @relation(fields:[permiso_id],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ @@id([membresia_id,permiso_id])
+ @@schema("transporte")
 }
