@@ -1,8 +1,9 @@
+import { identidadApi } from '../../features/identidad/api';
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { authApi } from "../../services/authApi";
-export default function RestablecerContrasena() {
+export default function RestablecerContrasena({ invitacion = false }: { invitacion?: boolean }) {
   const location=useLocation();const navigate=useNavigate();
   const [token]=useState(()=>new URLSearchParams(location.hash.slice(1)).get("token")??"");
   const [password,setPassword]=useState("");const [confirmar,setConfirmar]=useState("");
@@ -13,7 +14,7 @@ export default function RestablecerContrasena() {
     e.preventDefault();if(bloqueo.current)return;setError("");
     if(password!==confirmar){setError("Las contraseñas no coinciden.");return;}
     bloqueo.current=true;setEnviando(true);
-    try{setMensaje((await authApi.reset(token,password)).mensaje);setPassword("");setConfirmar("");}
+    try{setMensaje((await (invitacion ? identidadApi.aceptar(token,password) : authApi.reset(token,password))).mensaje);setPassword("");setConfirmar("");}
     catch(e){setError(e instanceof Error?e.message:"No se pudo cambiar la contraseña.");}
     finally{bloqueo.current=false;setEnviando(false);}
   }

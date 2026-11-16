@@ -148,7 +148,7 @@ authRouter.post("/login", async (req, res) => {
     } catch (error) {
       await cliente.query("ROLLBACK").catch(() => {}); throw error;
     } finally { cliente.release(); }
-    res.cookie(COOKIE, token, { ...opcionesCookie, maxAge: duracion });
+    res.cookie(COOKIE, token, { ...opcionesCookie, ...(req.body.recordar === true ? { maxAge: duracion } : {}) });
     res.json({ usuario });
   } catch (error) { errorRespuesta(res, error); }
 });
