@@ -23,7 +23,14 @@ editorRouter.use((req, _res, next) => {
   }
   next();
 });
-async function cooperativa(db: PoolClient, permiso: string) {
+async function cooperativa(db: PoolClient, permiso: string, seleccion?: unknown) {
+  if (seleccion !== undefined) {
+    exigir(typeof seleccion === 'string', 'Selecciona una cooperativa válida.');
+    const id = uuid(seleccion);
+    const r = await db.query('SELECT id FROM transporte.cooperativas WHERE id=$1 AND activa AND transporte.puede($2,id)', [id, permiso]);
+    if (!r.rowCount) throw new ErrorEditor(403, 'No tienes permiso para esta cooperativa o está inactiva.');
+    return id;
+  }
   const r = await db.query(`SELECT DISTINCT m.cooperativa_id FROM transporte.membresias m
     JOIN transporte.cooperativas c ON c.id=m.cooperativa_id AND c.activa
     WHERE m.usuario_id=transporte.actor() AND m.activa AND transporte.puede($1,m.cooperativa_id)`, [permiso]);
@@ -92,12 +99,20 @@ async function identidad(db: PoolClient, c: string) {
     lema: r.lema ?? '', logoUrl: r.logo_archivo_id ? urlImagen(r.logo_archivo_id) : '', primario: r.color_primario, secundario: r.color_secundario,
     texto: r.color_texto, email: r.soporte_email ?? '', telefono: r.telefono ?? '', whatsapp: r.whatsapp ?? '', direccion: r.direccion ?? '', facebook: r.facebook_url ?? '', instagram: r.instagram_url ?? '' };
 }
+// El administrador global puede elegir un ámbito sin tener una membresía local.
+editorRouter.get('/identidad/ambitos', async (req, res, next) => {
+  try { res.json(await sesionEditor(req, async db => {
+    const r = await db.query("SELECT id,nombre FROM transporte.cooperativas WHERE activa AND transporte.puede('config.admin',id) ORDER BY nombre,id");
+    if (!r.rowCount) throw new ErrorEditor(403, 'No tienes permiso para configurar una cooperativa activa.');
+    return { cooperativas: r.rows };
+  })); } catch (e) { next(e); }
+});
 editorRouter.get('/identidad', async (req, res, next) => {
-  try { res.json(await sesionEditor(req, async db => identidad(db, await cooperativa(db, 'config.admin')))); } catch (e) { next(e); }
+  try { res.json(await sesionEditor(req, async db => identidad(db, await cooperativa(db, 'config.admin', req.query.cooperativaId)))); } catch (e) { next(e); }
 });
 editorRouter.put('/identidad', async (req, res, next) => {
   try { const d = req.body?.datos; validarIdentidad(d); res.json(await sesionEditor(req, async db => {
-    const c = await cooperativa(db, 'config.admin');
+    const c = await cooperativa(db, 'config.admin', req.query.cooperativaId);
     await db.query('SELECT id FROM transporte.cooperativas WHERE id=$1 FOR UPDATE', [c]);
     await db.query('SELECT id FROM transporte.config_cooperativa WHERE cooperativa_id=$1 FOR UPDATE', [c]);
     const actual = await identidad(db, c); version(actual.version, d.version); version(actual.identidadVersion, d.identidadVersion);

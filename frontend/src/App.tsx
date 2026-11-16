@@ -1,3 +1,10 @@
+import ReportesAuditoria from './features/operacion/ReportesAuditoria';
+import PoliticaReembolso from './features/operacion/PoliticaReembolso';
+import CooperativaResumen from './features/operacion/CooperativaResumen';
+import FrecuenciasGestion from './features/operacion/FrecuenciasGestion';
+import HojaRutaGestion from './features/operacion/HojaRutaGestion';
+import TarifasGestion from './features/operacion/TarifasGestion';
+import CooperativasAdmin from './features/operacion/CooperativasAdmin';
 import UsuariosPage from './features/identidad/UsuariosPage';
 import AltasPage from './features/identidad/AltasPage';
 import AccesosPage from './features/identidad/AccesosPage';
@@ -6,7 +13,6 @@ import {VentaOficinaReal} from './features/oficina/VentaOficinaReal';
 import { ReembolsosReal } from './features/oficina/ReembolsosReal';
 import { RevisionComprobanteReal } from './features/oficina/RevisionComprobanteReal';
 import { OficinaComprobantesReal } from './features/oficina/OficinaComprobantesReal';
-import { ConfiguracionCooperativaTabs } from './components/configuracion/ConfiguracionCooperativaTabs';
 import { BusesConectados, BusConectado, IdentidadConectada, GlobalConectada, CompatibilidadesConectadas } from './pages/mikel/EditoresConectados';
 import ActivarCuenta from "./pages/auth/ActivarCuenta";
 import ReenviarActivacion from "./pages/auth/ReenviarActivacion";
@@ -36,10 +42,10 @@ import SolicitarReembolso from "./pages/mis-viajes/SolicitarReembolso";
 import { ResumenCompraPage } from "./pages/compra/ResumenCompraPage";
 import GestionCooperativasPage from "./pages/administracion/GestionCooperativasPage";
 import ConfiguracionPagosPage from "./pages/configuracion/ConfiguracionPagosPage";
-import FrecuenciasPage from "./pages/frecuencias/FrecuenciasPage";
 
-import HojaRutaPage from "./pages/operacion/HojaRutaPage";
-import ParadasTarifasPage from "./pages/administracion/ParadasTarifasPage";
+
+
+
 import MikelV3Panel, { VistaMikel } from "./pages/mikel/MikelV3Panel";
 import BusesPage from "./pages/flota/BusesPage";
 import PlanosBusPage from "./pages/flota/PlanosBusPage";
@@ -81,23 +87,29 @@ export function App() {
   if (matchPath('/oficina/*', location.pathname) || matchPath('/cooperativa/*', location.pathname) || matchPath('/panel/*', location.pathname)) {
     return <Routes>
       <Route path="/cooperativa" element={<CooperativaLayout />}>
-        <Route index element={<p className="py-6">El resumen de la cooperativa está pendiente. Usa el menú para administrar buses, compatibilidades e identidad.</p>} />
+        <Route index element={<CooperativaResumen />} />
         <Route path="buses" element={<BusesConectados />} />
         <Route path="buses/:id" element={<BusConectado />} />
         <Route path="configuracion" element={<IdentidadConectada />} />
         <Route path="configuracion/pagos" element={<ConfiguracionPagosPage panelCooperativa />} />
-        <Route path="frecuencias" element={<CompatibilidadesConectadas />} />
+        <Route path="configuracion/tarifas" element={<TarifasGestion />} />
+        <Route path="configuracion/tarifas/politica" element={<PoliticaReembolso />} />
+        <Route path="configuracion/politica-reembolso" element={<PoliticaReembolso />} />
+        <Route path="hoja-ruta" element={<HojaRutaGestion />} />
+        <Route path="frecuencias" element={<FrecuenciasGestion />} />
         <Route path="frecuencias/grupos" element={<CompatibilidadesConectadas />} />
+        <Route path="grupos" element={<CompatibilidadesConectadas />} />
         <Route path="*" element={<p className="py-6">Esta sección está pendiente de integración por su responsable.</p>} />
       </Route>
       <Route path="/oficina" element={<AdminLayout variant="oficina" panelFijo />}><Route index element={<OficinaResumenPage />}/><Route path="ventas" element={<VentaOficinaReal />}/><Route path="reservas" element={<OficinaReservasPage />}/><Route path="comprobantes" element={<OficinaComprobantesReal />}/><Route path="comprobantes/ejemplo" element={<RevisionComprobanteEjemplo />} /><Route path="comprobantes/:id" element={<RevisionComprobanteReal />}/><Route path="reembolsos" element={<ReembolsosReal />}/><Route path="*" element={<p>Sección pendiente de integración.</p>}/></Route>
       <Route path="/panel" element={<AdminLayout panelFijo />}>
         <Route index element={<AdminResumenPage />} />
-        <Route path="cooperativas" element={<GestionCooperativasPage />} />
+        <Route path="cooperativas" element={<CooperativasAdmin />} />
         <Route path="cooperativas/nueva" element={<AltasPage cooperativa />} />
         <Route path="usuarios" element={<UsuariosPage />} />
         <Route path="usuarios/nuevo" element={<AltasPage />} />
         <Route path="accesos" element={<AccesosPage />} />
+        <Route path="reportes" element={<ReportesAuditoria />} />
         <Route path="configuracion" element={<><nav className="px-4 pt-4"><Link className="inline-flex rounded-md border border-blue-200 px-4 py-2 text-blue-900" to="/panel/configuracion/pagos">Pagos y cuentas bancarias →</Link></nav><GlobalConectada /></>} />
         <Route path="configuracion/global" element={<GlobalConectada />} />
         <Route path="configuracion/pagos" element={<ConfiguracionPagosPage />} />
@@ -136,10 +148,10 @@ export function App() {
           <Route path="grupos" element={<section className="space-y-4 py-5"><h1 className="text-2xl font-bold">Gestión de grupos</h1><p>Falta implementar la administración del catálogo de grupos en este panel.</p><Link className="inline-block rounded-md border border-blue-200 px-4 py-3" to="/vista-previa/cooperativa/frecuencias/grupos">Ver grupos habilitados por frecuencia →</Link></section>} />
           <Route path="configuracion" element={<VistaMikel seccion="identidad" />} />
           <Route path="configuracion/pagos" element={<ConfiguracionPagosPage panelCooperativa />} />
-          <Route path="configuracion/tarifas" element={<section className="space-y-4 py-5"><h1 className="text-2xl font-bold">Configuración de la cooperativa</h1><ConfiguracionCooperativaTabs /><h2 className="text-xl font-bold">Tarifas y descuentos</h2><p>Falta integrar esta vista en el panel de la cooperativa.</p></section>} />
+          <Route path="configuracion/tarifas" element={<TarifasGestion />} />
           <Route path="frecuencias" element={<Navigate to="/vista-previa/cooperativa/frecuencias/grupos" replace />} />
           <Route path="frecuencias/grupos" element={<VistaMikel seccion="grupos" />} />
-          <Route path="hoja-ruta" element={<HojaRutaPage />} />
+          <Route path="hoja-ruta" element={<HojaRutaGestion />} />
           <Route path="personal" element={<p className="py-5">La vista de personal está pendiente de integración por su responsable.</p>} />
           <Route path="*" element={<p>Sección no encontrada.</p>} />
         </Route>
@@ -156,7 +168,7 @@ export function App() {
           />
           <Route
             path="reportes"
-            element={<SeccionAdminPendiente titulo="Reportes" />}
+            element={<ReportesAuditoria />}
           />
           <Route
             path="configuracion"
@@ -203,7 +215,7 @@ export function App() {
         {import.meta.env.DEV && (
           <Route
             path="/vista-previa/frecuencias"
-            element={<FrecuenciasPage />}
+            element={<Navigate to="/cooperativa/frecuencias" replace />}
           />
         )}
         <Route path="/mi-cuenta" element={<MiCuenta />} />
@@ -232,7 +244,7 @@ export function App() {
         {import.meta.env.DEV && (
           <Route
             path="/vista-previa/paradas-tarifas"
-            element={<ParadasTarifasPage />}
+            element={<Navigate to="/cooperativa/frecuencias" replace />}
           />
         )}
         {import.meta.env.DEV && (
@@ -263,8 +275,4 @@ export function App() {
       </Routes>
     </PublicLayout>
   );
-}
-
-function SeccionAdminPendiente({ titulo }: { titulo: string }) {
-  return <h2 className="sr-only">{titulo}</h2>;
 }

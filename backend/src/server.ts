@@ -1,3 +1,4 @@
+import {operacionRouter} from './operacion/router';
 import { identidadRouter } from './identidad/router';
 import express from "express";
 import cors from "cors";
@@ -20,6 +21,7 @@ app.use(cors({origin:[process.env.FRONTEND_URL ?? "http://127.0.0.1:5173","http:
 app.use(cookieParser());
 app.use('/api/mikel', editorRouter);
 app.use('/api/identidad', identidadRouter);
+app.use('/api/operacion', operacionRouter);
 app.use('/api/configuracion/pagos', configuracionPagosRouter);
 app.use(express.json({limit:"16kb"}));
 app.use("/api/auth",authRouter);

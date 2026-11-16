@@ -29,7 +29,12 @@ test('editores HTTP y PostgreSQL: permisos, versiones, fotos, identidad, planos 
     const admin=await persona(),coopUser=await persona(),cliente=await persona(),ajeno=await persona();
     await db.query("INSERT INTO transporte.usuario_roles_globales(usuario_id,rol_id) SELECT $1,id FROM transporte.roles WHERE codigo='ADMIN_SISTEMA'",[admin.id]);
     const c=await insertar('cooperativas','nombre,razon_social,ruc',['Test Mikel','Prueba reversible',randomUUID().slice(0,13)]);
-    await insertar('config_cooperativa','cooperativa_id',[c]);
+    const reparacion=readFileSync(resolve(__dirname,'../../conexion-bd/prisma/migrations/20261116_completar_configuracion_cooperativas/migration.sql'),'utf8').replace(/^BEGIN;\s*/, '').replace(/COMMIT;\s*$/, '');
+    await db.query(reparacion);
+    await db.query("UPDATE transporte.config_cooperativa SET lema='Conservar configuración' WHERE cooperativa_id=$1",[c]);
+    await db.query(reparacion);
+    assert.equal((await db.query('SELECT lema FROM transporte.config_cooperativa WHERE cooperativa_id=$1',[c])).rows[0].lema,'Conservar configuración');
+    assert.equal((await db.query('SELECT count(*)::int n FROM transporte.config_cooperativa WHERE cooperativa_id=$1',[c])).rows[0].n,1);
     await db.query("INSERT INTO transporte.membresias(cooperativa_id,usuario_id,rol_id) SELECT $1,$2,id FROM transporte.roles WHERE codigo='COOPERATIVA'",[c,coopUser.id]);
     const c2=await insertar('cooperativas','nombre,razon_social,ruc',['Otro ámbito','Prueba reversible',randomUUID().slice(0,13)]);
     await db.query("INSERT INTO transporte.membresias(cooperativa_id,usuario_id,rol_id) SELECT $1,$2,id FROM transporte.roles WHERE codigo='COOPERATIVA'",[c2,ajeno.id]);
@@ -64,10 +69,31 @@ test('editores HTTP y PostgreSQL: permisos, versiones, fotos, identidad, planos 
     assert.equal((await db.query('SELECT count(*)::int n FROM transporte.planos WHERE bus_id=$1',[guardado.id])).rows[0].n,2);
     assert.equal((await api('buses',coopUser.token,{datos:{...b,unidad:'no debe guardarse',placa:'ERR-9123'},fotos:[{base64:'basura'}],crearVersion:false})).status,422);
     assert.equal((await db.query("SELECT 1 FROM transporte.buses WHERE cooperativa_id=$1 AND unidad='no debe guardarse'",[c])).rowCount,0);
+    // Administrador sin membresía: lista ámbitos y consulta/guarda solo el seleccionado.
+    const ambitosAdmin=await api('identidad/ambitos',admin.token);
+    assert.equal(ambitosAdmin.status,200);
+    assert.ok(ambitosAdmin.datos.cooperativas.some((v:{id:string})=>v.id===c));
+    assert.equal((await api('identidad/ambitos',cliente.token)).status,403);
+    const ambitosCoop=await api('identidad/ambitos');
+    assert.deepEqual(ambitosCoop.datos.cooperativas.map((v:{id:string})=>v.id),[c]);
+    assert.equal((await api('identidad?cooperativaId='+c,admin.token)).status,200);
+    assert.equal((await api('identidad?cooperativaId='+c,ajeno.token)).status,403);
+    assert.equal((await api('identidad?cooperativaId='+c,cliente.token)).status,403);
     const identidad=await api('identidad');assert.equal(identidad.status,200);
     const idDatos={...identidad.datos,ruc:'1234567890001',email:'test@example.com',telefono:'',whatsapp:''};
     assert.equal((await api('identidad',coopUser.token,{datos:idDatos,logo:foto})).status,200);
     assert.equal((await api('identidad',coopUser.token,{datos:idDatos,logo:null})).status,409);
+    const identidadAdmin=await api('identidad?cooperativaId='+c,admin.token);
+    assert.equal(identidadAdmin.status,200,JSON.stringify(identidadAdmin.datos));
+    const datosAdmin={...identidadAdmin.datos,ruc:idDatos.ruc,email:idDatos.email,lema:'Configuración por administrador'};
+    const denegado=await api('identidad?cooperativaId='+c,ajeno.token,{datos:datosAdmin,logo:null});
+    assert.equal(denegado.status,403,JSON.stringify(denegado.datos));
+    assert.equal((await api('identidad?cooperativaId='+c,admin.token,{datos:datosAdmin,logo:null})).status,200);
+    assert.equal((await api('identidad')).datos.lema,datosAdmin.lema);
+    await db.query('UPDATE transporte.cooperativas SET activa=false WHERE id=$1',[c]);
+    assert.equal((await api('identidad?cooperativaId='+c,admin.token)).status,403);
+    assert.equal((await api('identidad?cooperativaId='+c,admin.token,{datos:datosAdmin,logo:null})).status,403);
+    await db.query('UPDATE transporte.cooperativas SET activa=true WHERE id=$1',[c]);
     // Una frecuencia real y sus grupos, sin alterar viajes publicados.
     const ruta=await insertar('rutas','cooperativa_id,nombre',[c,'Ruta reversible']);
     const frecuencia=await insertar('frecuencias','cooperativa_id,ruta_id,codigo,hora_salida,resolucion_ant,tipo_viaje',[c,ruta,'TEST','08:00','PRUEBA','DIRECTO']);
