@@ -19,8 +19,23 @@ function useCarga<T>(cargar: () => Promise<T>, clave = '') {
   return { datos, aviso };
 }
 export function IdentidadConectada() {
-  const { datos, aviso } = useCarga(editorApi.identidad);
-  return datos ? <EditorIdentidad inicial={datos} onGuardar={editorApi.guardarIdentidad} /> : aviso;
+  const { datos, aviso } = useCarga(editorApi.ambitosIdentidad);
+  const [seleccion, setSeleccion] = useState('');
+  if (!datos) return aviso;
+  const cooperativaId = datos.cooperativas.find(c => c.id === seleccion)?.id ?? datos.cooperativas[0]?.id;
+  if (!cooperativaId) return <p>No hay cooperativas autorizadas para configurar.</p>;
+  return <section className="space-y-4">
+    {datos.cooperativas.length > 1 && <label className="block max-w-md text-sm text-blue-900">Cooperativa
+      <select aria-label="Cooperativa de configuración" className="mt-1 w-full rounded-md border border-blue-200 bg-white px-3 py-2" value={cooperativaId} onChange={e => setSeleccion(e.target.value)}>
+        {datos.cooperativas.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+      </select>
+    </label>}
+    <IdentidadDeCooperativa key={cooperativaId} cooperativaId={cooperativaId} />
+  </section>;
+}
+function IdentidadDeCooperativa({ cooperativaId }: { cooperativaId: string }) {
+  const { datos, aviso } = useCarga(() => editorApi.identidad(cooperativaId), cooperativaId);
+  return datos ? <EditorIdentidad inicial={datos} onGuardar={(d, logo) => editorApi.guardarIdentidad(d, logo, cooperativaId)} /> : aviso;
 }
 export function GlobalConectada() {
   const { datos, aviso } = useCarga(editorApi.global);

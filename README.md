@@ -20,10 +20,12 @@ La limpieza local retiró implementaciones reemplazadas y archivos sin uso. Ver 
 | Flota y asientos | 3.1, 3.2, 11.4, 16, 16.1, 19 | `/asientos` | Mikel Guzmán |
 | Reservas, pagos y boletos | 6, 7, 7.1, 8, 9.2, 19.1, 19.1.1 | `/pago`, `/pago/comprobante`, `/pago/seguimiento`, `/pago/confirmacion`, `/mis-viajes/reembolso`; `/vista-previa/panel/configuracion` (solo desarrollo, vistas 19.1 y 19.1.1 desde #104; `/vista-previa/configuracion/pagos` redirige ahí) | Ángel Galarza |
 | Identidad y administración | 0.1, 0.2, 0.3, 10, 11.2, 20, 20.1, 20.2 | `/registrarse`, `/iniciar-sesion`, `/activar-cuenta`, `/reenviar-activacion`, `/recuperar-contrasena`, `/restablecer-contrasena`, `/mi-cuenta` | Matías Mena |
-| Operación | 11.1, 15, 17, 18, 19.2, frecuencias (PR #26 y #99 la llaman V16), paradas y tarifas (ADM06) | `/vista-previa/frecuencias`, `/vista-previa/hoja-ruta`, `/vista-previa/paradas-tarifas` (solo desarrollo) | Benjamín Basurto |
+| Operación | 11.1, 11.3, 15, 17, 18, 19.2 y 19.3; paradas y tarifas (ADM06) | `/panel/cooperativas`, `/panel/reportes`, `/cooperativa`, `/cooperativa/frecuencias`, `/cooperativa/hoja-ruta`, `/cooperativa/configuracion/tarifas`, `/cooperativa/configuracion/tarifas/politica` | Benjamín Basurto |
 | Oficina y panel de administración | 11, 12.x, 13, 14 | `/panel`, `/oficina`, `/oficina/ventas`, `/oficina/reservas`, `/oficina/comprobantes`, `/oficina/comprobantes/:id`, `/oficina/reembolsos` | Pablo Yupa |
 
 Las rutas `/vista-previa/*` se conservan solo en desarrollo para los ejemplos utilizados. Los paneles reales están en `/panel`, `/oficina` y `/cooperativa`. Las pantallas antiguas que no tenían ruta ni consumidores se retiraron en la limpieza del 14/11/2026.
+
+La integración conectada de las vistas de Benjamín se documenta en [Operación](docs/benjamin/integracion-operacion.md).
 
 El número de vista de cada módulo sale de la tabla de responsables del equipo; se confirma con el documento maestro. El detalle de cada módulo está en `docs/kt/`, `docs/angel/`, `docs/flota/` y `docs/benjamin/`. Quién hizo cada PR está en [CONTRIBUTING.md](CONTRIBUTING.md).
 

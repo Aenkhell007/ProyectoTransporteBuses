@@ -27,6 +27,8 @@
     "src/pagos/configuracion.test.ts",
     "src/pagos/configuracion.db.test.ts",
     "src/identidad/identidad.test.ts",
-    "src/identidad/identidad.db.test.ts"
+    "src/identidad/identidad.db.test.ts",
+    "src/operacion/operacion.test.ts",
+    "src/operacion/operacion.db.test.ts"
   ]
 }
