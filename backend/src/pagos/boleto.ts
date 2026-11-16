@@ -71,6 +71,11 @@ export async function generarBoleto(datos: DatosPago): Promise<Buffer> {
       `Tarifa ${dinero(p.tarifaCentavos)} | Descuento ${dinero(p.descuentoCentavos)} | Total ${dinero(p.tarifaCentavos - p.descuentoCentavos + p.servicioCentavos + p.ivaCentavos)}`,
     );
   }
+  if (datos.reembolsos?.cancelados.length) {
+    doc.moveDown().fontSize(10).fillColor('#7f1d1d').text('Documento actualizado: contiene únicamente pasajeros vigentes.');
+    doc.text('Reembolso en trámite: '+dinero(datos.reembolsos.enTramiteCentavos)+' | Abonado: '+dinero(datos.reembolsos.ejecutadoCentavos));
+    doc.text('Los importes siguientes corresponden a la compra original.');
+  }
   if (doc.y > 650) doc.addPage();
   const q = datos.cotizacion;
   doc
@@ -102,7 +107,7 @@ export async function generarBoleto(datos: DatosPago): Promise<Buffer> {
   doc
     .fontSize(8)
     .text(
-      "El QR identifica el boleto. La autorización de abordaje se comprueba en el sistema.",
+      "El QR identifica este boleto. Preséntalo junto con tu documento de identidad.",
       42,
       doc.y + 8,
       { width: 510 },

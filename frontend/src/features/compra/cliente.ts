@@ -1,3 +1,4 @@
+import {avisarSesionVencida} from '../auth/sesionVencida';
 import { ErrorCompra } from "./errores";
 const base = (
   (import.meta.env.VITE_API_URL as string | undefined) ?? "/api"
@@ -27,6 +28,7 @@ export async function apiCompra<T>(
     });
   }
   if (!respuesta.ok) {
+    avisarSesionVencida(respuesta.status);
     const cuerpo = await respuesta.json().catch(() => ({}));
     throw new ErrorCompra(respuesta.status, {
       ...cuerpo,

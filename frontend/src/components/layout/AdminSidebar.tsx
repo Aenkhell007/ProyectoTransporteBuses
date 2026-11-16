@@ -30,7 +30,6 @@ const seccionesCooperativa = [
   { ruta: "grupos", nombre: "Grupos" },
   { ruta: "frecuencias", nombre: "Frecuencias" },
   { ruta: "hoja-ruta", nombre: "Hoja de ruta" },
-  { ruta: "personal", nombre: "Personal" },
   seccionesAdmin[4],
 ];
 

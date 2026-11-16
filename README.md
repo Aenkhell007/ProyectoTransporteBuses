@@ -6,6 +6,10 @@ Proyecto grupal de la asignatura Manejo y Configuración del Software, cuarto se
 
 Los requisitos y las vistas numeradas salen del Documento Maestro V3 del 16/10/2026, de 355 páginas; las 163 primeras son la versión vigente. <!-- PENDIENTE: dónde lo puede consultar el docente (enlace o carpeta compartida). -->
 
+## Auditoría local del 16/11/2026
+
+La revisión de las 43 referencias, las correcciones de roles/sesión, el reembolso real del cliente y los límites de las integraciones externas están en [Auditoría de vistas](docs/auditoria-43-vistas-2026-11-16.md). Incluye una matriz por vista y comandos de comprobación.
+
 ## Estado al 14/11/2026
 
 `develop` incorpora la integración de Pablo del PR #143. Los paneles de administración y oficina usan servicios reales para resumen, reservas, comprobantes, revisión, reembolsos y venta presencial. Ver [integración de Pablo](docs/oficina/integracion-pablo.md).

@@ -20,12 +20,13 @@ export class ErrorCorreo extends Error {
   constructor(public estado: number, public codigo: string) { super(`Brevo: HTTP ${estado}, ${codigo}`); }
 }
 
-export async function enviarCorreo(email: string, subject: string, textContent: string, opciones: {htmlContent?: string; idempotencyKey?: string} = {}): Promise<{messageId: string | null}> {
+export async function enviarCorreo(email: string, subject: string, textContent: string, opciones: {htmlContent?: string; idempotencyKey?: string; adjuntos?: {name:string;content:string}[]} = {}): Promise<{messageId: string | null}> {
   if (!correoConfigurado()) throw new Error("Correo no configurado.");
   const response = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
     headers: {"Content-Type":"application/json", "Accept":"application/json", "api-key":process.env.BREVO_API_KEY!.trim()},
     body: JSON.stringify({sender:{email:process.env.BREVO_SENDER_EMAIL!.trim(),name:process.env.BREVO_SENDER_NAME ?? "Gran Continental"},to:[{email}],subject,textContent,
+      ...(opciones.adjuntos?.length ? {attachment:opciones.adjuntos} : {}),
       ...(opciones.htmlContent ? {htmlContent:opciones.htmlContent} : {}),
       ...(opciones.idempotencyKey ? {headers:{IdempotencyKey:opciones.idempotencyKey}} : {}),
     }),

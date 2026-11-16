@@ -1,3 +1,4 @@
+import {canalesEntrega,backendEntregaId} from './entregaBoletos';
 import { alcanceReserva } from '../oficina/consultas';
 import express, { Router } from "express";
 import type { Request, Response, NextFunction } from "express";
@@ -16,7 +17,7 @@ import { generarBoleto } from "./boleto";
 import type { DatosPago } from "../../../shared/pagos";
 import QRCode from "qrcode";
 
-import { conservarDatosCompra } from "./datos";
+import { conservarDatosCompra,conEstadoReembolsos } from "./datos";
 
 export const pagosRouter = Router();
 function token(req: Request) {
@@ -95,7 +96,7 @@ export async function limpiarTrasError(req: Request, claves: string[]) {
     // Ante indisponibilidad se conservan los archivos privados para reconciliar/reintentar.
   }
 }
-async function consultar(db: PoolClient, id: string) {
+export async function consultar(db: PoolClient, id: string) {
   const datos = conservarDatosCompra(
     (
       await db.query("SELECT transporte.consultar_pago_cliente($1) AS datos", [
@@ -105,7 +106,7 @@ async function consultar(db: PoolClient, id: string) {
   );
   const predeterminada = (await db.query('SELECT transporte.cuenta_predeterminada_cliente($1) AS id', [id])).rows[0]?.id;
   datos.cuentas.sort((a, b) => Number(b.id === predeterminada) - Number(a.id === predeterminada));
-  return datos;
+  return conEstadoReembolsos(db,datos);
 }
 pagosRouter.get('/reservas/:id/cuentas/:cuenta/qr', async (req, res) => {
   try {
@@ -308,6 +309,12 @@ pagosRouter.post("/pagos/comprobantes/:id/revision", async (req, res) => {
     responderError(res, e);
   }
 });
+pagosRouter.get('/reservas/:id/entrega-boleto',async(req,res)=>{
+ try{const reserva=uuid(req.params.id);const estados=await conSesion(token(req),async db=>{
+   const datos=await consultar(db,reserva);if(!datos.compra)throw new ErrorPago(409,'Primero confirma la compra.');
+   return (await db.query("SELECT canal,estado,error_codigo FROM transporte.notificaciones WHERE tipo='COMPRA_CONFIRMADA' AND payload->>'compraId'=$1 AND canal IN('EMAIL','WHATSAPP') ORDER BY canal",[datos.compra.id])).rows;
+ });res.json({canales:canalesEntrega(),estados});}catch(e){responderError(res,e);}
+});
 export async function emitir(db: PoolClient, compraId: string, creados: string[]) {
   await db.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
     compraId,
@@ -336,6 +343,7 @@ export async function emitir(db: PoolClient, compraId: string, creados: string[]
     compraId,
     archivoId,
   ]);
+  await db.query('SELECT transporte.asignar_entrega_boleto($1,$2)',[compraId,backendEntregaId()]);
 }
 pagosRouter.post("/pagos/compras/:id/documento", async (req, res) => {
   const creados: string[] = [];

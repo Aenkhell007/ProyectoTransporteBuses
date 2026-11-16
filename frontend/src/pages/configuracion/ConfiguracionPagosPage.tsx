@@ -37,12 +37,15 @@ export default function ConfiguracionPagosPage({ panelCooperativa = false }: { p
       if (!activo) return;
       setCooperativas(r.cooperativas);
       if (!r.cooperativas.length) throw new Error('Tu cuenta no tiene permiso para configurar pagos en ninguna cooperativa.');
-      const datos = await configuracionPagosApi.consultar(r.cooperativas[0].id);
+      const inicial=r.cooperativas.find(c=>c.id===params.get('cooperativaId'))??r.cooperativas[0];
+      const datos = await configuracionPagosApi.consultar(inicial.id);
+      if(activo&&!params.get('cooperativaId')){const p=new URLSearchParams(params);p.set('cooperativaId',inicial.id);setParams(p,{replace:true});}
       if (activo) { setConfiguracion(datos); setGuardada(datos); }
     }).catch(e => { if (activo) setError(e instanceof Error ? e.message : 'No se pudo cargar la configuración.'); })
       .finally(() => { if (activo) setCargando(false); });
     return () => { activo = false; };
   }, []);
+  useEffect(()=>{const id=params.get('cooperativaId');if(!cargando&&id&&id!==configuracion.cooperativa.id&&cooperativas.some(c=>c.id===id))void cargar(id);},[params,cargando,configuracion.cooperativa.id,cooperativas]);
   async function cargar(id: string) {
     const numero = ++carga.current; setCargando(true); setError(''); setMensaje('');
     try { const d = await configuracionPagosApi.consultar(id); if(numero === carga.current) {setConfiguracion(d); setGuardada(d); setCuentaVistaPrevia('');} }
@@ -50,7 +53,7 @@ export default function ConfiguracionPagosPage({ panelCooperativa = false }: { p
     finally { if(numero === carga.current) setCargando(false); }
   }
   function recargar() { if (!hayCambios || window.confirm('¿Descartar los cambios pendientes y cargar los datos guardados?')) void cargar(configuracion.cooperativa.id); }
-  function cambiarCooperativa(id: string) { if(!hayCambios || window.confirm('¿Descartar los cambios pendientes y cambiar de cooperativa?')) void cargar(id); }
+  function cambiarCooperativa(id: string) { if(!hayCambios || window.confirm('¿Descartar los cambios pendientes y cambiar de cooperativa?')) {const p=new URLSearchParams(params);p.set('cooperativaId',id);setParams(p,{replace:true});void cargar(id);} }
   function limpiarMensajes() {setError(''); setMensaje('');}
   function cambiarEstadoCuenta(id:string) { limpiarMensajes(); setConfiguracion(a=>({...a,cuentas:a.cuentas.map(c=>c.id===id?{...c,activa:!c.activa,predeterminada:c.activa?false:c.predeterminada}:c)})); }
   function establecerPredeterminada(id:string) { limpiarMensajes(); setConfiguracion(a=>({...a,cuentas:a.cuentas.map(c=>({...c,predeterminada:c.activa && c.id===id}))})); }

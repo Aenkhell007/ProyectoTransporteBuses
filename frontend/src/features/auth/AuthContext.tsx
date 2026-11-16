@@ -1,24 +1,17 @@
-import { createContext, startTransition, useContext, useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import type { ReactNode } from "react";
 import { authApi, ErrorAuth } from "../../services/authApi";
 import type { UsuarioSesion } from "../../services/authApi";
-
-interface AuthState {
-  usuario: UsuarioSesion | null;
-  cargando: boolean;
-  errorSesion: string;
-  login: (email: string, password: string, recordar?: boolean) => Promise<void>;
-  logout: () => Promise<void>;
-  refrescar: () => Promise<void>;
-}
-const Contexto = createContext<AuthState | null>(null);
+import {Contexto} from "./contextoSesion";
+export {useAuth} from "./contextoSesion";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [usuario, setUsuario] = useState<UsuarioSesion | null>(null);
   const [cargando, setCargando] = useState(true);
   const [errorSesion, setErrorSesion] = useState("");
+  useEffect(()=>{const invalidar=()=>{setUsuario(null);setErrorSesion('La sesión venció. Inicia sesión nuevamente.');};window.addEventListener('transporte:sesion-vencida',invalidar);return()=>window.removeEventListener('transporte:sesion-vencida',invalidar);},[]);
   useEffect(() => {
     let activo = true;
     authApi.me().then(({ usuario }) => { if (activo) setUsuario(usuario); })
@@ -30,7 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const datos = await authApi.login(email, password, recordar);
     setUsuario(datos.usuario); setErrorSesion("");
   }
-  async function refrescar() { const datos = await authApi.me(); setUsuario(datos.usuario); }
+  async function refrescar() { try{const datos = await authApi.me(); setUsuario(datos.usuario);}catch(e){if(e instanceof ErrorAuth&&e.status===401)setUsuario(null);throw e;} }
   async function logout() {
     await authApi.logout();
     startTransition(() => {
@@ -39,9 +32,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }
   return <Contexto.Provider value={{ usuario, cargando, errorSesion, login, logout, refrescar }}>{children}</Contexto.Provider>;
-}
-export function useAuth() {
-  const contexto = useContext(Contexto);
-  if (!contexto) throw new Error("Falta AuthProvider");
-  return contexto;
 }

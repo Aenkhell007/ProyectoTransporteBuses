@@ -1,3 +1,4 @@
+import {avisarSesionVencida} from '../auth/sesionVencida';
 import type { DatosPago } from "../../../../shared/pagos";
 export type { DatosPago };
 const base = (import.meta.env.VITE_API_URL ?? "/api").replace(/\/$/, "");
@@ -18,6 +19,7 @@ async function pedir<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
     credentials: "include",
   });
   if (!respuesta.ok) {
+    avisarSesionVencida(respuesta.status);
     const datos = await respuesta.json().catch(() => null);
     throw new ErrorPagoApi(
       respuesta.status,

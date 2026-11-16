@@ -1206,6 +1206,9 @@ model sesiones {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model solicitudes_reembolso {
+  reserva_asiento_ids String[] @db.Uuid
+  base_centavos BigInt
+  es_total Boolean @default(true)
   id                                                      String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   cooperativa_id                                          String              @db.Uuid
   compra_id                                               String              @db.Uuid

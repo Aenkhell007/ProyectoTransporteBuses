@@ -39,3 +39,9 @@ test('rechaza componentes de URL mal formados o con controles', () => {
     assert.equal(destinoTrasLogin({ pathname: '/mi-cuenta', ...dato }).pathname, '/');
   }
 });
+
+test('vuelve a la solicitud real de reembolso y a paneles autorizados',()=>{
+ assert.equal(destinoTrasLogin({pathname:'/mis-viajes/reembolso',search:'?reserva_id=123'},['CLIENTE']).pathname,'/mis-viajes/reembolso');
+ assert.equal(destinoTrasLogin({pathname:'/cooperativa/configuracion'},['COOPERATIVA']).pathname,'/cooperativa/configuracion');
+ assert.equal(destinoTrasLogin({pathname:'/panel/usuarios'},['OFICINISTA']).pathname,'/oficina');
+});

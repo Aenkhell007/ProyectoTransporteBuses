@@ -24,7 +24,7 @@ export function registrarExtras(router:Router,sesion:Sesion,ambito:Ambito){
  router.get('/politica',async(req,res,next)=>{try{res.json(await sesion(req,async db=>{const {id:c}=await ambito(db,req);const ids=(await db.query("SELECT id FROM transporte.politicas_reembolso WHERE cooperativa_id=$1 ORDER BY (estado='BORRADOR') DESC,numero_version DESC LIMIT 10",[c])).rows;const versiones=[];for(const p of ids)versiones.push(await politica(db,c,p.id));return {versiones};}));}catch(e){next(e);}});
  router.put('/politica',async(req,res,next)=>{try{res.json(await sesion(req,async db=>{
   const {id:c}=await ambito(db,req,'tarifas.admin'),d=req.body;exigir(typeof d.condiciones==='string'&&d.condiciones.length<=4000&&!/[<>\x00-\x08]/.test(d.condiciones),'Revisa las condiciones de la política.');
-  exigir(d.permite_parcial===false,'La cancelación parcial no está habilitada en el motor de reservas.');const plazo=d.plazo_abono_dias===null?null:entero(d.plazo_abono_dias,1,365);
+  exigir(typeof d.permite_parcial==='boolean','Indica si se permite cancelación parcial.');const plazo=d.plazo_abono_dias===null?null:entero(d.plazo_abono_dias,1,365);
   exigir(Array.isArray(d.reglas)&&d.reglas.length>0&&d.reglas.length<=20,'Define entre una y 20 reglas.');
   const reglas=d.reglas.map((r:{minutos_desde:unknown;minutos_hasta:unknown;porcentaje_bp:unknown})=>({minutos_desde:entero(r.minutos_desde,0,525600),minutos_hasta:r.minutos_hasta===null?null:entero(r.minutos_hasta,1,525600),porcentaje_bp:r.porcentaje_bp===null?null:entero(r.porcentaje_bp,0,10000)})).sort((a:{minutos_desde:number},b:{minutos_desde:number})=>a.minutos_desde-b.minutos_desde);
   for(let i=0;i<reglas.length;i++){const r=reglas[i];exigir(r.minutos_hasta===null||r.minutos_hasta>r.minutos_desde,'Revisa los límites horarios.');if(i)exigir(reglas[i-1].minutos_hasta!==null&&reglas[i-1].minutos_hasta<=r.minutos_desde,'Las reglas no pueden superponerse.');}
@@ -32,8 +32,8 @@ export function registrarExtras(router:Router,sesion:Sesion,ambito:Ambito){
   if(anterior&&anterior.revision!==d.revision)throw new ErrorOperacion(409,'La política cambió. Recarga antes de guardar.');
   if(!anterior||anterior.estado!=='BORRADOR'){
    exigir(!(await db.query("SELECT 1 FROM transporte.politicas_reembolso WHERE cooperativa_id=$1 AND estado='BORRADOR'",[c])).rowCount,'Ya existe un borrador. Selecciónalo para continuar.');
-   id=(await db.query("INSERT INTO transporte.politicas_reembolso(cooperativa_id,numero_version,condiciones,plazo_abono_dias,permite_parcial)SELECT $1,coalesce(max(numero_version),0)+1,$2,$3,false FROM transporte.politicas_reembolso WHERE cooperativa_id=$1 RETURNING id",[c,d.condiciones.trim(),plazo])).rows[0].id;
-  }else await db.query('UPDATE transporte.politicas_reembolso SET condiciones=$2,plazo_abono_dias=$3,permite_parcial=false WHERE id=$1',[id,d.condiciones.trim(),plazo]);
+   id=(await db.query("INSERT INTO transporte.politicas_reembolso(cooperativa_id,numero_version,condiciones,plazo_abono_dias,permite_parcial)SELECT $1,coalesce(max(numero_version),0)+1,$2,$3,$4 FROM transporte.politicas_reembolso WHERE cooperativa_id=$1 RETURNING id",[c,d.condiciones.trim(),plazo,d.permite_parcial])).rows[0].id;
+  }else await db.query('UPDATE transporte.politicas_reembolso SET condiciones=$2,plazo_abono_dias=$3,permite_parcial=$4 WHERE id=$1',[id,d.condiciones.trim(),plazo,d.permite_parcial]);
   await db.query('DELETE FROM transporte.reglas_reembolso WHERE politica_id=$1',[id]);
   for(const r of reglas.filter((r:{porcentaje_bp:number|null})=>r.porcentaje_bp!==null))await db.query('INSERT INTO transporte.reglas_reembolso(cooperativa_id,politica_id,minutos_desde,minutos_hasta,porcentaje_bp)VALUES($1,$2,$3,$4,$5)',[c,id,r.minutos_desde,r.minutos_hasta,r.porcentaje_bp]);
   return {politica:await politica(db,c,id!),mensaje:'Borrador guardado. La política publicada no cambia hasta que publiques esta versión.'};

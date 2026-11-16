@@ -1,3 +1,4 @@
+import {avisarSesionVencida} from '../features/auth/sesionVencida';
 // La URL de la API sale de VITE_API_URL. En el frontend nunca van credenciales de
 // base de datos: solo la dirección de la API.
 const BASE_URL = ((import.meta.env.VITE_API_URL as string | undefined) ?? '/api').replace(
@@ -36,7 +37,8 @@ export async function http<T>(ruta: string, opciones: RequestInit = {}): Promise
   });
 
   if (!respuesta.ok) {
-    const detalle = ['/mikel/','/oficina/','/admin/','/configuracion/pagos','/identidad/','/operacion/'].some(prefijo=>ruta.startsWith(prefijo)) && [403, 409, 413, 422, 503].includes(respuesta.status)
+    avisarSesionVencida(respuesta.status);
+    const detalle = ['/reservas/','/mikel/','/oficina/','/admin/','/configuracion/pagos','/identidad/','/operacion/'].some(prefijo=>ruta.startsWith(prefijo)) && [403, 409, 413, 422, 503].includes(respuesta.status)
       ? await respuesta.json().catch(() => null) as { error?: unknown } | null : null;
     throw new ApiError(
       respuesta.status,

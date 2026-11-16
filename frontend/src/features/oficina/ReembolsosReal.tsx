@@ -39,6 +39,8 @@ interface Solicitud {
   monto_centavos: number;
   politica_version: number;
   politica_estado: string;
+  base_centavos?: number;
+  pasajeros_solicitados?: {id:string;nombre:string;codigo:string;piso:number}[];
 }
 interface Elegibilidad {
   elegible: boolean;
@@ -437,7 +439,7 @@ export function ReembolsosReal() {
               <div className="grid grid-cols-2 gap-3 text-sm"><div><p className="text-xs text-blue-800">Cliente</p><p>{d.cliente}</p></div><div><p className="text-xs text-blue-800">Anticipación al solicitar</p><p className="text-red-600">{anticipacion(d)}</p></div></div>
               <div className="flex flex-wrap items-center justify-between gap-2 text-sm"><span>Política · versión {d.politica_version}</span><span className="rounded bg-blue-50 px-2 py-1 text-xs text-blue-700">{d.politica_estado === "BORRADOR" ? "Borrador" : d.politica_estado === "PUBLICADA" ? "Publicada" : d.politica_estado}</span></div><Estado valor={d.estado}/>
               <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm"><strong className="block text-amber-700">Motivo de la solicitud</strong><p className="mt-1 wrap-anywhere text-blue-900">{d.motivo}</p></div>
-              <dl className="space-y-3"><div className="flex justify-between gap-3"><dt>Monto pagado</dt><dd className="font-bold">{dinero(Number(d.total_pagado_centavos) / 100)}</dd></div><div className="flex justify-between gap-3"><dt>Porcentaje de devolución</dt><dd className="font-bold">{Number(d.porcentaje_bp) / 100}%</dd></div><div className="flex justify-between gap-3 border-t border-blue-100 pt-3"><dt>Monto a devolver</dt><dd className="text-2xl font-bold">{dinero(Number(d.monto_centavos) / 100)}</dd></div></dl>
+              <section className="rounded bg-blue-50 p-3 text-sm"><h3 className="font-bold">Pasajeros incluidos en la solicitud</h3>{d.pasajeros_solicitados?.length?<ul>{d.pasajeros_solicitados.map(p=><li key={p.id} className="mt-1">{p.nombre} · Asiento {p.codigo} · Piso {p.piso}</li>)}</ul>:<p>Consulta los pasajeros de la compra antes de decidir.</p>}</section><dl className="space-y-3"><div className="flex justify-between gap-3"><dt>Base de esta solicitud</dt><dd className="font-bold">{dinero(Number(d.base_centavos??d.total_pagado_centavos)/100)}</dd></div><div className="flex justify-between gap-3"><dt>Monto pagado</dt><dd className="font-bold">{dinero(Number(d.total_pagado_centavos) / 100)}</dd></div><div className="flex justify-between gap-3"><dt>Porcentaje de devolución</dt><dd className="font-bold">{Number(d.porcentaje_bp) / 100}%</dd></div><div className="flex justify-between gap-3 border-t border-blue-100 pt-3"><dt>Monto a devolver</dt><dd className="text-2xl font-bold">{dinero(Number(d.monto_centavos) / 100)}</dd></div></dl>
               {d.decision_motivo && <Aviso>{d.decision_motivo}</Aviso>}
               {d.estado === "SOLICITADO" && (
                 <>

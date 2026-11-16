@@ -22,6 +22,7 @@ async function codificar(archivo: File) {
     r.onload = () => resolve({ base64: String(r.result).split(',')[1] }); r.readAsDataURL(blob);
   });
 }
+const ambito = (ruta: string, cooperativaId?: string) => ruta + (cooperativaId ? '?cooperativaId=' + encodeURIComponent(cooperativaId) : '');
 const guardar = <T,>(ruta: string, datos: unknown) => http<T>(`/mikel/${ruta}`, { method: 'PUT', body: JSON.stringify(datos) });
 export interface CatalogosEditor {
   buses: { id: string; unidad: string; placa: string; activo: boolean }[];
@@ -30,14 +31,15 @@ export interface CatalogosEditor {
   servicios: { id: string; nombre: string }[];
 }
 export const editorApi = {
-  catalogos: () => http<CatalogosEditor>('/mikel/buses'),
-  bus: (id: string) => http<BusEditorDatos>(`/mikel/buses/${encodeURIComponent(id)}`),
-  guardarBus: async (datos: BusEditorDatos, fotos: File[], crearVersion: boolean) => guardar<BusEditorDatos>('buses', { datos, fotos: await Promise.all(fotos.map(codificar)), crearVersion }),
+  ambitos: (permiso: string) => http<{ cooperativas: { id: string; nombre: string }[] }>('/mikel/ambitos/' + encodeURIComponent(permiso)),
+  catalogos: (cooperativaId?: string) => http<CatalogosEditor>(ambito('/mikel/buses', cooperativaId)),
+  bus: (id: string, cooperativaId?: string) => http<BusEditorDatos>(ambito(`/mikel/buses/${encodeURIComponent(id)}`, cooperativaId)),
+  guardarBus: async (datos: BusEditorDatos, fotos: File[], crearVersion: boolean, cooperativaId?: string) => guardar<BusEditorDatos>(ambito('buses', cooperativaId), { datos, fotos: await Promise.all(fotos.map(codificar)), crearVersion }),
   ambitosIdentidad: () => http<{ cooperativas: { id: string; nombre: string }[] }>('/mikel/identidad/ambitos'),
   identidad: (cooperativaId?: string) => http<IdentidadCooperativaDatos>(`/mikel/identidad${cooperativaId ? '?cooperativaId=' + encodeURIComponent(cooperativaId) : ''}`),
   guardarIdentidad: async (datos: IdentidadCooperativaDatos, logo: File | null, cooperativaId?: string) => guardar<IdentidadCooperativaDatos>(`identidad${cooperativaId ? '?cooperativaId=' + encodeURIComponent(cooperativaId) : ''}`, { datos, logo: logo ? await codificar(logo) : null }),
   global: () => http<{ datos: ConfiguracionGlobalDatos; canales: { correo: boolean; whatsapp: boolean }; admiteMfa: boolean }>('/mikel/global'),
   guardarGlobal: (datos: ConfiguracionGlobalDatos) => guardar<ConfiguracionGlobalDatos>('global', datos),
-  compatibilidades: () => http<{ grupos: GrupoCompatible[]; frecuencias: (FrecuenciaCompatible & { version: number })[] }>('/mikel/compatibilidades'),
-  guardarCompatibilidades: (datos: CompatibilidadGrupos) => guardar<CompatibilidadGrupos>('compatibilidades', datos),
+  compatibilidades: (cooperativaId?: string) => http<{ grupos: GrupoCompatible[]; frecuencias: (FrecuenciaCompatible & { version: number })[] }>(ambito('/mikel/compatibilidades', cooperativaId)),
+  guardarCompatibilidades: (datos: CompatibilidadGrupos, cooperativaId?: string) => guardar<CompatibilidadGrupos>(ambito('compatibilidades', cooperativaId), datos),
 };

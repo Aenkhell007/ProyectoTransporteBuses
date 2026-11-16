@@ -1,6 +1,6 @@
 import type { PoolClient } from "pg";
 import type { DatosPago } from "../../../shared/pagos";
-import { conservarDatosCompra } from "../pagos/datos";
+import { conservarDatosCompra,conEstadoReembolsos } from "../pagos/datos";
 
 export interface FiltrosListaViajes {seccion:string;estado:string;q:string;desde:string;hasta:string;cursor:number}
 // Además de RLS, se exige que la reserva pertenezca al actor autenticado.
@@ -25,7 +25,7 @@ export async function listarViajesPropios(db:PoolClient,f:FiltrosListaViajes){
  ) SELECT id,estado,datos FROM filtrados ORDER BY CASE WHEN $1='proximos' THEN salida END ASC,CASE WHEN $1='historial' THEN salida END DESC,id OFFSET $6 LIMIT 13`,[f.seccion,f.estado,f.q,f.desde,f.hasta,f.cursor]);
  const data=[];
  for(const item of r.rows.slice(0,12)){
-  const d=conservarDatosCompra(item.datos as DatosPago);
+  const d=await conEstadoReembolsos(db,conservarDatosCompra(item.datos as DatosPago));
   data.push(tarjetaViaje(d,item.estado));
  }
  return {data,next_cursor:r.rows.length>12?String(f.cursor+12):null};

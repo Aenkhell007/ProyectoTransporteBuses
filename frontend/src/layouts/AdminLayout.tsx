@@ -1,6 +1,8 @@
+import { accesoPanel } from '../features/auth/accesoPanel';
+import { destinoTrasLogin } from '../features/auth/destinoTrasLogin';
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { Outlet, useLocation } from "react-router";
+import { Link, Navigate, Outlet, useLocation } from "react-router";
 import { AdminHeader } from "../components/layout/AdminHeader";
 import { AdminSidebar } from "../components/layout/AdminSidebar";
 import { SiteFooter } from "../components/layout";
@@ -21,7 +23,8 @@ export default function AdminLayout({
   panelFijo?: boolean;
 }) {
   const { usuario, cargando, logout } = useAuth();
-  const ruta = useLocation().pathname;
+  const location = useLocation();
+  const ruta = location.pathname;
   const homeHref = ruta.startsWith('/oficina') ? '/oficina' : ruta.startsWith('/cooperativa') ? '/cooperativa' : ruta.startsWith('/panel') ? '/panel' : variant === 'cooperativa' ? '/vista-previa/cooperativa' : variant === 'oficina' ? '/vista-previa/oficinista' : '/vista-previa/panel';
   const [saliendo, setSaliendo] = useState(false);
   const [error, setError] = useState("");
@@ -41,6 +44,11 @@ export default function AdminLayout({
     }
   }
 
+  if (!ruta.startsWith('/vista-previa/')) {
+    if (cargando) return <p role="status" className="m-6 rounded-lg bg-white p-6">Comprobando acceso…</p>;
+    if (!usuario) return <Navigate to="/iniciar-sesion" state={{from:location}} replace />;
+    if (!accesoPanel(variant,usuario.roles,usuario.permisos)) return <section className="mx-auto mt-10 max-w-lg rounded-lg bg-white p-6 text-blue-950"><h1 className="text-2xl font-bold">Acceso restringido</h1><p className="my-4">Tu cuenta no tiene permisos para este panel.</p><Link className="underline" to={destinoTrasLogin(null,usuario.roles).pathname}>Volver a mi inicio</Link></section>;
+  }
   return (
     <div className={panelFijo ? "gc-shell gc-shell--public" : "gc-shell gc-shell--public p-3 sm:p-5"}>
       {panelFijo && (

@@ -1,3 +1,5 @@
+import {useEffect,useState} from 'react';
+import {http} from '../../services/http';
 import { Link } from "react-router";
 import { useFlujoPago } from "../../features/pagos/useFlujoPago";
 import EstadoConsultaPago from "../../components/pagos/EstadoConsultaPago";
@@ -12,6 +14,8 @@ const dinero = (centavos: number) => `$ ${(centavos / 100).toFixed(2)}`;
 export default function ConfirmacionCompra() {
   const { reservaId, flujo, compra, datos, cargando, error, status, recargar } =
     useFlujoPago();
+  const [entrega,setEntrega]=useState<{canales:{EMAIL:boolean;WHATSAPP:boolean};estados:{canal:string;estado:string;error_codigo:string|null}[]}|null>(null);
+  useEffect(()=>{let vivo=true;if(!reservaId||!datos?.compra){setEntrega(null);return;}const cargar=()=>http<NonNullable<typeof entrega>>('/reservas/'+reservaId+'/entrega-boleto').then(r=>{if(vivo)setEntrega(r);}).catch(()=>{});void cargar();const timer=setInterval(()=>void cargar(),15000);return()=>{vivo=false;clearInterval(timer);};},[reservaId,datos?.compra?.id]);
   if (!datos || !reservaId || !flujo || !compra)
     return <EstadoConsultaPago {...{ cargando, error, status, recargar }} />;
   const reservaDesconocida = !reservaId || !flujo;
@@ -44,6 +48,8 @@ export default function ConfirmacionCompra() {
     <section className="min-w-0 font-[Arial,Helvetica,sans-serif] text-[#08035b] [&>h1]:text-[27px] [&>h1]:font-bold [&>h1]:tracking-[-.8px] max-[601px]:[&>h1]:text-[22px] mx-auto my-4 w-[calc(100%-24px)] max-w-360 rounded-lg bg-white p-4 sm:my-6 sm:w-[calc(100%-36px)] sm:p-6">
       <BookingProgress confirmacionCompleta={disponible} />
       <h1>Confirmación de compra</h1>
+      {!!datos.reembolsos?.cancelados.length&&<p className="my-3 rounded-md bg-amber-50 p-3 text-sm">Documento actualizado con los pasajeros vigentes. Devolución en trámite: {dinero(datos.reembolsos.enTramiteCentavos)}. Abonado: {dinero(datos.reembolsos.ejecutadoCentavos)}. Los importes de compra conservan el pago original.</p>}
+      {entrega&&disponible&&<div className="my-3 rounded-md bg-blue-50 p-3 text-sm"><p className="font-semibold">Entrega del boleto</p>{(['EMAIL','WHATSAPP'] as const).map(canal=>{const estado=entrega.estados.find(e=>e.canal===canal)?.estado;return <p key={canal}>{canal==='EMAIL'?'Correo electrónico':'WhatsApp'}: {!entrega.canales[canal]?'servicio pendiente de configuración':estado==='ENVIADA'?'aceptado por el proveedor':estado==='FALLIDA'?'no se confirmó el envío; conserva el PDF descargado':estado==='EN_PROCESO'?'procesando':'en cola para envío'}</p>;})}</div>}
       {error && (
         <p role="alert" className="mt-2 rounded bg-amber-50 p-3">
           {error}

@@ -603,7 +603,7 @@ export function VentaOficinaReal() {
                 </p>
                 <Aviso>
                   Se confirma la compra y se emite un boleto consolidado. El
-                  envío automático de correo y WhatsApp requiere su integración.
+                  envío automático de correo y WhatsApp depende de que los servicios estén configurados.
                 </Aviso>
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <button

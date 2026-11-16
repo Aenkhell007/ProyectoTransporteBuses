@@ -1,6 +1,6 @@
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { enviarContacto } from "../../../features/compra/catalogoApi";
+import { enviarContacto, obtenerContactoPublico, type ContactoPublico } from "../../../features/compra/catalogoApi";
 import {
   CONTACTO_VACIO,
   LIMITES_CONTACTO,
@@ -25,7 +25,6 @@ const ASUNTOS = [
   "Sugerencias o reclamos",
   "Otro",
 ];
-const CORREO_SOPORTE = "soporte@example.com";
 
 type Envio =
   | { estado: "inactivo" }
@@ -34,6 +33,9 @@ type Envio =
   | { estado: "error"; mensaje: string };
 
 export function ContactoSeccion() {
+  const [contacto,setContacto]=useState<ContactoPublico|null>(null);
+  useEffect(()=>{let vivo=true;obtenerContactoPublico().then(r=>{if(vivo)setContacto(r.data);}).catch(()=>{});return()=>{vivo=false;};},[]);
+  const whatsapp=contacto?.whatsapp&&/^\+[1-9]\d{7,14}$/.test(contacto.whatsapp)?contacto.whatsapp.slice(1):null;
   return (
     <section
       id="contacto"
@@ -54,32 +56,20 @@ export function ContactoSeccion() {
             titulo="WhatsApp"
             texto="Escríbenos y recibe atención rápida."
             accion={
-              <span className="inline-flex min-h-11 items-center rounded-md bg-slate-100 px-4 text-sm text-slate-600">
-                Número por confirmar
-              </span>
+              whatsapp ? <a href={'https://wa.me/'+whatsapp} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-md bg-green-700 px-4 text-sm text-white">Escribir por WhatsApp</a> : <span className="inline-flex min-h-11 items-center rounded-md bg-slate-100 px-4 text-sm text-slate-600">Número por confirmar</span>
             }
           />
           <Canal
             icono="correo"
             color="bg-red-600"
             titulo="Correo electrónico"
-            texto={
-              <>
-                Envíanos tus consultas al correo:{" "}
-                <a
-                  href={`mailto:${CORREO_SOPORTE}`}
-                  className="font-semibold text-red-700 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-blue-600"
-                >
-                  {CORREO_SOPORTE}
-                </a>
-              </>
-            }
+            texto={contacto?.email ? <a href={'mailto:'+contacto.email} className="font-semibold text-red-700 underline">{contacto.email}</a> : 'Correo de atención por confirmar. Puedes usar el formulario de contacto.'}
           />
           <Canal
             icono="ubicacion"
             color="bg-red-600"
             titulo="Oficinas"
-            texto="Consulta los puntos de atención en nuestras principales ciudades. La lista se publicará cuando la cooperativa registre sus oficinas."
+            texto={<span>{contacto?.direccion || 'La dirección de atención se mostrará cuando la cooperativa la registre.'}{contacto?.telefono&&<span className="mt-1 block">Teléfono: {contacto.telefono}</span>}</span>}
           />
         </ul>
         <FormularioContactoTarjeta />
