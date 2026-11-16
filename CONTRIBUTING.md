@@ -10,7 +10,7 @@ El docente audita los cambios de cada mes. Por eso cada cambio tiene un issue, u
 |---|---|---|---|
 | Ángel Giovanni Galarza Moreta | `Aenkhell007` | Reservas, pagos, comprobantes, boleto y reembolso. Coordinador y dueño del repositorio | 6, 7, 7.1, 8, 9.2, 19.1, 19.1.1 |
 | Kevin David Balseca Tumbaco (KT) | `Balseca-Kevin` | Compra del cliente: inicio, búsqueda, pasajeros, resumen y Mis viajes | 1, 1.1, 2, 4, 5, 9, 9.1 |
-| Mikel Alejandro Guzmán Lescano | `Mikel032005AGL` | Flota, planos y mapa de asientos | 3.1, 3.2, 11.4, 16, 16.1, 19 |
+| Mikel Alejandro Guzmán Lescano | `Mikel032005AGL` | Flota, planos, mapa de asientos, configuración global e identidad de la cooperativa | 3.1, 3.2, 11.4, 16, 16.1, 17.1, 19 |
 | Matías Xavier Mena Romero | `matixavier1234-oss` | Identidad, registro, sesión, usuarios, roles y esquema de la base | 0.1, 0.2, 0.3, 10, 11.2, 20, 20.1, 20.2 |
 | Patricio Benjamín Basurto Villalba | `99benjaminb` | Frecuencias, rutas, paradas, tarifas, beneficios, hoja de ruta y reportes | 11.1, 15, 17, 18, 19.2 |
 | Pablo David Yupa Aguiar | `PABLOYUPA` | Oficina: venta presencial, revisión de comprobantes y reembolsos; panel de administración | 11, 12.x, 13, 14 |
@@ -19,40 +19,42 @@ Revisión cruzada: Benjamín revisa los PR de KT y KT revisa los de Benjamín. L
 
 ## Aportes por integrante
 
-Cifras al 10/11/2026, `develop` en `3c5121b` (último merge, PR #117). Los PR son los fusionados con base `develop` según GitHub (65 en total), agrupados por autor. Los commits no cuentan merges (`git shortlog -sn --no-merges origin/develop`, 300 en total).
+Cifras al 16/11/2026, `develop` en `2610ce4` (último merge, PR #146). Los PR son los fusionados con base `develop` según GitHub (`gh pr list --state merged --base develop`, 82 en total), agrupados por autor. Los commits no cuentan merges (`git shortlog -sn --no-merges origin/develop`, 341 en total) y suman los nombres de autor de cada integrante (por ejemplo, `Mikel Guzmán` y `Mikel032005AGL`). Los merges son los commits "Merge pull request" de `develop` (67), por autor.
 
 | Integrante | PR fusionados | Commits | Merges hechos con el botón de GitHub |
 |---|---|---|---|
-| Mikel | 18 | 86 | 11 |
-| Ángel | 15 | 37 | 32 |
-| Kevin | 11 | 60 | 9 |
-| Matías | 11 | 71 | 4 |
+| Mikel | 27 | 96 | 7 |
+| Ángel | 17 | 39 | 35 |
+| Kevin | 14 | 70 | 10 |
+| Matías | 12 | 75 | 5 |
 | Benjamín | 6 | 36 | 1 |
-| Pablo | 4 | 10 | 7 |
+| Pablo | 6 | 24 | 9 |
 
-Un merge más no tiene autor registrado en GitHub.
+Un commit más tiene como autor `Kevin-Balseca` <!-- PENDIENTE: Kevin confirma el origen de 8ce0327 antes de sumarlo -->. El PR #130 (`develop` a `main`, de Ángel) no cuenta porque su base es `main`.
 
 ### Ángel Galarza
 
-PR #12 contratos de reservas, pagos y boletos; #16 layout compartido y conexión a Supabase; #25 método de pago; #32 subida de comprobante; #56 integración de identidad con Brevo; #69 seguimiento del pago (vista 7.1); #70 confirmación de compra (vista 8); #71 solicitud de reembolso (vista 9.2); #84 compra, reserva y pagos con PostgreSQL; #85 edición de asientos sin perder pasajeros; #102 layout del panel de administración; #103 layout del panel del oficinista; #104 configuración de pagos en el panel de cooperativa (vistas 19.1 y 19.1.1); #107 cabecera fija y lateral del panel; #117 conexión de las vistas de administración y oficina a sus menús.
+PR #12 contratos de reservas, pagos y boletos; #16 layout compartido y conexión a Supabase; #25 método de pago; #32 subida de comprobante; #56 integración de identidad con Brevo; #69 seguimiento del pago (vista 7.1); #70 confirmación de compra (vista 8); #71 solicitud de reembolso (vista 9.2); #84 compra, reserva y pagos con PostgreSQL; #85 edición de asientos sin perder pasajeros; #102 layout del panel de administración; #103 layout del panel del oficinista; #104 configuración de pagos en el panel de cooperativa (vistas 19.1 y 19.1.1); #107 cabecera fija y lateral del panel; #117 conexión de las vistas de administración y oficina a sus menús; #130 integración de `develop` en `main` (10/11/2026); #144 retiro de código sin uso y guía de actualización del equipo (`docs/limpieza-local.md`, `docs/actualizar-equipo.md`); #145 configuración de pagos y cuentas bancarias con PostgreSQL (vistas 19.1 y 19.1.1).
 
 Documentación: `docs/angel/`, `docs/integracion-pagos-reales.md`, `docs/integracion-compra-real.md`, `docs/edicion-asientos-pasajeros.md`.
 
 ### Kevin Balseca (KT)
 
-PR #38 contrato de API de compra; #40 inicio y búsqueda; #42 resultados con filtros, orden y paginación; #51 datos de pasajeros por asiento; #53 resumen del viaje y descuentos; #55 Mis viajes e historial; #77 contrato de compra 0.3.0; #79 enlaces de Mis viajes a las vistas de pago; #81 reserva compartida entre la selección de asientos y los pasajeros; #83 fotos de buses; #112 ajustes de las vistas 1, 2, 4 y 5 (#88 a #93), imágenes del inicio en WebP, formato de Mis viajes y documentación raíz.
+PR #38 contrato de API de compra; #40 inicio y búsqueda; #42 resultados con filtros, orden y paginación; #51 datos de pasajeros por asiento; #53 resumen del viaje y descuentos; #55 Mis viajes e historial; #77 contrato de compra 0.3.0; #79 enlaces de Mis viajes a las vistas de pago; #81 reserva compartida entre la selección de asientos y los pasajeros; #83 fotos de buses; #112 ajustes de las vistas 1, 2, 4 y 5 (#88 a #93), imágenes del inicio en WebP, formato de Mis viajes y documentación raíz; #114 archivo de cita `CITATION.cff`; #128 importe esperado en Mis viajes (#94); #129 código corto en Mis viajes (#95).
 
 Documentación: `docs/kt/README.md`, `docs/api/compra-endpoints.md`.
 
 ### Mikel Guzmán
 
-PR #2 propuesta de modelo de flota y asientos; #6 y #18 mapa de asientos con datos simulados; #10 y #17 contrato de API de flota; #15 esquema Prisma de flota; #20 mapa de asientos en el frontend; #24 CRUD de buses; #31 editor de plano; #34 cliente HTTP y servicio del mapa; #45 servicios de buses, planos y disponibilidad; #47 selección de asientos (vistas 3.1 y 3.2); #50 alineación del contrato de flota; #58 versiones de plano; #62 README del módulo (EC-004); #64 edición de bus; #67 indisponibilidades; #78 estilo del módulo.
+PR #2 propuesta de modelo de flota y asientos; #6 y #18 mapa de asientos con datos simulados; #10 y #17 contrato de API de flota; #15 esquema Prisma de flota; #20 mapa de asientos en el frontend; #24 CRUD de buses; #31 editor de plano; #34 cliente HTTP y servicio del mapa; #45 servicios de buses, planos y disponibilidad; #47 selección de asientos (vistas 3.1 y 3.2); #50 alineación del contrato de flota; #58 versiones de plano; #62 README del módulo (EC-004); #64 edición de bus; #67 indisponibilidades; #78 estilo del módulo; #118 flota y configuración de la cooperativa con `docs/comite-cambios.md`; #135 configuración global (vista 11.4); #136 grupos habilitados (vista 17.1); #137 identidad y contacto (vista 19); #138 editor de bus ejecutivo (vista 16); #139 editor de bus normal (vista 16.1); #140 y #141 correcciones de las plantillas de las vistas 3.1 y 3.2; #142 vistas de flota con backend y PostgreSQL.
 
 Documentación: `docs/flota/`, `docs/api/flota-endpoints.md`, `docs/api/mapa-asientos.md`.
 
 ### Matías Mena
 
-PR #5 esquema Prisma y estructura inicial del backend; #13 vistas de autenticación; #21 base de datos y vistas 10 y 0.3; #22 vistas de administración de identidad; #29 autenticación con JWT en el backend; #35 administración de identidad en el backend; #48 vistas de identidad y perfil; #65 administración de usuarios y cooperativas; #68 validaciones de gestión de cooperativas; #72 conexión de gestión de buses con la API; #98 modal y matriz de permisos de usuarios. Responsable de EC-REQ-01 y EC-DB-01 en el inventario.
+PR #5 esquema Prisma y estructura inicial del backend; #13 vistas de autenticación; #21 base de datos y vistas 10 y 0.3; #22 vistas de administración de identidad; #29 autenticación con JWT en el backend; #35 administración de identidad en el backend; #48 vistas de identidad y perfil; #65 administración de usuarios y cooperativas; #68 validaciones de gestión de cooperativas; #72 conexión de gestión de buses con la API; #98 modal y matriz de permisos de usuarios; #146 perfil, invitaciones, usuarios, cooperativas y permisos con PostgreSQL, e iconos de Font Awesome Free. Responsable de EC-REQ-01 y EC-DB-01 en el inventario.
+
+Documentación: `docs/identidad-matias.md`, `docs/iconos-terceros.md`.
 
 ### Benjamín Basurto
 
@@ -62,7 +64,9 @@ Documentación: `docs/benjamin/planificacion-alcance.md`, `docs/benjamin/planifi
 
 ### Pablo Yupa
 
-PR #8 panel preliminar del oficinista; #60 tipos de la vista 11; #87 servicio de API de la vista 11; #106 resumen del panel de administración (vista 11). Archivos: `frontend/src/pages/oficina/BandejaComprobantes.tsx`, `frontend/src/pages/oficina/VentaPresencial.tsx`, `frontend/src/features/administracion/`.
+PR #8 panel preliminar del oficinista; #60 tipos de la vista 11; #87 servicio de API de la vista 11; #106 resumen del panel de administración (vista 11); #116 interfaz de la vista 12 con reservas y comprobantes; #143 vistas 11, 12, 12.1, 12.2, 12.3, 13 y 14 con servicios reales, con aprobación de comprobantes en `/oficina/comprobantes/:id`. Archivos: `frontend/src/features/oficina/`, `frontend/src/features/administracion/`, `backend/src/oficina/`.
+
+Documentación: `docs/oficina/integracion-pablo.md`.
 
 ## Modelo de ramas: Git Flow
 
@@ -101,7 +105,7 @@ gitGraph
 
 `release/1.0.0` y `v1.0.0` todavía no existen; el diagrama muestra cómo se publicará la primera versión.
 
-El número de la rama es el del issue en GitHub y la descripción va en minúsculas con guiones: `feature/46-seleccion-asientos`. Un número de issue por rama: el número 11 se usó en 8 ramas (`feature/11-metodo-pago`, `feature/11-edicion-asientos-pasajeros` y seis más) y desde ahora no se repite. Al 10/11/2026 (`develop` en `3c5121b`) hay 26 ramas `feature/` sin número de issue (por ejemplo `feature/admin-usuarios` y `feature/integracion-compra-real`); quedan como están y las nuevas llevan número.
+El número de la rama es el del issue en GitHub y la descripción va en minúsculas con guiones: `feature/46-seleccion-asientos`. Un número de issue por rama: el número 11 se usó en 8 ramas (`feature/11-metodo-pago`, `feature/11-edicion-asientos-pasajeros` y seis más) y desde ahora no se repite. Al 10/11/2026 (`develop` en `3c5121b`) había 26 ramas `feature/` sin número de issue (por ejemplo `feature/admin-usuarios` y `feature/integracion-compra-real`). Al 16/11/2026 hay 43 de 96 ramas remotas, entre ellas 8 `feature/mikel-*` (`feature/mikel-vista-3-1` y `feature/mikel-integracion-backend`, por ejemplo) y 7 `feature/pablo-vista-*-backend`. Fuera del prefijo `feature/` hay 4 ramas `codex/*` (#143 a #146), `feat/mikel-flota-configuracion` (#118) y `pr-132` y `pr-134`. Quedan como están y las nuevas llevan número.
 
 Las ramas no se borran, ni las locales ni las remotas, aunque ya estén integradas. Es una regla del docente: el historial completo de ramas es parte de la evaluación. `develop` y `main` además tienen bloqueado el borrado en GitHub.
 
@@ -167,7 +171,7 @@ Un commit no mezcla dos módulos. `package-lock.json` solo cambia cuando el PR a
 1. Base `develop`, salvo una rama que depende de otro PR abierto.
 2. Título con el formato de commit.
 3. Descripción con la plantilla `.github/pull_request_template.md`: cambio, issue (`Closes #90`), tipo de cambio, archivos, pruebas, pendientes y verificaciones del autor.
-4. Dos aprobaciones de integrantes distintos al autor. Quien encuentra un problema pide cambios citando la línea y el error.
+4. Dos aprobaciones de integrantes distintos al autor (GitHub exige una; ver "Protección de ramas"). Quien encuentra un problema pide cambios citando la línea y el error.
 5. Merge con el botón de GitHub (merge commit). No se usa squash ni rebase sobre `develop`.
 6. La rama se conserva después del merge.
 
@@ -224,9 +228,9 @@ Un hotfix sigue el mismo camino desde `main` con `hotfix/1.0.1`.
 
 ## Protección de ramas
 
-`develop` y `main` comparten el conjunto de reglas 25032201 de GitHub (`gh api repos/Aenkhell007/ProyectoTransporteBuses/rules/branches/develop`, consultado el 10/11/2026):
+`develop` y `main` comparten el conjunto de reglas 25032201 de GitHub (`gh api repos/Aenkhell007/ProyectoTransporteBuses/rules/branches/develop`, consultado el 16/11/2026; el 10/11/2026 pedía 2 aprobaciones):
 
-- Pull request obligatorio con 2 aprobaciones.
+- Pull request obligatorio con 1 aprobación.
 - Las aprobaciones se descartan cuando llega un commit nuevo, y el último push necesita una aprobación de otra persona.
 - Las conversaciones del PR tienen que estar resueltas.
 - No se permite borrar la rama ni hacer force push.
