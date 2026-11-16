@@ -1,3 +1,4 @@
+import {IconoBiblioteca} from '../ui/IconoBiblioteca';
 import { useState } from "react";
 import type { EstadoCelda, MapaViaje } from "../../types/mapaViaje";
 
@@ -29,7 +30,7 @@ export default function SelectorAsientos({ mapa, cantidad, seleccion, onChange }
           <div className="relative overflow-hidden rounded-t-[48px] rounded-b-[38px] border-[7px] border-slate-300 bg-[linear-gradient(105deg,#141719,#414648_48%,#1b1e20)] p-3 shadow-[inset_0_0_0_3px_#16191a,0_8px_12px_#0003] before:absolute before:inset-y-8 before:left-0 before:w-1 before:bg-[linear-gradient(#008b46_0_30%,#fff_30%_43%,#ef1424_43%_65%,#fff_65%_75%,#008b46_75%)] after:absolute after:inset-y-8 after:right-0 after:w-1 after:bg-[linear-gradient(#008b46_0_30%,#fff_30%_43%,#ef1424_43%_65%,#fff_65%_75%,#008b46_75%)]">
             <div className="mb-5 mt-2 flex h-10 items-center justify-between gap-3 border-b border-white/20 px-2 pb-3 text-xs font-semibold text-white">
               <span className="rounded bg-black/50 px-3 py-2">PUERTA</span>
-              <svg aria-hidden="true" viewBox="0 0 32 32" className="size-8 fill-none stroke-slate-200 stroke-2"><circle cx="16" cy="16" r="12"/><circle cx="16" cy="16" r="3"/><path d="M4 13h24M14 18l-4 9M18 18l4 9"/></svg>
+              <IconoBiblioteca nombre="bus" className="size-8 text-slate-200"/>
             </div>
             <div className="grid gap-2" style={{gridTemplateColumns:`repeat(${columnas},minmax(0,1fr))`}}>
               {celdas.map(c=>{

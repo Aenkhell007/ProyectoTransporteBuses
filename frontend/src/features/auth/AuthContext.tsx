@@ -8,8 +8,9 @@ interface AuthState {
   usuario: UsuarioSesion | null;
   cargando: boolean;
   errorSesion: string;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, recordar?: boolean) => Promise<void>;
   logout: () => Promise<void>;
+  refrescar: () => Promise<void>;
 }
 const Contexto = createContext<AuthState | null>(null);
 
@@ -25,10 +26,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => { if (activo) setCargando(false); });
     return () => { activo = false; };
   }, []);
-  async function login(email: string, password: string) {
-    const datos = await authApi.login(email, password);
+  async function login(email: string, password: string, recordar = false) {
+    const datos = await authApi.login(email, password, recordar);
     setUsuario(datos.usuario); setErrorSesion("");
   }
+  async function refrescar() { const datos = await authApi.me(); setUsuario(datos.usuario); }
   async function logout() {
     await authApi.logout();
     startTransition(() => {
@@ -36,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUsuario(null);
     });
   }
-  return <Contexto.Provider value={{ usuario, cargando, errorSesion, login, logout }}>{children}</Contexto.Provider>;
+  return <Contexto.Provider value={{ usuario, cargando, errorSesion, login, logout, refrescar }}>{children}</Contexto.Provider>;
 }
 export function useAuth() {
   const contexto = useContext(Contexto);

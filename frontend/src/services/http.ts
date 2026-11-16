@@ -36,7 +36,7 @@ export async function http<T>(ruta: string, opciones: RequestInit = {}): Promise
   });
 
   if (!respuesta.ok) {
-    const detalle = ['/mikel/','/oficina/','/admin/','/configuracion/pagos'].some(prefijo=>ruta.startsWith(prefijo)) && [403, 409, 413, 422, 503].includes(respuesta.status)
+    const detalle = ['/mikel/','/oficina/','/admin/','/configuracion/pagos','/identidad/'].some(prefijo=>ruta.startsWith(prefijo)) && [403, 409, 413, 422, 503].includes(respuesta.status)
       ? await respuesta.json().catch(() => null) as { error?: unknown } | null : null;
     throw new ApiError(
       respuesta.status,

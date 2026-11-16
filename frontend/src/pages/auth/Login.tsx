@@ -14,13 +14,14 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [visible, setVisible] = useState(false);
+  const [recordar, setRecordar] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
   if (!cargando && usuario) return <Navigate to={destino} state={destino.state} replace />;
   async function enviar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (enviando) return;
     setEnviando(true); setError("");
-    try { await login(email, password); setPassword("");  }
+    try { await login(email, password, recordar); setPassword("");  }
     catch (error) { setError(error instanceof Error ? error.message : "No se pudo iniciar sesión."); }
     finally { setEnviando(false); }
   }
@@ -44,7 +45,7 @@ export default function Login() {
             <button type="button" aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"} aria-pressed={visible} onClick={() => setVisible(!visible)} className="absolute right-1 top-1 flex h-12 w-12 items-center justify-center rounded-md text-indigo-500 hover:bg-indigo-50 focus-visible:outline-2 focus-visible:outline-blue-700"><IconoClave ojo visible={visible} /></button>
           </div>
         </div>
-        <div className="text-right"><Link to="/recuperar-contrasena" className="text-blue-700 underline-offset-4 hover:underline">¿Olvidaste tu contraseña?</Link></div>
+        <div className="flex flex-wrap items-center justify-between gap-3"><label className="flex items-center gap-2"><input type="checkbox" checked={recordar} onChange={e=>setRecordar(e.target.checked)} className="size-5 accent-red-600"/>Recordarme</label><Link to="/recuperar-contrasena" className="text-blue-700 underline-offset-4 hover:underline">¿Olvidaste tu contraseña?</Link></div>
         {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
         <button type="submit" disabled={enviando || cargando} className={botonAuth}><Icono nombre="persona" className="h-6 w-6" />{enviando ? "Iniciando sesión…" : "Iniciar sesión"}</button>
       </form>

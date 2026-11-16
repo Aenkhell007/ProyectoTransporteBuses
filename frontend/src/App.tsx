@@ -1,3 +1,6 @@
+import UsuariosPage from './features/identidad/UsuariosPage';
+import AltasPage from './features/identidad/AltasPage';
+import AccesosPage from './features/identidad/AccesosPage';
 import { RevisionComprobanteEjemplo } from "./features/oficina/RevisionComprobanteEjemplo";
 import {VentaOficinaReal} from './features/oficina/VentaOficinaReal';
 import { ReembolsosReal } from './features/oficina/ReembolsosReal';
@@ -91,6 +94,10 @@ export function App() {
       <Route path="/panel" element={<AdminLayout panelFijo />}>
         <Route index element={<AdminResumenPage />} />
         <Route path="cooperativas" element={<GestionCooperativasPage />} />
+        <Route path="cooperativas/nueva" element={<AltasPage cooperativa />} />
+        <Route path="usuarios" element={<UsuariosPage />} />
+        <Route path="usuarios/nuevo" element={<AltasPage />} />
+        <Route path="accesos" element={<AccesosPage />} />
         <Route path="configuracion" element={<><nav className="px-4 pt-4"><Link className="inline-flex rounded-md border border-blue-200 px-4 py-2 text-blue-900" to="/panel/configuracion/pagos">Pagos y cuentas bancarias →</Link></nav><GlobalConectada /></>} />
         <Route path="configuracion/global" element={<GlobalConectada />} />
         <Route path="configuracion/pagos" element={<ConfiguracionPagosPage />} />
@@ -145,7 +152,7 @@ export function App() {
           />
           <Route
             path="usuarios"
-            element={<SeccionAdminPendiente titulo="Usuarios y roles" />}
+            element={<UsuariosPage />}
           />
           <Route
             path="reportes"
@@ -185,6 +192,7 @@ export function App() {
     >
       <Routes>
         <Route path="/activar-cuenta" element={<ActivarCuenta />} />
+        <Route path="/aceptar-invitacion" element={<RestablecerContrasena invitacion />} />
         <Route path="/reenviar-activacion" element={<ReenviarActivacion />} />
         <Route path="/" element={<InicioPage />} />
         <Route path="/iniciar-sesion" element={<Login />} />

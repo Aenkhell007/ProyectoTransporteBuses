@@ -33,7 +33,7 @@ export const authApi = {
   forgot: (email: string) => peticion<{mensaje:string}>("/password/forgot", {email}),
   reset: (token: string, password: string) => peticion<{mensaje:string}>("/password/reset", {token,password}),
   me: () => peticion<{ usuario: UsuarioSesion }>("/me"),
-  login: (email: string, password: string) => peticion<{ usuario: UsuarioSesion }>("/login", { email, password }),
+  login: (email: string, password: string, recordar = false) => peticion<{ usuario: UsuarioSesion }>("/login", { email, password, recordar }),
   logout: () => peticion<void>("/logout", {}),
   register: (datos: { nombres: string; apellidos: string; email: string; password: string; tipoDocumento: string; documento: string; telefono?: string; aceptaTerminos: boolean }) => peticion<{ id: string; mensaje: string }>("/register", datos),
 };

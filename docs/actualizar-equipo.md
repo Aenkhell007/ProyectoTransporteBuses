@@ -16,7 +16,7 @@ Si Windows informa archivos bloqueados, detén únicamente los servidores de est
 
 ## Base de datos
 
-El esquema vigente está en `backend/conexion-bd/prisma/schema.prisma`; su historial reproducible está en `backend/conexion-bd/prisma/migrations/`. Hay ocho migraciones, incluidas `20261112_venta_oficina_idempotente` y `20261114_configuracion_pagos`. Esta última conecta las vistas 19.1 y 19.1.1 y añade la persistencia de QR y cuenta predeterminada. Consulta [configuración de pagos real](configuracion-pagos-real.md).
+El esquema vigente está en `backend/conexion-bd/prisma/schema.prisma`; su historial reproducible está en `backend/conexion-bd/prisma/migrations/`. Hay nueve migraciones, incluidas `20261112_venta_oficina_idempotente` y `20261114_configuracion_pagos` y `20261116_identidad_administracion`. La migración de pagos conecta las vistas 19.1 y 19.1.1 y añade la persistencia de QR y cuenta predeterminada. Consulta [configuración de pagos real](configuracion-pagos-real.md).
 
 Git distribuye el código SQL y el esquema. Los datos compartidos permanecen en PostgreSQL/Supabase. Cada compañero debe recibir por el canal privado del equipo su configuración de conexión y CA. No se necesitan Supabase Auth ni Storage.
 
@@ -27,6 +27,8 @@ Git distribuye el código SQL y el esquema. Los datos compartidos permanecen en 
 5. El responsable puede ejecutar `npm --prefix backend/conexion-bd run db:estado` para verificar nombres, estados y checksums de las migraciones. Solo lee metadatos, también acepta diferencias de finales de línea entre Windows y Linux.
 
 En la base compartida no repitas el instalador, el baseline ni migraciones SQL ya aplicadas. No ejecutes `prisma db push` para sincronizarla. Si el comprobador informa pendientes o diferencias, el responsable revisa el resultado antes de aplicar `db:deploy` con sus permisos. Una base nueva necesita además la configuración de roles, usuarios y credenciales descrita en `backend/conexion-bd/GUIA_COMPLETA.md` y `docs/baseline-prisma.md`.
+
+La integración de las ocho vistas de Matías y su prueba transaccional están en [Identidad y administración](identidad-matias.md).
 
 ## Datos de demostración
 
