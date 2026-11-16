@@ -1,5 +1,6 @@
+import {IconoBiblioteca, type NombreIconoBiblioteca} from '../../components/ui/IconoBiblioteca';
 import { useRef, useState } from "react";
-import type { ChangeEvent, FormEvent, ReactNode } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import { Link } from "react-router";
 import { authApi } from "../../services/authApi";
 import "./registro.css";
@@ -11,16 +12,7 @@ const estadoInicial = {
 };
 
 function Icono({ nombre }: { nombre: string }) {
-  const trazos: Record<string, ReactNode> = {
-    usuario: <><circle cx="12" cy="7" r="4"/><path d="M5 21v-3a7 7 0 0 1 14 0v3Z"/></>,
-    correo: <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 6 9 7 9-7"/></>,
-    clave: <><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></>,
-    cedula: <><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="10" r="2"/><path d="M5 16v-1a3 3 0 0 1 6 0v1m3-6h5m-5 4h5"/></>,
-    telefono: <path d="m6 3 4 4-3 3a14 14 0 0 0 7 7l3-3 4 4-2 3C10 23 1 14 3 5Z"/>,
-    ojo: <><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></>,
-    oculto: <><path d="m3 3 18 18M10 5a12 12 0 0 1 12 7l-3 4M6 6a20 20 0 0 0-4 6s4 7 10 7a14 14 0 0 0 5-1"/></>,
-  };
-  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">{trazos[nombre]}</svg>;
+  return <IconoBiblioteca nombre={nombre as NombreIconoBiblioteca} className="h-6 w-6"/>;
 }
 
 interface CampoProps {

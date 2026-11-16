@@ -1,3 +1,4 @@
+import {IconoBiblioteca} from '../ui/IconoBiblioteca';
 import { useEffect, useId, useRef, useState } from "react";
 import type { DragEvent } from "react";
 import { ACCEPT_COMPROBANTE, validarComprobante } from "../../features/pagos/validarComprobante";
@@ -69,9 +70,7 @@ export default function ProofUploader({ value, onChange, onValidando, politica }
       aria-busy={validando}
       className={`flex flex-col items-center gap-3 rounded-lg border-2 border-dashed p-5 text-center sm:p-6 ${arrastrando ? "border-blue-600 bg-blue-100" : "border-blue-200 bg-blue-50/50"}`}
     >
-      <svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-blue-700">
-        <path d="M12 16V3m-5 5 5-5 5 5M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5" />
-      </svg>
+      <IconoBiblioteca nombre="subir" className="h-10 w-10 text-blue-700"/>
       <p className="font-semibold text-blue-950">Arrastra aquí tu comprobante</p>
       <p id={`${id}-ayuda`} className="text-sm text-slate-600">Un archivo {politica?.mimes.map(m => m === "image/jpeg" ? "JPG" : m === "image/png" ? "PNG" : "PDF").join(", ") ?? "JPG, PNG o PDF"} · máximo {((politica?.maxBytes ?? 5242880) / 1048576).toLocaleString("es-EC")} MB</p>
       <input ref={input} id={id} type="file" accept={ACCEPT_COMPROBANTE}

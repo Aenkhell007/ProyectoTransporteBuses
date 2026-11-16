@@ -1,3 +1,4 @@
+import {IconoBiblioteca} from '../../components/ui/IconoBiblioteca';
 import { Link } from "react-router";
 import { useFlujoPago } from "../../features/pagos/useFlujoPago";
 import EstadoConsultaPago from "../../components/pagos/EstadoConsultaPago";
@@ -294,18 +295,7 @@ export default function SeguimientoPago() {
 }
 
 function BancoIcono() {
-  return (
-    <svg
-      className="size-[26px] shrink-0 max-[761px]:size-[21px]"
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-    >
-      <path d="m3 7 9-5 9 5H3Zm0 14h18M5 18h14M6 10v6m6-6v6m6-6v6" />
-    </svg>
-  );
+  return <IconoBiblioteca nombre="banco" className="size-[26px] max-[761px]:size-[21px]"/>;
 }
 
 function ComprobanteRecibido({ estado }: { estado: EscenarioPago }) {
@@ -369,32 +359,7 @@ function ComprobanteRecibido({ estado }: { estado: EscenarioPago }) {
 }
 
 function MiniComprobante() {
-  return (
-    <svg
-      className="h-[46px] w-[30px] shrink-0 max-[761px]:h-[42px] max-[761px]:w-[28px]"
-      aria-hidden="true"
-      viewBox="0 0 34 48"
-    >
-      <rect
-        x="1"
-        y="1"
-        width="32"
-        height="46"
-        rx="2"
-        fill="#e0e3e7"
-        stroke="#c4cad2"
-      />
-      <path
-        d="m4 5 4 2 4-2 4 2 4-2 4 2 6-2v38l-5-2-5 2-4-2-4 2-4-2-4 2Z"
-        fill="#f3f4f5"
-      />
-      <path
-        d="M9 12h16M7 18h20M7 22h13M7 27h19M7 31h17M9 38h15"
-        stroke="#abb1ba"
-        strokeWidth="1.3"
-      />
-    </svg>
-  );
+  return <IconoBiblioteca nombre="recibo" className="h-[46px] w-[30px] text-slate-400 max-[761px]:h-[42px] max-[761px]:w-[28px]"/>;
 }
 
 function RevisionIlustracion() {

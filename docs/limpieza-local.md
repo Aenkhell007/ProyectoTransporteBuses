@@ -30,3 +30,12 @@ npm --prefix backend/conexion-bd run check
 - Frontend local activo en http://127.0.0.1:5173; el servidor anterior de 4192 se conserva. Backend en http://127.0.0.1:3000.
 
 Estos chequeos no sustituyen una nueva prueba manual de cada flujo con las cuentas correspondientes. La limpieza se entrega mediante una rama y pull request; consulta el historial Git para recuperar versiones anteriores.
+
+
+## Revisión del 16/11/2026
+
+- Se centralizaron los pictogramas en `frontend/src/components/ui/IconoBiblioteca.tsx`, con importaciones individuales de Font Awesome Free. Se retiraron los trazos duplicados de los componentes anteriores conservando sus interfaces, títulos accesibles y clases de tamaño y color. Véase `iconos-terceros.md`.
+- Se eliminó `frontend/src/components/flota/seat-map.css`: no tenía importaciones ni referencias a sus clases en la aplicación, pruebas o documentación activa.
+- Se retiraron `bcrypt`, `jsonwebtoken` y sus paquetes de tipos del backend: no tenían consumidores en el código ni en los scripts. La autenticación vigente utiliza las funciones criptográficas de Node y las sesiones de PostgreSQL.
+- El análisis de importaciones desde la entrada del frontend y sus pruebas no encontró pantallas TypeScript desconectadas. Se conservaron las rutas de vista previa utilizadas y las herramientas de base de datos.
+- Los archivos personales sin versionar y los datos privados permanecen fuera del commit. No se modifica el esquema ni los datos de PostgreSQL en esta limpieza.

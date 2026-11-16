@@ -1,3 +1,4 @@
+import {IconoBiblioteca} from '../ui/IconoBiblioteca';
 import { useId } from "react";
 
 export interface PaymentMethodOption {
@@ -14,70 +15,8 @@ interface PaymentMethodSelectorProps {
 }
 
 function PaymentMethodIcon({ metodo }: { metodo: string }) {
-  const svgProps = {
-    width: 28,
-    height: 28,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.8,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-    "aria-hidden": true as const,
-    className: "shrink-0",
-  };
-
-  switch (metodo) {
-    case "BANCO":
-    case "transferencia":
-      return (
-        <svg {...svgProps}>
-          <path d="m3 8 9-5 9 5H3Z" />
-          <path d="M5 10v7M10 10v7M14 10v7M19 10v7" />
-          <path d="M3 20h18M4 17h16" />
-        </svg>
-      );
-
-    case "OFICINA":
-    case "oficina":
-      return (
-        <svg {...svgProps}>
-          <rect x="5" y="3" width="14" height="16" rx="3" />
-          <path d="M5 8h14M5 13h14M9 3v5M15 3v5" />
-          <path d="M7 19v2M17 19v2" />
-          <circle cx="8.5" cy="16" r=".7" />
-          <circle cx="15.5" cy="16" r=".7" />
-        </svg>
-      );
-
-    case "PAYPHONE":
-    case "payphone":
-      return (
-        <svg {...svgProps}>
-          <rect x="6" y="2" width="12" height="20" rx="2" />
-          <path d="M10 5h4M10 19h4" />
-        </svg>
-      );
-
-    case "PAYPAL":
-    case "paypal":
-      return (
-        <span
-          aria-hidden="true"
-          className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-3xl font-black italic"
-        >
-          P
-        </span>
-      );
-
-    default:
-      return (
-        <svg {...svgProps}>
-          <rect x="2" y="5" width="20" height="14" rx="2" />
-          <path d="M2 9h20M6 14h3M6 16h5" />
-        </svg>
-      );
-  }
+  const valor=metodo.toLowerCase();
+  return <IconoBiblioteca nombre={valor==='banco'||valor==='transferencia'?'banco':valor==='oficina'?'oficina':valor==='payphone'?'movil':valor==='paypal'?'paypal':'tarjeta'} className="h-7 w-7"/>;
 }
 
 export default function PaymentMethodSelector({
