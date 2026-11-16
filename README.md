@@ -6,7 +6,9 @@ Proyecto grupal de la asignatura Manejo y Configuración del Software, cuarto se
 
 Los requisitos y las vistas numeradas salen del Documento Maestro V3 del 16/10/2026, de 355 páginas; las 163 primeras son la versión vigente. <!-- PENDIENTE: dónde lo puede consultar el docente (enlace o carpeta compartida). -->
 
-## Estado al 14/11/2026
+## Estado al 16/11/2026
+
+`develop` en `2610ce4` (merge del PR #146 del 16/11/2026). #146 conecta perfil, invitaciones, usuarios, cooperativas y permisos con PostgreSQL ([identidad](docs/identidad-matias.md)) y reemplaza los iconos propios por Font Awesome Free ([iconos](docs/iconos-terceros.md)). #142 conecta las vistas de flota y la identidad de la cooperativa, y #145 la configuración de pagos.
 
 `develop` incorpora la integración de Pablo del PR #143. Los paneles de administración y oficina usan servicios reales para resumen, reservas, comprobantes, revisión, reembolsos y venta presencial. Ver [integración de Pablo](docs/oficina/integracion-pablo.md).
 
@@ -17,10 +19,10 @@ La limpieza local retiró implementaciones reemplazadas y archivos sin uso. Ver 
 | Módulo | Vistas del documento maestro | Rutas en `App.tsx` | Responsable |
 |---|---|---|---|
 | Compra del cliente | 1, 1.1, 2, 4, 5, 9, 9.1 | `/`, `/viajes`, `/pasajeros`, `/resumen`, `/mis-viajes` | Kevin Balseca (KT) |
-| Flota y asientos | 3.1, 3.2, 11.4, 16, 16.1, 19 | `/asientos` | Mikel Guzmán |
-| Reservas, pagos y boletos | 6, 7, 7.1, 8, 9.2, 19.1, 19.1.1 | `/pago`, `/pago/comprobante`, `/pago/seguimiento`, `/pago/confirmacion`, `/mis-viajes/reembolso`; `/vista-previa/panel/configuracion` (solo desarrollo, vistas 19.1 y 19.1.1 desde #104; `/vista-previa/configuracion/pagos` redirige ahí) | Ángel Galarza |
-| Identidad y administración | 0.1, 0.2, 0.3, 10, 11.2, 20, 20.1, 20.2 | `/registrarse`, `/iniciar-sesion`, `/activar-cuenta`, `/reenviar-activacion`, `/recuperar-contrasena`, `/restablecer-contrasena`, `/mi-cuenta` | Matías Mena |
-| Operación | 11.1, 15, 17, 18, 19.2, frecuencias (PR #26 y #99 la llaman V16), paradas y tarifas (ADM06) | `/vista-previa/frecuencias`, `/vista-previa/hoja-ruta`, `/vista-previa/paradas-tarifas` (solo desarrollo) | Benjamín Basurto |
+| Flota y asientos | 3.1, 3.2, 11.4, 16, 16.1, 17.1, 19 | `/asientos`, `/cooperativa/buses`, `/cooperativa/buses/:id`, `/cooperativa/configuracion`, `/cooperativa/frecuencias`, `/cooperativa/frecuencias/grupos`, `/panel/configuracion/global` | Mikel Guzmán |
+| Reservas, pagos y boletos | 6, 7, 7.1, 8, 9.2, 19.1, 19.1.1 | `/pago`, `/pago/comprobante`, `/pago/seguimiento`, `/pago/confirmacion`, `/mis-viajes/reembolso`, `/cooperativa/configuracion/pagos`, `/panel/configuracion/pagos` | Ángel Galarza |
+| Identidad y administración | 0.1, 0.2, 0.3, 10, 11.2, 20, 20.1, 20.2 | `/registrarse`, `/iniciar-sesion`, `/activar-cuenta`, `/reenviar-activacion`, `/aceptar-invitacion`, `/recuperar-contrasena`, `/restablecer-contrasena`, `/mi-cuenta`, `/panel/usuarios`, `/panel/usuarios/nuevo`, `/panel/accesos`, `/panel/cooperativas`, `/panel/cooperativas/nueva` | Matías Mena |
+| Operación | 11.1, 15, 17, 18, 19.2, frecuencias (PR #26 y #99 la llaman V16), paradas y tarifas (ADM06) | `/vista-previa/frecuencias`, `/vista-previa/cooperativa/hoja-ruta`, `/vista-previa/paradas-tarifas` (solo desarrollo) | Benjamín Basurto |
 | Oficina y panel de administración | 11, 12.x, 13, 14 | `/panel`, `/oficina`, `/oficina/ventas`, `/oficina/reservas`, `/oficina/comprobantes`, `/oficina/comprobantes/:id`, `/oficina/reembolsos` | Pablo Yupa |
 
 Las rutas `/vista-previa/*` se conservan solo en desarrollo para los ejemplos utilizados. Los paneles reales están en `/panel`, `/oficina` y `/cooperativa`. Las pantallas antiguas que no tenían ruta ni consumidores se retiraron en la limpieza del 14/11/2026.
@@ -120,15 +122,15 @@ Se usa `127.0.0.1` en lugar de `localhost` y el mismo puerto que dice `FRONTEND_
 
 ## Pruebas
 
-Comprobaciones locales del 14/11/2026:
+Comprobaciones locales del 16/11/2026 sobre `develop` en `2610ce4`:
 
 | Comando | Resultado |
 |---|---|
 | `npm --prefix frontend run build` | Compila con comprobación de variables y parámetros sin uso |
 | `npm --prefix backend run check:api` | Tipos correctos |
 | `npm --prefix backend/conexion-bd run check` | Tipos correctos |
-| `node backend/node_modules/tsx/dist/cli.mjs --tsconfig frontend/tsconfig.json --test frontend/tests/*.test.*` | 56 pruebas aprobadas |
-| `npm --prefix backend test` | 28 pruebas aprobadas |
+| `node backend/node_modules/tsx/dist/cli.mjs --tsconfig frontend/tsconfig.json --test frontend/tests/*.test.*` | 56 de 56 |
+| `npm --prefix backend test` | 33 de 33 con `backend/conexion-bd/.env`; 30 de 31 en un clon sin `.env`, porque `compra.test.ts` no carga sin `DATABASE_URL` (#147, PR #149) |
 
 Las pruebas contra PostgreSQL mantienen sus comandos separados (`test:pagos:db`, `test:activacion:db`, `test:editores:db`) y requieren configuración privada. La limpieza no ejecuta migraciones ni modifica los datos compartidos.
 
@@ -159,7 +161,7 @@ Las pruebas contra PostgreSQL mantienen sus comandos separados (`test:pagos:db`,
 
 ## Cómo citar
 
-[CITATION.cff](CITATION.cff) tiene el título, el resumen, los 6 integrantes, el repositorio y la licencia en formato Citation File Format 1.2.0. GitHub muestra el botón "Cite this repository", con la cita en APA y BibTeX, cuando el archivo está en la rama por defecto (`main`); hasta `release/1.0.0` el archivo solo está en `develop`. La versión y la fecha de publicación se agregan con la etiqueta `v1.0.0`.
+[CITATION.cff](CITATION.cff) tiene el título, el resumen, los 6 integrantes, el repositorio y la licencia en formato Citation File Format 1.2.0. GitHub muestra el botón "Cite this repository", con la cita en APA y BibTeX, cuando el archivo está en la rama por defecto (`main`). El archivo está en `main` desde el PR #130 (`fc928fa`, 10/11/2026). La versión y la fecha de publicación se agregan con la etiqueta `v1.0.0`, que todavía no existe.
 
 Cita en APA armada con los datos de `CITATION.cff`:
 
