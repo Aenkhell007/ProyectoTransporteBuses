@@ -71,7 +71,11 @@ async function perfil(cliente: PoolClient) {
     SELECT r.codigo FROM transporte.usuario_roles_globales ur JOIN transporte.roles r ON r.id=ur.rol_id WHERE ur.usuario_id=transporte.actor()
     UNION SELECT r.codigo FROM transporte.membresias m JOIN transporte.roles r ON r.id=m.rol_id WHERE m.usuario_id=transporte.actor() AND m.activa
   `);
-  return { ...usuario.rows[0], roles: roles.rows.length ? roles.rows.map((r) => r.codigo as string) : ["CLIENTE"] };
+  const permisos = await cliente.query(`SELECT p.codigo FROM transporte.permisos p
+    WHERE transporte.puede(p.codigo) OR EXISTS (
+      SELECT 1 FROM transporte.cooperativas c WHERE c.activa AND transporte.puede(p.codigo,c.id)
+    ) ORDER BY p.codigo`);
+  return { ...usuario.rows[0], roles: roles.rows.length ? roles.rows.map((r) => r.codigo as string) : ["CLIENTE"], permisos: permisos.rows.map(r=>r.codigo as string) };
 }
 
 authRouter.post("/register", async (req, res) => {
@@ -219,3 +223,6 @@ authRouter.post("/password/reset", async (req, res) => {
     res.json({mensaje:"Contraseña actualizada. Inicia sesión con tu nueva contraseña."});
   } catch (error) {errorRespuesta(res,error);}
 });
+
+// Consulta compartida por login/me y por las pruebas de ámbito de la sesión.
+export { perfil as perfilSesion };

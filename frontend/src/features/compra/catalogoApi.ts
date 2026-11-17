@@ -16,3 +16,6 @@ export const enviarContacto = (solicitud: SolicitudContacto) =>
     method: "POST",
     body: JSON.stringify(solicitud),
   });
+
+export interface ContactoPublico {nombre:string;email:string|null;telefono:string|null;whatsapp:string|null;direccion:string|null}
+export const obtenerContactoPublico=()=>apiCompra<{data:ContactoPublico|null}>('/catalogos/contacto');

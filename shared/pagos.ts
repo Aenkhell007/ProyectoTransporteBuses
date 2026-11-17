@@ -36,6 +36,7 @@ export interface ViajePago {
   pisos: number;
 }
 export interface DatosPago {
+  reembolsos?: {cancelados:string[];enTramiteCentavos:number;ejecutadoCentavos:number};
   reserva: {
     id: string;
     estado: "PENDIENTE" | "CONFIRMADA" | "VENCIDA" | "CANCELADA";

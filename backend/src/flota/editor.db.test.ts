@@ -23,6 +23,8 @@ test('editores HTTP y PostgreSQL: permisos, versiones, fotos, identidad, planos 
     await db.query('BEGIN');
     if(!(await db.query("SELECT 1 FROM information_schema.columns WHERE table_schema='transporte' AND table_name='buses' AND column_name='version'")).rowCount)
       await db.query(readFileSync(resolve(__dirname,'../../conexion-bd/prisma/migrations/20261112_editores_mikel/migration.sql'),'utf8').replace(/^BEGIN;\s*/, '').replace(/COMMIT;\s*$/, ''));
+    if(!(await db.query("SELECT to_regprocedure('transporte.actualizar_identidad_cooperativa(uuid,integer,text,text,text)') AS f")).rows[0].f)
+      await db.query(readFileSync(resolve(__dirname,'../../conexion-bd/prisma/migrations/20261116_guardar_identidad_cooperativa/migration.sql'),'utf8').replace(/^BEGIN;\s*/, '').replace(/COMMIT;\s*$/, ''));
     await db.query('GRANT transporte_runtime TO CURRENT_USER');
     const insertar=async(tabla:string,columnas:string,valores:unknown[])=>(await db.query(`INSERT INTO transporte.${tabla}(${columnas}) VALUES(${valores.map((_,i)=>'$'+(i+1))}) RETURNING id`,valores)).rows[0].id as string;
     async function persona(){const id=await insertar('usuarios','nombres,apellidos,tipo_documento,documento,email,email_verificado_at',['Test','Mikel','OTRO',randomUUID().slice(0,30),randomUUID()+'@example.com',new Date()]);const token=randomBytes(32).toString('base64url'),hash=createHash('sha256').update(token).digest('hex');await insertar('sesiones','usuario_id,token_hash,expires_at',[id,hash,new Date(Date.now()+3600000)]);return{id,token,hash};}
@@ -54,6 +56,10 @@ test('editores HTTP y PostgreSQL: permisos, versiones, fotos, identidad, planos 
     assert.equal((await api('buses','')).status,401);
     assert.equal((await api('buses',cliente.token)).status,403);
     assert.equal((await api('global',coopUser.token)).status,403);
+    assert.equal((await api('ambitos/flota.admin',admin.token)).status,200);
+    assert.equal((await api('ambitos/flota.admin',cliente.token)).status,403);
+    assert.equal((await api('buses?cooperativaId='+c,admin.token)).status,200);
+    assert.equal((await api('buses?cooperativaId='+c,ajeno.token)).status,403);
     const global=await api('global',admin.token);assert.equal(global.status,200);assert.equal((await api('global',admin.token,{...global.datos.datos,sesionHoras:4})).status,200);assert.equal((await api('global',admin.token,global.datos.datos)).status,409);
     const b={version:1,unidad:randomUUID().slice(0,15),placa:'TST-'+String(Math.floor(Math.random()*9000)+1000),chasis:'Prueba',carroceria:'Prueba',correo:'test@example.com',grupoId:grupo,propietario:'',activo:true,pisos:1,filas:1,celdas:[{piso:1,fila:1,columna:1,tipo:'ASIENTO',codigo:'1A',clase_id:clase}],servicios:[],fotos:[],planoEnUso:false};
     const foto={base64:(await sharp({create:{width:20,height:20,channels:3,background:'#ff0000'}}).png().toBuffer()).toString('base64')};
@@ -80,8 +86,17 @@ test('editores HTTP y PostgreSQL: permisos, versiones, fotos, identidad, planos 
     assert.equal((await api('identidad?cooperativaId='+c,ajeno.token)).status,403);
     assert.equal((await api('identidad?cooperativaId='+c,cliente.token)).status,403);
     const identidad=await api('identidad');assert.equal(identidad.status,200);
-    const idDatos={...identidad.datos,ruc:'1234567890001',email:'test@example.com',telefono:'',whatsapp:''};
+    const idDatos={...identidad.datos,nombre:'Nombre persistido por cooperativa',razonSocial:'Razón social persistida',ruc:'1234567890001',email:'test@example.com',telefono:'',whatsapp:''};
     assert.equal((await api('identidad',coopUser.token,{datos:idDatos,logo:foto})).status,200);
+    if(!(await db.query("SELECT to_regprocedure('transporte.contacto_publico()') f")).rows[0].f)
+      await db.query(readFileSync(resolve(__dirname,'../../conexion-bd/prisma/migrations/20261116_contacto_publico/migration.sql'),'utf8').replace(/^BEGIN;\s*/, '').replace(/COMMIT;\s*$/, ''));
+    await db.query("UPDATE transporte.config_global SET valor=to_jsonb($1::text) WHERE clave='cooperativa_publica_id'",[c]);
+    await db.query('SET LOCAL ROLE transporte_runtime');
+    const publico=(await db.query('SELECT transporte.contacto_publico() datos')).rows[0].datos;
+    await db.query('RESET ROLE');assert.equal(publico.email,idDatos.email);assert.equal(publico.nombre,idDatos.nombre);assert.deepEqual(Object.keys(publico).sort(),['direccion','email','nombre','telefono','whatsapp']);
+    const recargada=(await api('identidad')).datos;
+    assert.equal(recargada.nombre,idDatos.nombre);assert.equal(recargada.razonSocial,idDatos.razonSocial);assert.equal(recargada.ruc,idDatos.ruc);
+    assert.equal(recargada.identidadVersion,idDatos.identidadVersion+1);
     assert.equal((await api('identidad',coopUser.token,{datos:idDatos,logo:null})).status,409);
     const identidadAdmin=await api('identidad?cooperativaId='+c,admin.token);
     assert.equal(identidadAdmin.status,200,JSON.stringify(identidadAdmin.datos));

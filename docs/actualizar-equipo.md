@@ -16,7 +16,7 @@ Si Windows informa archivos bloqueados, detén únicamente los servidores de est
 
 ## Base de datos
 
-El esquema vigente está en `backend/conexion-bd/prisma/schema.prisma`; su historial reproducible está en `backend/conexion-bd/prisma/migrations/`. Hay diez migraciones, incluidas `20261112_venta_oficina_idempotente` y `20261114_configuracion_pagos` y `20261116_identidad_administracion` y `20261116_completar_configuracion_cooperativas`. Esta última completa únicamente la configuración ausente de las cooperativas; ya se aplicó en la base compartida. La migración de pagos conecta las vistas 19.1 y 19.1.1 y añade la persistencia de QR y cuenta predeterminada. Consulta [configuración de pagos real](configuracion-pagos-real.md).
+El esquema vigente está en `backend/conexion-bd/prisma/schema.prisma`; su historial reproducible está en `backend/conexion-bd/prisma/migrations/`. Hay doce migraciones, incluidas `20261112_venta_oficina_idempotente` y `20261114_configuracion_pagos` y `20261116_identidad_administracion` y `20261116_completar_configuracion_cooperativas`. Esta última completa únicamente la configuración ausente de las cooperativas; ya se aplicó en la base compartida. La migración de pagos conecta las vistas 19.1 y 19.1.1 y añade la persistencia de QR y cuenta predeterminada. Consulta [configuración de pagos real](configuracion-pagos-real.md).
 
 Git distribuye el código SQL y el esquema. Los datos compartidos permanecen en PostgreSQL/Supabase. Cada compañero debe recibir por el canal privado del equipo su configuración de conexión y CA. No se necesitan Supabase Auth ni Storage.
 
@@ -55,4 +55,13 @@ node backend/node_modules/tsx/dist/cli.mjs --tsconfig frontend/tsconfig.json --t
 npm --prefix backend test
 ```
 
-Resultados de la limpieza: 56 pruebas del frontend y 28 del backend aprobadas. El recorrido manual por roles, ventas, comprobantes y reembolsos se describe en la guía de oficina; el ejemplo de comprobante es de solo lectura.
+Resultados del cierre: 62 pruebas unitarias del frontend y 41 del backend aprobadas. El recorrido manual por roles, ventas, comprobantes y reembolsos se describe en la guía de oficina; el ejemplo de comprobante es de solo lectura.
+
+La auditoría de las 43 referencias está en [Auditoría de vistas](auditoria-43-vistas-2026-11-16.md). La migración `20261116_guardar_identidad_cooperativa` corrige el guardado limitado de identidad del rol cooperativa y ya está aplicada en la base compartida.
+
+`20261116_contacto_publico` ya está aplicada y conecta únicamente los canales comerciales autorizados de Gran Continental con Contacto en el inicio.
+
+
+El cierre contiene 17 migraciones versionadas. Para una base compartida ya actualizada, solo regenera Prisma (`npm --prefix backend/conexion-bd run db:generate`) y comprueba el estado; no repitas instalaciones ni borres datos. En una base nueva o pendiente, el responsable aplica las migraciones según la guía antes de arrancar la API. El nombre de la migración de aislamiento de entregas se ordenó después de su base, conservando su SQL y checksum, para que también funcione una instalación nueva.
+
+La entrega automática de PDF por correo y la preparación de WhatsApp están explicadas en [Entrega de boletos](entrega-boletos.md). Se mantienen apagadas por defecto para que arrancar el backend no envíe mensajes de compras anteriores. Personal del bus y validación de abordaje por QR corresponden a la segunda entrega.

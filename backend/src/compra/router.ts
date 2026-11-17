@@ -140,6 +140,9 @@ compraRouter.use((req: Request, res: Response, next: NextFunction) => {
 const catalogos = async () =>
   (await pool.query("SELECT transporte.compra_catalogos() datos")).rows[0]
     .datos;
+compraRouter.get('/catalogos/contacto',ruta(async(_req,res)=>{
+  res.json({data:(await pool.query('SELECT transporte.contacto_publico() datos')).rows[0].datos});
+}));
 compraRouter.get(
   "/catalogos/ciudades",
   ruta(async (_req, res) => res.json({ data: (await catalogos()).ciudades })),

@@ -392,6 +392,14 @@ test(
         compra,
         pdf,
       ]);
+      const backendPrueba=randomUUID();
+      await db.query('SELECT transporte.asignar_entrega_boleto($1,$2)',[compra,backendPrueba]);
+      assert.equal((await db.query("SELECT * FROM transporte.reclamar_entrega_boleto('EMAIL',now()-interval '1 hour',$1)",[randomUUID()])).rowCount,0,'Otro backend no toma PDFs privados');
+      const entrega=(await db.query("SELECT * FROM transporte.reclamar_entrega_boleto('EMAIL',now()-interval '1 hour',$1)",[backendPrueba])).rows[0];
+      assert.equal(entrega.compra_id,compra);assert.ok(entrega.email);assert.equal(entrega.canal,'EMAIL');
+      assert.equal((await db.query("SELECT * FROM transporte.reclamar_entrega_boleto('EMAIL',now()-interval '1 hour',$1)",[backendPrueba])).rowCount,0,'No se toma dos veces una entrega en proceso');
+      await db.query('SELECT transporte.finalizar_entrega_boleto($1,true,$2,NULL)',[entrega.notificacion_id,'proveedor-simulado']);
+      assert.equal((await db.query('SELECT estado FROM transporte.notificaciones WHERE id=$1',[entrega.notificacion_id])).rows[0].estado,'ENVIADA');
       await sesion(cliente.hash);
       assert.equal((await consultar()).documento.estado, "LISTO");
       assert.equal((await consultar()).compra.totalPagadoCentavos, 2345);
@@ -553,6 +561,7 @@ test(
         const solicitudBody={compraId:compraVenta.compra_id,motivo:'Solicitud de devolución de prueba',clave:randomUUID()};
         assert.equal((await peticion('/oficina/reembolsos',ajeno.token,solicitudBody)).status,404);
         const solicitada=await peticion('/oficina/reembolsos',oficinista.token,solicitudBody);assert.equal(solicitada.status,201,await solicitada.clone().text());const solicitudId=(await solicitada.json()).id;
+        const detalleSolicitud=(await (await peticion('/oficina/reembolsos',oficinista.token)).json()).solicitudes.find((s:any)=>s.id===solicitudId);assert.equal(detalleSolicitud.pasajeros_solicitados.length,1);assert.ok(detalleSolicitud.pasajeros_solicitados[0].codigo);assert.equal(Number(detalleSolicitud.base_centavos),Number(detalleSolicitud.total_pagado_centavos));
         assert.equal((await (await peticion('/oficina/reembolsos',oficinista.token,solicitudBody)).json()).id,solicitudId);
         assert.equal((await peticion('/oficina/reembolsos/'+solicitudId+'/decision',ajeno.token,{aprobar:true,motivo:'Validación de prueba'})).status,404);
         assert.equal((await peticion('/oficina/reembolsos/'+solicitudId+'/decision',oficinista.token,{aprobar:true,motivo:''})).status,422);

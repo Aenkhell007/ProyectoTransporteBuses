@@ -5,6 +5,7 @@ export interface UsuarioSesion {
   email: string;
   email_verificado_at: string | null;
   roles: string[];
+  permisos?: string[];
 }
 
 export class ErrorAuth extends Error {

@@ -100,6 +100,17 @@ async function identidad(db: PoolClient, c: string) {
     texto: r.color_texto, email: r.soporte_email ?? '', telefono: r.telefono ?? '', whatsapp: r.whatsapp ?? '', direccion: r.direccion ?? '', facebook: r.facebook_url ?? '', instagram: r.instagram_url ?? '' };
 }
 // El administrador global puede elegir un ámbito sin tener una membresía local.
+editorRouter.get('/ambitos/:permiso', async (req, res, next) => {
+  try {
+    const permiso=req.params.permiso;
+    exigir(['config.admin','flota.admin','operacion.admin'].includes(String(permiso)), 'Permiso de editor inválido.');
+    res.json(await sesionEditor(req,async db=>{
+      const r=await db.query('SELECT id,nombre FROM transporte.cooperativas WHERE activa AND transporte.puede($1,id) ORDER BY nombre,id',[permiso]);
+      if (!r.rowCount) throw new ErrorEditor(403,'No tienes permiso para este editor en una cooperativa activa.');
+      return {cooperativas:r.rows};
+    }));
+  }catch(e){next(e);}
+});
 editorRouter.get('/identidad/ambitos', async (req, res, next) => {
   try { res.json(await sesionEditor(req, async db => {
     const r = await db.query("SELECT id,nombre FROM transporte.cooperativas WHERE activa AND transporte.puede('config.admin',id) ORDER BY nombre,id");
@@ -117,7 +128,7 @@ editorRouter.put('/identidad', async (req, res, next) => {
     await db.query('SELECT id FROM transporte.config_cooperativa WHERE cooperativa_id=$1 FOR UPDATE', [c]);
     const actual = await identidad(db, c); version(actual.version, d.version); version(actual.identidadVersion, d.identidadVersion);
     const logo = req.body.logo ? await imagen(db, c, req.body.logo, 'LOGO') : null;
-    await db.query('UPDATE transporte.cooperativas SET nombre=$2,razon_social=$3,ruc=$4,version=version+1,updated_at=now() WHERE id=$1', [c, d.nombre.trim(), d.razonSocial.trim(), d.ruc]);
+    await db.query('SELECT transporte.actualizar_identidad_cooperativa($1,$2,$3,$4,$5)', [c, d.identidadVersion, d.nombre, d.razonSocial, d.ruc]);
     await db.query(`UPDATE transporte.config_cooperativa SET lema=$2,color_primario=$3,color_secundario=$4,color_texto=$5,soporte_email=$6,telefono=$7,whatsapp=$8,direccion=$9,facebook_url=$10,instagram_url=$11,
       logo_archivo_id=COALESCE($12,logo_archivo_id),version=version+1,updated_at=now() WHERE cooperativa_id=$1`, [c,d.lema,d.primario,d.secundario,d.texto,d.email,d.telefono,d.whatsapp,d.direccion,d.facebook,d.instagram,logo]);
     return identidad(db, c);
@@ -137,7 +148,7 @@ async function detalleBus(db: PoolClient, c: string, id: string) {
 }
 editorRouter.get('/buses', async(req,res,next)=>{
   try { res.json(await sesionEditor(req,async db=>{
-    const c=await cooperativa(db,'flota.admin');
+    const c=await cooperativa(db,'flota.admin',req.query.cooperativaId);
     return { buses:(await db.query('SELECT id,unidad,placa,activo FROM transporte.buses WHERE cooperativa_id=$1 ORDER BY unidad',[c])).rows,
       grupos:(await db.query('SELECT id,nombre FROM transporte.grupos_bus WHERE cooperativa_id=$1 AND activo ORDER BY nombre',[c])).rows,
       clases:(await db.query('SELECT id,codigo,nombre FROM transporte.clases_asiento ORDER BY codigo')).rows,
@@ -145,14 +156,14 @@ editorRouter.get('/buses', async(req,res,next)=>{
   })); }catch(e){next(e);}
 });
 editorRouter.get('/buses/:id',async(req,res,next)=>{
-  try{res.json(await sesionEditor(req,async db=>detalleBus(db,await cooperativa(db,'flota.admin'),uuid(req.params.id))));}catch(e){next(e);}
+  try{res.json(await sesionEditor(req,async db=>detalleBus(db,await cooperativa(db,'flota.admin',req.query.cooperativaId),uuid(req.params.id))));}catch(e){next(e);}
 });
 editorRouter.put('/buses',async(req,res,next)=>{
   try{
     const d=req.body?.datos; validarBus(d);
     exigir(Array.isArray(req.body.fotos) && req.body.fotos.length+d.fotos.length<=6,'Se permiten seis fotografías.');
     res.json(await sesionEditor(req,async db=>{
-      const c=await cooperativa(db,'flota.admin'); let id=d.id?uuid(d.id):randomUUID();
+      const c=await cooperativa(db,'flota.admin',req.query.cooperativaId); let id=d.id?uuid(d.id):randomUUID();
       if(d.id){const b=(await db.query('SELECT version FROM transporte.buses WHERE id=$1 AND cooperativa_id=$2 FOR UPDATE',[id,c])).rows[0];if(!b)throw new ErrorEditor(404,'Bus no disponible.');version(b.version,d.version);}
       // Serializa también altas concurrentes de la misma unidad.
       await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[`${c}:flota`]);
@@ -192,7 +203,7 @@ editorRouter.put('/buses',async(req,res,next)=>{
 
 editorRouter.get('/compatibilidades',async(req,res,next)=>{
   try{res.json(await sesionEditor(req,async db=>{
-    const c=await cooperativa(db,'operacion.admin');
+    const c=await cooperativa(db,'operacion.admin',req.query.cooperativaId);
     const frecuencias=(await db.query(`SELECT f.id,f.codigo,to_char(f.hora_salida,'HH24:MI') hora,f.activa,f.version,
       (SELECT t.nombre FROM transporte.ruta_paradas p JOIN transporte.terminales t ON t.id=p.terminal_id WHERE p.ruta_id=f.ruta_id ORDER BY p.orden LIMIT 1) origen,
       (SELECT t.nombre FROM transporte.ruta_paradas p JOIN transporte.terminales t ON t.id=p.terminal_id WHERE p.ruta_id=f.ruta_id ORDER BY p.orden DESC LIMIT 1) destino
@@ -205,7 +216,7 @@ editorRouter.get('/compatibilidades',async(req,res,next)=>{
 });
 editorRouter.put('/compatibilidades',async(req,res,next)=>{
   try{res.json(await sesionEditor(req,async db=>{
-    const c=await cooperativa(db,'operacion.admin'),d=req.body,id=uuid(d.frecuenciaId);
+    const c=await cooperativa(db,'operacion.admin',req.query.cooperativaId),d=req.body,id=uuid(d.frecuenciaId);
     exigir(Array.isArray(d.grupoIds)&&d.grupoIds.length<=200&&new Set(d.grupoIds).size===d.grupoIds.length,'Grupos inválidos.');
     const f=(await db.query('SELECT version,activa FROM transporte.frecuencias WHERE id=$1 AND cooperativa_id=$2 FOR UPDATE',[id,c])).rows[0];
     if(!f)throw new ErrorEditor(404,'Frecuencia no disponible.');version(f.version,d.version);exigir(f.activa,'La frecuencia está inactiva.');
@@ -218,7 +229,7 @@ editorRouter.put('/compatibilidades',async(req,res,next)=>{
 });
 
 editorRouter.use((e:any,_req:Request,res:express.Response,_next:express.NextFunction)=>{
-  const status=e.status??(e.code==='28000'?401:e.code==='42501'?403:['23505','23P01'].includes(e.code)?409:['22P02','23514'].includes(e.code)?422:500);
+  const status=e.status??(e.code==='28000'?401:e.code==='42501'?403:['23505','23P01','40001'].includes(e.code)?409:['22P02','23514'].includes(e.code)?422:500);
   if(status===500)console.error('Editores Mikel',e.code??e.message);
   res.status(status).json({error:e instanceof ErrorEditor?e.message:status===401?'Inicia sesión para continuar.':status===403?'No tienes permiso para esta operación.':status===409?'Los datos entran en conflicto. Actualiza y revisa.':status===422?'Revisa los campos enviados.':'No se pudo procesar la solicitud.'});
 });

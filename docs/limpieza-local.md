@@ -39,3 +39,19 @@ Estos chequeos no sustituyen una nueva prueba manual de cada flujo con las cuent
 - Se retiraron `bcrypt`, `jsonwebtoken` y sus paquetes de tipos del backend: no tenían consumidores en el código ni en los scripts. La autenticación vigente utiliza las funciones criptográficas de Node y las sesiones de PostgreSQL.
 - El análisis de importaciones desde la entrada del frontend y sus pruebas no encontró pantallas TypeScript desconectadas. Se conservaron las rutas de vista previa utilizadas y las herramientas de base de datos.
 - Los archivos personales sin versionar y los datos privados permanecen fuera del commit. No se modifica el esquema ni los datos de PostgreSQL en esta limpieza.
+
+## Limpieza de cierre de las 43 vistas
+
+Se verificó el grafo de importaciones desde `frontend/src/main.tsx` y todas las pruebas TypeScript/MJS antes de retirar estos nueve archivos sin consumidores:
+
+- `frontend/src/components/frecuencias/ParadasTarifasManager.tsx`
+- `frontend/src/features/pagos/reembolsoDemo.ts`
+- `frontend/src/mocks/frecuencias.mock.ts`
+- `frontend/src/mocks/paradasTarifas.ts`
+- `frontend/src/mocks/reembolso.ts`
+- `frontend/src/pages/administracion/ParadasTarifasPage.tsx`
+- `frontend/src/pages/frecuencias/FrecuenciasPage.tsx`
+- `frontend/src/pages/operacion/HojaRutaPage.tsx`
+- `frontend/src/types/pagos/reembolso.ts`
+
+Se desinstaló `@zxing/browser`, añadido durante la exploración de abordaje y sin consumidores: Personal del bus y el lector QR pertenecen a la segunda entrega. Se conservan el generador del QR del boleto y la carga del QR bancario. No se borraron scripts personales, comprobantes, boletos privados, variables de entorno ni datos de la base. Git conserva el historial para recuperar código retirado.
