@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import express from "express";
 import cookieParser from "cookie-parser";
 import { randomUUID } from "node:crypto";
+// Debe ir antes de ./router: asigna una DATABASE_URL local si falta (ver entornoPrueba.ts).
+import "./entornoPrueba";
 import { compraRouter, entero, fecha, id, validarPasajeros } from "./router";
 
 test("consulta: rechaza UUID, enteros y fechas inválidos", () => {
