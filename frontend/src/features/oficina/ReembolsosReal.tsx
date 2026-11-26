@@ -29,6 +29,7 @@ interface Solicitud {
   salida: string;
   estado: string;
   motivo: string;
+  nota_interna: string | null;
   decision_motivo: string | null;
   created_at: string;
   decidido_at: string | null;
@@ -47,6 +48,70 @@ interface Elegibilidad {
   motivo?: string;
   porcentajeBp?: number;
   montoCentavos?: number;
+}
+function NotaInternaReembolso({ id, nota, recargar }: {
+  id: string;
+  nota: string;
+  recargar: () => void;
+}) {
+  const [guardada, cambiarGuardada] = useState(nota);
+  const [borrador, editar] = useState(nota);
+  const [guardando, cambiarGuardando] = useState(false);
+  const [mensaje, cambiarMensaje] = useState("");
+  const [error, cambiarError] = useState("");
+
+  async function guardar() {
+    cambiarGuardando(true);
+    cambiarMensaje("");
+    cambiarError("");
+    try {
+      const resultado = await http<{ nota_interna: string }>(
+        "/oficina/reembolsos/" + id + "/nota-interna",
+        { method: "PUT", body: JSON.stringify({ nota: borrador }) },
+      );
+      cambiarGuardada(resultado.nota_interna);
+      editar(resultado.nota_interna);
+      cambiarMensaje("Nota interna guardada.");
+      recargar();
+    } catch (causa) {
+      cambiarError(causa instanceof Error ? causa.message : "No se pudo guardar la nota.");
+    } finally {
+      cambiarGuardando(false);
+    }
+  }
+
+  return (
+    <section className="space-y-2 rounded-md border border-blue-100 p-3 text-sm">
+      <label className="block font-semibold text-blue-900" htmlFor="reembolso-nota-interna">
+        Nota interna
+      </label>
+      <p id="reembolso-ayuda-nota">Visible para el personal autorizado a gestionar esta solicitud.</p>
+      <textarea
+        id="reembolso-nota-interna"
+        aria-describedby="reembolso-ayuda-nota"
+        className={campo + " w-full"}
+        rows={3}
+        maxLength={1000}
+        value={borrador}
+        disabled={guardando}
+        onChange={(e) => {
+          editar(e.target.value);
+          cambiarMensaje("");
+          cambiarError("");
+        }}
+      />
+      <button
+        type="button"
+        className={boton}
+        disabled={guardando || borrador.trim() === guardada}
+        onClick={() => void guardar()}
+      >
+        {guardando ? "Guardando…" : "Guardar nota"}
+      </button>
+      {mensaje && <p role="status">{mensaje}</p>}
+      {error && <p role="alert" className="text-red-700">{error}</p>}
+    </section>
+  );
 }
 export function ReembolsosReal() {
   const c = useConsulta<{ solicitudes: Solicitud[] }>("/oficina/reembolsos");
@@ -441,6 +506,7 @@ export function ReembolsosReal() {
               <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm"><strong className="block text-amber-700">Motivo de la solicitud</strong><p className="mt-1 wrap-anywhere text-blue-900">{d.motivo}</p></div>
               <section className="rounded bg-blue-50 p-3 text-sm"><h3 className="font-bold">Pasajeros incluidos en la solicitud</h3>{d.pasajeros_solicitados?.length?<ul>{d.pasajeros_solicitados.map(p=><li key={p.id} className="mt-1">{p.nombre} · Asiento {p.codigo} · Piso {p.piso}</li>)}</ul>:<p>Consulta los pasajeros de la compra antes de decidir.</p>}</section><dl className="space-y-3"><div className="flex justify-between gap-3"><dt>Base de esta solicitud</dt><dd className="font-bold">{dinero(Number(d.base_centavos??d.total_pagado_centavos)/100)}</dd></div><div className="flex justify-between gap-3"><dt>Monto pagado</dt><dd className="font-bold">{dinero(Number(d.total_pagado_centavos) / 100)}</dd></div><div className="flex justify-between gap-3"><dt>Porcentaje de devolución</dt><dd className="font-bold">{Number(d.porcentaje_bp) / 100}%</dd></div><div className="flex justify-between gap-3 border-t border-blue-100 pt-3"><dt>Monto a devolver</dt><dd className="text-2xl font-bold">{dinero(Number(d.monto_centavos) / 100)}</dd></div></dl>
               {d.decision_motivo && <Aviso>{d.decision_motivo}</Aviso>}
+              <NotaInternaReembolso key={d.id} id={d.id} nota={d.nota_interna ?? ""} recargar={c.recargar} />
               {d.estado === "SOLICITADO" && (
                 <>
                   <label className="block">
