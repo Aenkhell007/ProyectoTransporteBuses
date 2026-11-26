@@ -34,6 +34,7 @@ import { InicioPage } from "./pages/compra/InicioPage";
 
 import SeleccionAsientosPage from "./pages/flota/SeleccionAsientosPage";
 import MetodoPago from "./pages/pagos/MetodoPago";
+import RespuestaPayphone from "./pages/pagos/RespuestaPayphone";
 import { PasajerosPage } from "./pages/compra/PasajerosPage";
 import SubirComprobante from "./pages/pagos/SubirComprobante";
 import SeguimientoPago from "./pages/pagos/SeguimientoPago";
@@ -225,6 +226,7 @@ export function App() {
           element={<RestablecerContrasena />}
         />
         <Route path="/pago" element={<MetodoPago />} />
+        <Route path="/pago/payphone/respuesta" element={<RespuestaPayphone />} />
         <Route path="/resumen" element={<ResumenCompraPage />} />
         <Route path="/pago/comprobante" element={<SubirComprobante />} />
         <Route path="/pago/seguimiento" element={<SeguimientoPago />} />

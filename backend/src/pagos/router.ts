@@ -3,7 +3,7 @@ import { alcanceReserva } from '../oficina/consultas';
 import express, { Router } from "express";
 import type { Request, Response, NextFunction } from "express";
 import type { PoolClient } from "pg";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { conSesion } from "../sesion";
 import { guardarArchivo, borrarCreados, leerArchivo } from "./archivos";
 import {
@@ -13,6 +13,13 @@ import {
   referenciaValida,
   nombreSeguro,
 } from "./validacion";
+import {
+  payphoneConfigurado,
+  generarClientTransactionId,
+  construirMontosPayphone,
+  prepararPagoPayphone,
+  confirmarPagoPayphone,
+} from "./payphone";
 import { generarBoleto } from "./boleto";
 import type { DatosPago } from "../../../shared/pagos";
 import QRCode from "qrcode";
@@ -104,6 +111,11 @@ export async function consultar(db: PoolClient, id: string) {
       ])
     ).rows[0].datos as DatosPago,
   );
+  if (!payphoneConfigurado()) {
+    datos.metodos = datos.metodos.map((metodo) =>
+      metodo.id === "PAYPHONE" ? { ...metodo, habilitado: false } : metodo,
+    );
+  }
   const predeterminada = (await db.query('SELECT transporte.cuenta_predeterminada_cliente($1) AS id', [id])).rows[0]?.id;
   datos.cuentas.sort((a, b) => Number(b.id === predeterminada) - Number(a.id === predeterminada));
   return conEstadoReembolsos(db,datos);
@@ -370,6 +382,268 @@ pagosRouter.post("/pagos/compras/:id/documento", async (req, res) => {
       await emitir(db, id, creados);
     });
     res.status(204).end();
+  } catch (e) {
+    await limpiarTrasError(req, creados);
+    responderError(res, e);
+  }
+});
+
+pagosRouter.post("/reservas/:id/payphone/preparar", async (req, res) => {
+  try {
+    const sesionToken = token(req);
+    if (!payphoneConfigurado()) {
+      throw new ErrorPago(
+        503,
+        "PayPhone no está configurado en el servidor (falta PAYPHONE_TOKEN en backend/.env).",
+      );
+    }
+    const reservaId = uuid(req.params.id);
+    const modo = req.body?.modo === "payphone" ? "payphone" : "card";
+
+    const info = await conSesion(sesionToken, async (db) => {
+      await db.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [reservaId]);
+      const datos = await consultar(db, reservaId);
+      if (datos.compra?.estado === "CONFIRMADA") {
+        throw new ErrorPago(409, "Esta reserva ya tiene una compra confirmada.");
+      }
+      if (
+        datos.reserva.estado !== "PENDIENTE" ||
+        Date.parse(datos.reserva.expires_at) <= Date.now()
+      ) {
+        throw new ErrorPago(409, "La reserva ya venció o no está pendiente.");
+      }
+      if (
+        datos.reserva.aceptada_version !== datos.reserva.cotizacion_version ||
+        !datos.cotizacion
+      ) {
+        throw new ErrorPago(409, "Primero acepta la cotización vigente.");
+      }
+      if (!datos.metodos.some((m) => m.id === "PAYPHONE" && m.habilitado)) {
+        throw new ErrorPago(409, "PayPhone no está habilitado para esta cooperativa.");
+      }
+      const actorRows = (
+        await db.query(
+          "SELECT email, documento, telefono FROM transporte.usuarios WHERE id = transporte.actor()",
+        )
+      ).rows;
+      const actor = actorRows[0] as
+        | { email?: string | null; documento?: string | null; telefono?: string | null }
+        | undefined;
+      const intentoId = (
+        await db.query("SELECT transporte.crear_intento_pago($1,'PAYPHONE',NULL,$2) AS id", [
+          reservaId,
+          randomUUID(),
+        ])
+      ).rows[0].id as string;
+      const clientTransactionId = generarClientTransactionId(intentoId);
+      await db.query("SELECT transporte.registrar_orden_payphone($1,$2,$3)", [
+        intentoId,
+        clientTransactionId,
+        "",
+      ]);
+      const montos = construirMontosPayphone(
+        datos.reserva.total_centavos,
+        datos.cotizacion.iva_centavos,
+        datos.cotizacion.servicio_centavos,
+      );
+      return {
+        intentoId,
+        clientTransactionId,
+        montos,
+        actor,
+        viaje: datos.viaje,
+      };
+    });
+
+    let prep;
+    try {
+      const referencia = `Boleto ${info.viaje.origen}-${info.viaje.destino} (${info.viaje.cooperativa})`;
+      prep = await prepararPagoPayphone({
+        clientTransactionId: info.clientTransactionId,
+        montos: info.montos,
+        referencia,
+        reservaId,
+        origenSolicitud: req.get("origin"),
+        email: info.actor?.email,
+        documento: info.actor?.documento,
+        telefono: info.actor?.telefono,
+      });
+    } catch (err) {
+      await conSesion(sesionToken, (db) =>
+        db.query("SELECT transporte.anular_intento_payphone($1,$2,$3)", [
+          reservaId,
+          info.clientTransactionId,
+          err instanceof Error ? err.message : "Error preparando pago PayPhone",
+        ]),
+      ).catch(() => {});
+      throw err;
+    }
+
+    await conSesion(sesionToken, (db) =>
+      db.query("SELECT transporte.registrar_orden_payphone($1,$2,$3)", [
+        info.intentoId,
+        info.clientTransactionId,
+        prep.paymentId,
+      ]),
+    );
+
+    const urlPago =
+      modo === "payphone"
+        ? prep.payWithPayPhone || prep.payWithCard
+        : prep.payWithCard || prep.payWithPayPhone;
+
+    res.status(201).json({
+      intentoId: info.intentoId,
+      clientTransactionId: info.clientTransactionId,
+      paymentId: prep.paymentId,
+      urlPago,
+      payWithCard: prep.payWithCard,
+      payWithPayPhone: prep.payWithPayPhone,
+    });
+  } catch (e) {
+    responderError(res, e);
+  }
+});
+
+pagosRouter.post("/pagos/payphone/confirmar", async (req, res) => {
+  const creados: string[] = [];
+  try {
+    const sesionToken = token(req);
+    const clientTransactionId =
+      typeof req.body?.clientTransactionId === "string"
+        ? req.body.clientTransactionId.trim()
+        : "";
+    const idNum = Number(req.body?.id ?? 0);
+    if (
+      !clientTransactionId ||
+      clientTransactionId.length > 50 ||
+      !Number.isInteger(idNum) ||
+      idNum < 0
+    ) {
+      throw new ErrorPago(422, "Parámetros de confirmación PayPhone inválidos.");
+    }
+
+    const paso1 = await conSesion(sesionToken, async (db) => {
+      const encontrado = (
+        await db.query("SELECT transporte.buscar_intento_payphone($1) AS datos", [
+          clientTransactionId,
+        ])
+      ).rows[0]?.datos as
+        | {
+            intentoId: string;
+            reservaId: string;
+            estado: string;
+            totalCentavos: number;
+            compraId: string | null;
+          }
+        | null
+        | undefined;
+      if (!encontrado) {
+        throw new ErrorPago(404, "No encontramos un intento PayPhone para esta transacción.");
+      }
+      if (encontrado.estado === "APROBADO" && encontrado.compraId) {
+        await emitir(db, encontrado.compraId, creados);
+        return { yaAprobado: true as const, intento: encontrado };
+      }
+      return { yaAprobado: false as const, intento: encontrado };
+    });
+
+    if (paso1.yaAprobado) {
+      res.json({
+        estado: "APROBADO",
+        reservaId: paso1.intento.reservaId,
+        compraId: paso1.intento.compraId,
+        autorizacion: null,
+      });
+      return;
+    }
+
+    if (idNum <= 0) {
+      await conSesion(sesionToken, (db) =>
+        db.query("SELECT transporte.anular_intento_payphone($1,$2,$3)", [
+          paso1.intento.reservaId,
+          clientTransactionId,
+          "Cancelado por el usuario en PayPhone",
+        ]),
+      );
+      res.json({
+        estado: "CANCELADO",
+        reservaId: paso1.intento.reservaId,
+        mensaje:
+          "El pago fue cancelado en PayPhone. Puedes intentarlo nuevamente o elegir otro método.",
+      });
+      return;
+    }
+
+    const conf = await confirmarPagoPayphone({
+      id: idNum,
+      clientTxId: clientTransactionId,
+    });
+
+    if (conf.estado === "CANCELADO") {
+      await conSesion(sesionToken, (db) =>
+        db.query("SELECT transporte.anular_intento_payphone($1,$2,$3)", [
+          paso1.intento.reservaId,
+          clientTransactionId,
+          conf.message ?? "Cancelado en PayPhone",
+        ]),
+      );
+      res.json({
+        estado: "CANCELADO",
+        reservaId: paso1.intento.reservaId,
+        mensaje:
+          conf.message ||
+          "El pago fue cancelado en PayPhone. Puedes intentarlo nuevamente o elegir otro método.",
+      });
+      return;
+    }
+
+    if (conf.estado !== "APROBADO") {
+      res.json({
+        estado: "PENDIENTE",
+        reservaId: paso1.intento.reservaId,
+        mensaje:
+          conf.message || "PayPhone aún reporta el pago como pendiente de confirmación.",
+      });
+      return;
+    }
+
+    if (
+      conf.amount !== Number(paso1.intento.totalCentavos) ||
+      conf.clientTransactionId !== clientTransactionId
+    ) {
+      throw new ErrorPago(
+        409,
+        "El monto o identificador confirmado por PayPhone no coincide con tu reserva.",
+      );
+    }
+
+    const referenciaExterna = [
+      `PAYPHONE-${conf.transactionId}`,
+      conf.authorizationCode ? `AUTH-${conf.authorizationCode}` : null,
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    const compraId = await conSesion(sesionToken, async (db) => {
+      const cid = (
+        await db.query("SELECT transporte.confirmar_pago_payphone($1,$2,$3,$4) AS id", [
+          paso1.intento.reservaId,
+          clientTransactionId,
+          referenciaExterna,
+          conf.amount,
+        ])
+      ).rows[0].id as string;
+      await emitir(db, cid, creados);
+      return cid;
+    });
+
+    res.json({
+      estado: "APROBADO",
+      reservaId: paso1.intento.reservaId,
+      compraId,
+      autorizacion: conf.authorizationCode,
+    });
   } catch (e) {
     await limpiarTrasError(req, creados);
     responderError(res, e);
