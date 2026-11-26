@@ -149,7 +149,26 @@ async function detalleBus(db: PoolClient, c: string, id: string) {
 editorRouter.get('/buses', async(req,res,next)=>{
   try { res.json(await sesionEditor(req,async db=>{
     const c=await cooperativa(db,'flota.admin',req.query.cooperativaId);
-    return { buses:(await db.query('SELECT id,unidad,placa,activo FROM transporte.buses WHERE cooperativa_id=$1 ORDER BY unidad',[c])).rows,
+    const buses = (await db.query(`
+      SELECT b.id,b.unidad,b.placa,b.activo,b.chasis,b.carroceria,b.grupo_id,g.nombre AS grupo_nombre,
+        p.pisos,f.archivo_id,
+        coalesce(asientos.normal,0) AS asientos_normal,coalesce(asientos.vip,0) AS asientos_vip,
+        ARRAY(SELECT e.nombre FROM transporte.bus_equipamiento be
+          JOIN transporte.equipamientos e ON e.id=be.equipamiento_id
+          WHERE be.bus_id=b.id AND be.cooperativa_id=b.cooperativa_id ORDER BY e.nombre) AS servicios
+      FROM transporte.buses b JOIN transporte.grupos_bus g ON g.id=b.grupo_id AND g.cooperativa_id=b.cooperativa_id
+      LEFT JOIN LATERAL (SELECT id,pisos FROM transporte.planos
+        WHERE bus_id=b.id AND cooperativa_id=b.cooperativa_id ORDER BY numero_version DESC LIMIT 1) p ON true
+      LEFT JOIN LATERAL (SELECT archivo_id FROM transporte.bus_fotos
+        WHERE bus_id=b.id AND cooperativa_id=b.cooperativa_id ORDER BY orden,id LIMIT 1) f ON true
+      LEFT JOIN LATERAL (
+        SELECT (count(*) FILTER (WHERE ca.codigo='NORMAL'))::int AS normal,
+          (count(*) FILTER (WHERE ca.codigo='VIP'))::int AS vip
+        FROM transporte.plano_celdas pc JOIN transporte.clases_asiento ca ON ca.id=pc.clase_id
+        WHERE pc.plano_id=p.id AND pc.activa AND pc.tipo='ASIENTO'
+      ) asientos ON true
+      WHERE b.cooperativa_id=$1 ORDER BY b.unidad`,[c])).rows;
+    return { buses: buses.map(({archivo_id, ...bus}) => ({...bus, foto_url: archivo_id ? urlImagen(archivo_id) : null})),
       grupos:(await db.query('SELECT id,nombre FROM transporte.grupos_bus WHERE cooperativa_id=$1 AND activo ORDER BY nombre',[c])).rows,
       clases:(await db.query('SELECT id,codigo,nombre FROM transporte.clases_asiento ORDER BY codigo')).rows,
       servicios:(await db.query('SELECT id,nombre FROM transporte.equipamientos ORDER BY nombre')).rows };
@@ -226,6 +245,61 @@ editorRouter.put('/compatibilidades',async(req,res,next)=>{
     await db.query('UPDATE transporte.frecuencias SET version=version+1,updated_at=now() WHERE id=$1',[id]);
     return {...d,version:f.version+1};
   }));}catch(e){next(e);}
+});
+
+function textoGrupo(valor: unknown, campo: string, maximo: number, obligatorio = true) {
+  exigir(typeof valor === 'string', 'Revisa ' + campo + '.');
+  const texto = valor.trim();
+  exigir(texto.length <= maximo && (!obligatorio || texto.length > 0), 'Revisa ' + campo + '.');
+  return texto;
+}
+
+editorRouter.get('/grupos', async (req, res, next) => {
+  try {
+    res.json(await sesionEditor(req, async db => {
+      const c = await cooperativa(db, 'flota.admin', req.query.cooperativaId);
+      const grupos = (await db.query(`
+        SELECT g.id, g.nombre, coalesce(g.descripcion,'') descripcion, g.activo,
+          (SELECT count(*)::int FROM transporte.buses b WHERE b.grupo_id=g.id) buses,
+          (SELECT count(*)::int FROM transporte.frecuencia_grupo fg WHERE fg.grupo_id=g.id) frecuencias
+        FROM transporte.grupos_bus g WHERE g.cooperativa_id=$1 ORDER BY g.nombre`, [c])).rows;
+      return { grupos };
+    }));
+  } catch (e) { next(e); }
+});
+
+editorRouter.post('/grupos', async (req, res, next) => {
+  try {
+    res.status(201).json(await sesionEditor(req, async db => {
+      const c = await cooperativa(db, 'flota.admin', req.query.cooperativaId);
+      const nombre = textoGrupo(req.body?.nombre, 'Nombre del grupo', 100);
+      const descripcion = textoGrupo(req.body?.descripcion ?? '', 'Descripción', 500, false);
+      const activo = typeof req.body?.activo === 'boolean' ? req.body.activo : true;
+      const r = (await db.query(
+        'INSERT INTO transporte.grupos_bus(cooperativa_id,nombre,descripcion,activo) VALUES($1,$2,$3,$4) RETURNING id,nombre,coalesce(descripcion,\'\') descripcion,activo',
+        [c, nombre, descripcion || null, activo]
+      )).rows[0];
+      return { grupo: { ...r, buses: 0, frecuencias: 0 }, mensaje: 'Grupo creado.' };
+    }));
+  } catch (e) { next(e); }
+});
+
+editorRouter.put('/grupos/:id', async (req, res, next) => {
+  try {
+    res.json(await sesionEditor(req, async db => {
+      const c = await cooperativa(db, 'flota.admin', req.query.cooperativaId);
+      const id = uuid(req.params.id);
+      const nombre = textoGrupo(req.body?.nombre, 'Nombre del grupo', 100);
+      const descripcion = textoGrupo(req.body?.descripcion ?? '', 'Descripción', 500, false);
+      const activo = typeof req.body?.activo === 'boolean' ? req.body.activo : true;
+      const r = (await db.query(
+        'UPDATE transporte.grupos_bus SET nombre=$1,descripcion=$2,activo=$3,updated_at=now() WHERE id=$4 AND cooperativa_id=$5 RETURNING id,nombre,coalesce(descripcion,\'\') descripcion,activo',
+        [nombre, descripcion || null, activo, id, c]
+      )).rows[0];
+      if (!r) throw new ErrorEditor(404, 'Grupo no disponible.');
+      return { grupo: r, mensaje: 'Grupo actualizado.' };
+    }));
+  } catch (e) { next(e); }
 });
 
 editorRouter.use((e:any,_req:Request,res:express.Response,_next:express.NextFunction)=>{

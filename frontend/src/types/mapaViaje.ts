@@ -2,7 +2,7 @@
 // alimenta GET /viajes/:viajeId/mapa-asientos. El estado de cada celda ya viene
 // calculado por el servidor para el tramo pedido.
 export type EstadoCelda = 'DISPONIBLE' | 'SELECCIONADO' | 'RESERVADO' | 'OCUPADO';
-export type TipoCeldaMapa = 'ASIENTO' | 'PASILLO' | 'BLOQUE';
+export type TipoCeldaMapa = 'ASIENTO' | 'PASILLO' | 'BLOQUE' | 'PUERTA';
 
 export interface CeldaMapa {
   id: string;

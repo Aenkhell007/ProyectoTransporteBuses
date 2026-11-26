@@ -10,6 +10,11 @@ test('bus: valida el plano completo y rechaza coordenadas/códigos duplicados',(
   assert.throws(()=>validarBus({...bus,celdas:[{...celda,piso:2}]}));
   assert.throws(()=>validarBus({...bus,servicios:['a','a']}));
 });
+test('bus: una puerta se guarda como celda sin código ni clase', () => {
+  const puerta = { piso: 1, fila: 1, columna: 2, tipo: 'PUERTA', codigo: null, clase_id: null };
+  assert.doesNotThrow(() => validarBus({ ...bus, celdas: [celda, puerta] }));
+  assert.throws(() => validarBus({ ...bus, celdas: [celda, { ...puerta, codigo: 'P1' }] }));
+});
 test('bus: no admite payload incompleto ni placa o correo inválido',()=>{
   for(const d of [null,{}, {...bus,placa:'abc'}, {...bus,correo:'incorrecto'}, {...bus,activo:'true'}, {...bus,celdas:[]}])assert.throws(()=>validarBus(d));
 });

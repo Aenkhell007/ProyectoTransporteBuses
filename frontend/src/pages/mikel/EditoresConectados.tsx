@@ -1,3 +1,5 @@
+import FlotaBusesVista from '../../components/flota/FlotaBusesVista';
+import GruposGestion from '../../components/flota/GruposGestion';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import EditorBus, { type BusEditorDatos } from '../../components/flota/EditorBus';
@@ -57,7 +59,7 @@ function CompatibilidadesDeCooperativa({ cooperativaId }: { cooperativaId: strin
 export function BusesConectados() { return <ConAmbito permiso="flota.admin">{id => <BusesDeCooperativa cooperativaId={id} />}</ConAmbito>; }
 function BusesDeCooperativa({ cooperativaId }: { cooperativaId: string }) {
   const { datos, aviso } = useCarga(() => editorApi.catalogos(cooperativaId), cooperativaId);
-  return datos ? <section className="space-y-5 py-5"><header className="flex flex-wrap items-center justify-between gap-4"><h1 className="text-2xl font-bold">Gestión de buses</h1><Link className="rounded bg-red-600 px-5 py-3 text-white" to={"nuevo?cooperativaId="+cooperativaId}>Nuevo bus</Link></header>{datos.buses.length ? <ul className="grid gap-3 sm:grid-cols-2">{datos.buses.map(b=><li key={b.id} className="rounded border border-blue-100 p-4"><h2 className="font-bold">Unidad {b.unidad}</h2><p>{b.placa} · {b.activo?'Activo':'Inactivo'}</p><Link className="mt-3 inline-block underline" to={b.id+"?cooperativaId="+cooperativaId}>Editar datos, fotos y plano →</Link></li>)}</ul> : <p>No hay buses registrados. Puedes agregar el primero.</p>}</section> : aviso;
+  return datos ? <FlotaBusesVista cooperativaId={cooperativaId} buses={datos.buses} grupos={datos.grupos} /> : aviso;
 }
 export function BusConectado() { return <ConAmbito permiso="flota.admin">{id => <BusDeCooperativa cooperativaId={id} />}</ConAmbito>; }
 function BusDeCooperativa({ cooperativaId }: { cooperativaId: string }) {
@@ -69,4 +71,18 @@ function BusDeCooperativa({ cooperativaId }: { cooperativaId: string }) {
   const clase=c.clases.find(k=>k.codigo==='NORMAL')??c.clases[0];
   const inicial: BusEditorDatos = datos.bus ?? {version:1,unidad:'',placa:'',chasis:'',carroceria:'',correo:'',propietario:'',activo:true,grupoId:c.grupos[0].id,pisos:1,filas:10,celdas:plantillaNormal(10,clase.id),servicios:[],fotos:[],planoEnUso:false};
   return <div className="py-5"><Link to={"/cooperativa/buses?cooperativaId="+cooperativaId} className="mb-4 inline-block underline">← Volver a la flota</Link><EditorBus key={id} inicial={inicial} grupos={c.grupos} clases={c.clases} servicios={c.servicios} existentes={c.buses} chasis={inicial.chasis?[inicial.chasis]:[]} carrocerias={inicial.carroceria?[inicial.carroceria]:[]} onGuardar={async(d,f,v)=>{const r=await editorApi.guardarBus(d,f,v,cooperativaId); if(r.id!==id)navigate(`/cooperativa/buses/${r.id}?cooperativaId=${cooperativaId}`,{replace:true});return r;}} /></div>;
+}
+
+export function GruposGestionConectada() {
+  return <ConAmbito permiso="flota.admin">{id => <GruposDeCooperativa key={id} cooperativaId={id} />}</ConAmbito>;
+}
+
+function GruposDeCooperativa({ cooperativaId }: { cooperativaId: string }) {
+  const { datos, aviso } = useCarga(() => editorApi.listarGrupos(cooperativaId), cooperativaId);
+  return datos ? <GruposGestion
+    cooperativaId={cooperativaId}
+    inicial={datos.grupos}
+    onCrear={d => editorApi.crearGrupo(d, cooperativaId)}
+    onActualizar={(id, d) => editorApi.actualizarGrupo(id, d, cooperativaId)}
+  /> : aviso;
 }
