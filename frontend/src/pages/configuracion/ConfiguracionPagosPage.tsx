@@ -302,8 +302,8 @@ export default function ConfiguracionPagosPage({ panelCooperativa = false }: { p
           </div>
 
           <p className="mt-3 rounded-md bg-blue-50 p-3 text-xs leading-5 text-blue-900">
-            Agregar una pasarela requiere su integración técnica. Por ahora,
-            PayPhone, tarjeta y PayPal permanecen deshabilitados.
+            PayPhone requiere configuración del servidor y se habilita por cooperativa.
+            El cobro directo con tarjeta y PayPal siguen pendientes de integración.
           </p>
         </section>
       </div>
