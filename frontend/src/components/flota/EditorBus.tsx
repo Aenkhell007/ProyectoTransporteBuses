@@ -94,20 +94,29 @@ export default function EditorBus({ inicial, grupos, clases, chasis, carrocerias
     const celdas = herramienta === 'BORRAR' ? resto : [...resto, { piso, fila, columna, tipo: herramienta as CeldaPlano['tipo'], codigo: null, clase_id: herramienta === 'ASIENTO' ? claseId : null }];
     cambiar('celdas', numerarPlanoComercial(celdas, datos.pisos));
   }
+  const placaNormalizada = datos.placa.trim().toUpperCase();
+  const formatoPlacaValido = /^[A-Z]{3}-\d{4}$/.test(placaNormalizada);
+  const placaDuplicada = existentes.some(bus =>
+    bus.id !== datos.id && bus.placa.trim().toUpperCase() === placaNormalizada,
+  );
+  const errorPlaca = !formatoPlacaValido
+    ? 'Usa tres letras, un guion y cuatro dígitos. Ejemplo: ABC-1234.'
+    : placaDuplicada ? 'Esta placa ya está registrada en otro bus.' : '';
+
   async function guardar(evento: FormEvent) {
     evento.preventDefault(); if (guardando || validandoFotos) return;
     const fallos = validarPlano(datos.celdas, datos.pisos);
     if (!datos.unidad.trim() || !datos.chasis.trim() || !datos.carroceria.trim()) fallos.push('Unidad, chasis y carrocería son obligatorios.');
-    if (!/^[A-Z]{3}-\d{4}$/.test(datos.placa.trim().toUpperCase())) fallos.push('La placa debe tener formato ABC-1234.');
+    if (errorPlaca) fallos.push(errorPlaca);
     if (!grupos.some(g => g.id === datos.grupoId)) fallos.push('Selecciona un grupo disponible.');
     if (datos.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.correo)) fallos.push('Ingresa un correo de contacto válido.');
-    if (existentes.some(b => b.id !== datos.id && (b.unidad.trim().toLowerCase() === datos.unidad.trim().toLowerCase() || b.placa.trim().toUpperCase() === datos.placa.trim().toUpperCase()))) fallos.push('La unidad o la placa ya están registradas.');
+    if (existentes.some(b => b.id !== datos.id && b.unidad.trim().toLowerCase() === datos.unidad.trim().toLowerCase())) fallos.push('El número de unidad ya está registrado.');
     if (datos.celdas.some(c => c.tipo === 'ASIENTO' && !clases.some(k => k.id === c.clase_id))) fallos.push('El plano tiene clases de asiento no disponibles.');
     if (datos.id === base.id && base.planoEnUso && JSON.stringify(base.celdas) !== JSON.stringify(datos.celdas) && !nuevaVersion) fallos.push('El plano está en uso: crea una nueva versión para modificarlo.');
     setErrores(fallos); if (fallos.length) return;
     setGuardando(true);
     try {
-      const payload = { ...datos, unidad: datos.unidad.trim(), placa: datos.placa.trim().toUpperCase(), version: datos.id ? base.version : 1 };
+      const payload = { ...datos, unidad: datos.unidad.trim(), placa: placaNormalizada, version: datos.id ? base.version : 1 };
       if (onGuardar) { const respuesta = await onGuardar(payload, fotos, nuevaVersion); setBase(respuesta); setDatos(respuesta); setFotos([]); setNuevaVersion(false); setEditandoPlano(false); setMensaje('Bus guardado correctamente.'); }
       else setMensaje('Borrador validado. Los datos, las fotos y el plano no se enviaron al servidor.');
     } catch (error) { setErrores([error instanceof Error ? error.message : 'No se pudo guardar el bus. Conservamos los cambios para reintentar.']); }
@@ -120,7 +129,21 @@ export default function EditorBus({ inicial, grupos, clases, chasis, carrocerias
     {!onGuardar && <p className="rounded bg-amber-50 p-3 text-xs text-amber-900">Vista previa del editor · cambios locales. No modifica buses del servidor.</p>}
     <div className="flex flex-wrap items-center gap-3 rounded-lg bg-blue-50 p-3"><img src={`/images/compra/bus-${datos.pisos === 1 ? 'un-piso' : 'dos-pisos'}.webp`} alt="Ilustración del tipo de bus" className="h-14 w-20 rounded object-cover" /><div><h2 className="font-bold">{datos.unidad ? `Unidad ${datos.unidad}` : 'Nuevo bus'}</h2><p className="text-sm">{datos.placa || 'Placa pendiente'} · {datos.id ? 'Editando' : 'Registro de unidad'}</p></div><span className="ml-auto rounded-full bg-white px-3 py-1 text-sm">{datos.activo ? 'Activo' : 'Inactivo'}</span><button type="button" className={guardarConfiguracion} disabled={guardando} onClick={() => cambiado ? setConfirmarNuevo(true) : nuevoBus()}>＋ Nuevo bus</button></div>{confirmarNuevo && <div role="alert" className="flex flex-wrap items-center gap-3 rounded bg-amber-50 p-3 text-sm"><p>Se descartarán los cambios de este borrador. ¿Crear otro bus?</p><button type="button" className={botonConfiguracion} onClick={() => setConfirmarNuevo(false)}>Seguir editando</button><button type="button" className={guardarConfiguracion} onClick={nuevoBus}>Crear nuevo borrador</button></div>}
     <fieldset disabled={guardando} className="grid items-start gap-4 xl:grid-cols-2">
-      <BloqueConfiguracion titulo="Datos del bus"><div className="grid grid-cols-2 gap-3">{campo('unidad', 'Número de unidad *')}{campo('placa', 'Placa *')}{catalogo('chasis', 'Marca del chasis *', chasis)}{catalogo('carroceria', 'Carrocería *', carrocerias)}{campo('correo', 'Correo de contacto', 'email')}<label className="grid gap-1.5 text-sm">Grupo *<select className={entradaConfiguracion} value={datos.grupoId} onChange={e => cambiar('grupoId', e.target.value)}><option value="">Selecciona un grupo</option>{grupos.map(g => <option key={g.id} value={g.id}>{g.nombre}</option>)}</select></label><label className="grid gap-1.5 text-sm">Estado<select className={entradaConfiguracion} value={String(datos.activo)} onChange={e => cambiar('activo', e.target.value === 'true')}><option value="true">Activo</option><option value="false">Inactivo</option></select></label>{campo('propietario', 'Propietario (opcional)')}</div>
+      <BloqueConfiguracion titulo="Datos del bus"><div className="grid grid-cols-2 gap-3">{campo('unidad', 'Número de unidad *')}<label className="grid gap-1.5 text-sm">
+          Placa *
+          <input
+            className={entradaConfiguracion}
+            value={datos.placa}
+            placeholder="ABC-1234"
+            autoCapitalize="characters"
+            aria-describedby="ayuda-placa-bus"
+            aria-invalid={Boolean(placaNormalizada && errorPlaca)}
+            onChange={e => cambiar('placa', e.target.value)}
+          />
+          <span id="ayuda-placa-bus" className={placaNormalizada && errorPlaca ? 'text-xs text-red-800' : 'text-xs'}>
+            {placaNormalizada && errorPlaca ? errorPlaca : 'Formato ABC-1234'}
+          </span>
+        </label>{catalogo('chasis', 'Marca del chasis *', chasis)}{catalogo('carroceria', 'Carrocería *', carrocerias)}{campo('correo', 'Correo de contacto', 'email')}<label className="grid gap-1.5 text-sm">Grupo *<select className={entradaConfiguracion} value={datos.grupoId} onChange={e => cambiar('grupoId', e.target.value)}><option value="">Selecciona un grupo</option>{grupos.map(g => <option key={g.id} value={g.id}>{g.nombre}</option>)}</select></label><label className="grid gap-1.5 text-sm">Estado<select className={entradaConfiguracion} value={String(datos.activo)} onChange={e => cambiar('activo', e.target.value === 'true')}><option value="true">Activo</option><option value="false">Inactivo</option></select></label>{campo('propietario', 'Propietario (opcional)')}</div>
         <h3 className="mb-3 mt-5 font-bold">Fotografías del bus</h3><div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{datos.fotos.map(f => <figure key={f.id} className="relative"><img src={f.url} alt={f.nombre} className="h-24 w-full rounded object-cover" /><button type="button" className="absolute right-1 top-1 grid size-8 place-items-center rounded-full bg-white text-red-700" aria-label={`Quitar foto ${f.nombre}`} onClick={() => cambiar('fotos', datos.fotos.filter(x => x.id !== f.id))}>×</button></figure>)}<FotosNuevas archivos={fotos} onQuitar={i => setFotos(actual => actual.filter((_, n) => n !== i))} /><label className="grid min-h-24 cursor-pointer place-items-center rounded-md border border-dashed border-blue-300 bg-blue-50 p-3 text-center text-sm">Subir fotos<input type="file" multiple accept="image/jpeg,image/png,image/webp" disabled={validandoFotos} className="mt-2 block w-full text-xs" onChange={e => { void agregarFotos([...e.target.files ?? []]); e.target.value = ''; }} /></label></div><p className="mt-2 text-xs text-slate-500">JPG, PNG o WebP · máximo 5 MB por imagen · hasta 6 fotos.</p>{validandoFotos && <p role="status">Validando fotografías…</p>}{fotoError && <p role="alert" className="text-sm text-red-700">{fotoError}</p>}
         <h3 className="mb-3 mt-5 font-bold">Servicios y comodidades</h3><div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{servicios.map(s => <label key={s.id} className="flex min-h-11 items-center gap-2 rounded-md bg-green-50 px-3 text-sm"><input type="checkbox" checked={datos.servicios.includes(s.id)} onChange={e => cambiar('servicios', e.target.checked ? [...datos.servicios, s.id] : datos.servicios.filter(id => id !== s.id))} />{s.nombre}</label>)}</div>
       </BloqueConfiguracion>
