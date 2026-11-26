@@ -38,12 +38,20 @@ export default function GruposHabilitadosEditor({ grupos, frecuencias, inicial, 
   const grupo = grupos.find(g => g.id === grupoId);
   const modificado = JSON.stringify([...datos.grupoIds].sort()) !== JSON.stringify([...base.grupoIds].sort());
   const visibles = grupos.filter(g => `${g.nombre} ${g.descripcion}`.toLocaleLowerCase().includes(busqueda.trim().toLocaleLowerCase()));
+  const idsActivos = grupos.filter(g => g.activo).map(g => g.id);
+  const seleccionCompleta = idsActivos.every(id => datos.grupoIds.includes(id));
+  function seleccionarGruposActivos() {
+    setDatos(actual => ({ ...actual, grupoIds: [...new Set([...actual.grupoIds, ...idsActivos])] }));
+    setRevisado(false);
+    setMensaje('');
+    setError('');
+  }
   function alternar(id: string) {
     setDatos(d => ({ ...d, grupoIds: d.grupoIds.includes(id) ? d.grupoIds.filter(g => g !== id) : [...d.grupoIds, id] }));
     setRevisado(false); setMensaje(''); setError('');
   }
   async function guardar() {
-    if (!modificado || !revisado || !frecuencia?.activa || guardando) return;
+    if (!modificado || !revisado || !frecuencia?.activa || !datos.grupoIds.length || guardando) return;
     setGuardando(true); setError('');
     try {
       const respuesta = onGuardar ? await onGuardar({ ...datos, version: base.version }) : { ...datos };
@@ -68,6 +76,14 @@ export default function GruposHabilitadosEditor({ grupos, frecuencias, inicial, 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
         <section className="min-w-0 rounded-lg border border-blue-100 p-4 sm:p-5"><h2 className="mb-4 flex items-center gap-2 text-lg font-bold"><IconoConfiguracion nombre="personas"/>Grupos compatibles</h2>
           <div className="mb-4 flex flex-wrap gap-3"><label className="relative min-w-40 flex-1"><span className="sr-only">Buscar grupo por nombre</span><IconoConfiguracion nombre="lupa" className="absolute left-3 top-3 h-5 w-5 text-indigo-400"/><input type="search" placeholder="Buscar grupo por nombre" className={entradaConfiguracion + ' pl-10'} value={busqueda} onChange={e => setBusqueda(e.target.value)} /></label><Link to={gruposHref} className={botonConfiguracion + ' inline-flex items-center gap-2'}><IconoConfiguracion nombre="ajustes" className="h-5 w-5"/>Gestionar grupos</Link></div>
+          <button
+            type="button"
+            className={botonConfiguracion + ' mb-3'}
+            disabled={guardando || !frecuencia?.activa || seleccionCompleta}
+            onClick={seleccionarGruposActivos}
+          >
+            Seleccionar todos los grupos activos
+          </button>
           <div className="overflow-x-auto rounded-lg border border-blue-100"><table className="w-full text-left text-sm"><thead className="bg-sky-100/80"><tr><th className="p-3"><span className="sr-only">Habilitar</span></th><th className="py-4 pr-3">Grupo</th><th className="hidden py-4 pr-3 sm:table-cell">Buses miembros</th><th className="py-4 pr-3">Habilitación</th><th className="p-3"><span className="sr-only">Detalle</span></th></tr></thead><tbody>{visibles.map(g => <tr key={g.id} className={'border-t border-blue-100 ' + (grupoId === g.id ? 'bg-sky-100/80' : '')}><td className="p-3"><input aria-label={'Habilitar ' + g.nombre} type="checkbox" className="h-5 w-5 accent-blue-600" checked={datos.grupoIds.includes(g.id)} disabled={guardando || !frecuencia?.activa || (!g.activo && !datos.grupoIds.includes(g.id))} onChange={() => { alternar(g.id); setGrupoId(g.id); }} /></td><th scope="row" className="py-5 pr-3">{g.nombre}<small className="block font-normal sm:hidden">{g.buses.filter(b => b.activo).length} buses</small>{!g.activo && <small className="block font-normal text-red-700">Grupo inactivo</small>}</th><td className="hidden pr-3 sm:table-cell">{g.buses.filter(b => b.activo).length} buses</td><td className="pr-2 text-xs sm:whitespace-nowrap sm:pr-3 sm:text-sm"><span className={datos.grupoIds.includes(g.id) ? 'text-green-700' : 'text-slate-500'}>●</span> {datos.grupoIds.includes(g.id) ? 'Habilitado' : 'No habilitado'}</td><td className="pr-2"><button type="button" aria-label={'Ver detalle de ' + g.nombre} className="min-h-11 min-w-9 rounded text-xl text-blue-700 hover:bg-blue-100" onClick={() => setGrupoId(g.id)}>›</button></td></tr>)}</tbody></table></div>
           {visibles.length === 0 && <p className="py-4 text-sm text-slate-500">No se encontraron grupos.</p>}
         </section>
@@ -76,9 +92,10 @@ export default function GruposHabilitadosEditor({ grupos, frecuencias, inicial, 
         </section>
       </div>
       <p className="flex items-center gap-3 rounded-lg bg-blue-50 p-4 text-sm leading-6"><IconoConfiguracion nombre="info" className="h-7 w-7 shrink-0 text-blue-600"/>Solo los grupos habilitados podrán asignarse a esta frecuencia en la hoja de ruta.<br/>Los cambios no modifican viajes ya publicados.</p>
+      {modificado && !datos.grupoIds.length && <p role="status" className="text-sm text-amber-900">Selecciona al menos un grupo para guardar.</p>}
       {modificado && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={revisado} disabled={guardando} onChange={e => setRevisado(e.target.checked)} className="h-4 w-4 accent-blue-600"/>He revisado los cambios: {base.grupoIds.length} grupos antes, {datos.grupoIds.length} habilitados al guardar.</label>}
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}{mensaje && <p role="status" className="rounded bg-green-50 p-3 text-sm text-green-800">{mensaje}</p>}
-      <footer className="flex flex-wrap justify-end gap-3"><button type="button" className={botonConfiguracion} disabled={!modificado || guardando} onClick={() => { setDatos(base); setRevisado(false); setError(''); setMensaje('Se restauraron las compatibilidades.'); }}>Cancelar</button><button type="button" className={guardarConfiguracion + ' inline-flex items-center gap-2'} disabled={!modificado || !revisado || guardando || !frecuencia?.activa} onClick={() => void guardar()}><IconoConfiguracion nombre="guardar" className="h-5 w-5"/>{guardando ? 'Guardando…' : 'Guardar compatibilidades'}</button></footer>
+      <footer className="flex flex-wrap justify-end gap-3"><button type="button" className={botonConfiguracion} disabled={!modificado || guardando} onClick={() => { setDatos(base); setRevisado(false); setError(''); setMensaje('Se restauraron las compatibilidades.'); }}>Cancelar</button><button type="button" className={guardarConfiguracion + ' inline-flex items-center gap-2'} disabled={!modificado || !revisado || guardando || !frecuencia?.activa || !datos.grupoIds.length} onClick={() => void guardar()}><IconoConfiguracion nombre="guardar" className="h-5 w-5"/>{guardando ? 'Guardando…' : 'Guardar compatibilidades'}</button></footer>
     </div>
   </section>;
 }
