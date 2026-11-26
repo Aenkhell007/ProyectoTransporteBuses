@@ -38,6 +38,31 @@ export function enlaceQr(id: string) {
   return `${base}/reservas/${encodeURIComponent(id)}/boleto/qr`;
 }
 export const pagosApi = {
+  prepararPayphone: (id: string, modo: "card" | "payphone" = "card") =>
+    pedir<{
+      intentoId: string;
+      clientTransactionId: string;
+      paymentId: string;
+      urlPago: string;
+      payWithCard: string;
+      payWithPayPhone: string;
+    }>(`/reservas/${encodeURIComponent(id)}/payphone/preparar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ modo }),
+    }),
+  confirmarPayphone: (id: number, clientTransactionId: string) =>
+    pedir<{
+      estado: "APROBADO" | "CANCELADO" | "PENDIENTE";
+      reservaId: string;
+      compraId?: string | null;
+      autorizacion?: string | null;
+      mensaje?: string;
+    }>("/pagos/payphone/confirmar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, clientTransactionId }),
+    }),
   consultar: (id: string, signal?: AbortSignal) =>
     pedir<DatosPago>(`/reservas/${encodeURIComponent(id)}/pago`, { signal }),
   crearIntento: (id: string, cuentaId: string, clave: string) =>

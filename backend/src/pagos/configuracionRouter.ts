@@ -1,4 +1,5 @@
 import express from 'express';
+import { payphoneConfigurado } from './payphone';
 import type { Request } from 'express';
 import type { PoolClient } from 'pg';
 import { createHash, randomUUID } from 'node:crypto';
@@ -31,9 +32,9 @@ export async function leerConfiguracion(db: PoolClient, coop: string) {
     qrId: c.qr_archivo_id, qrSrc: c.qr_archivo_id ? `/api/configuracion/pagos/${coop}/cuentas/${c.id}/qr?v=${c.version}` : '',
   }));
   const metodos = (await db.query(`SELECT m.codigo,m.nombre,m.tipo,m.adaptador_disponible,coalesce(c.habilitado,false) habilitado,coalesce(c.instrucciones,'') instrucciones FROM transporte.metodos_pago m LEFT JOIN transporte.cooperativa_metodos_pago c ON c.metodo_id=m.id AND c.cooperativa_id=$1 ORDER BY m.codigo`, [coop])).rows.map(m => ({
-    codigo: m.codigo, nombre: m.nombre, descripcion: m.tipo === 'PASARELA' ? 'Proveedor pendiente de integración técnica.' : m.codigo === 'BANCO' ? 'Transferencia o depósito con revisión del comprobante.' : 'Cobro presencial por el personal autorizado.',
-    habilitado: m.habilitado && m.adaptador_disponible && ['BANCO', 'EFECTIVO'].includes(m.codigo), disponible: m.adaptador_disponible && ['BANCO', 'EFECTIVO'].includes(m.codigo),
-    instrucciones: m.instrucciones, estado: m.tipo === 'PASARELA' ? 'Pendiente de conexión' : undefined,
+    codigo: m.codigo, nombre: m.nombre, descripcion: m.codigo === 'PAYPHONE' ? 'Pago en línea con tarjeta o aplicación PayPhone.' : m.tipo === 'PASARELA' ? 'Proveedor pendiente de integración técnica.' : m.codigo === 'BANCO' ? 'Transferencia o depósito con revisión del comprobante.' : 'Cobro presencial por el personal autorizado.',
+    habilitado: m.habilitado && m.adaptador_disponible && ['BANCO', 'EFECTIVO', 'PAYPHONE'].includes(m.codigo), disponible: m.adaptador_disponible && ['BANCO', 'EFECTIVO', 'PAYPHONE'].includes(m.codigo),
+    instrucciones: m.instrucciones, estado: m.codigo === 'PAYPHONE' ? (payphoneConfigurado() ? 'Configurado en el servidor' : 'Pendiente de configuración del servidor') : m.tipo === 'PASARELA' ? 'Pendiente de conexión' : undefined,
   }));
   return { cooperativa, version: politica?.version ?? 0, cuentas, metodos, formatos: politica ? Object.keys(FORMATOS).filter(f => politica.mimes.includes(FORMATOS[f])) : ['JPG', 'PNG', 'PDF'],
     maximoMB: Math.min(5, Number(politica?.max_bytes ?? 5242880) / 1048576), referenciaObligatoria: politica?.referencia_obligatoria ?? false,

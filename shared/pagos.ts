@@ -82,6 +82,8 @@ export interface DatosPago {
       banco_id: string;
     } | null;
     metodo: string;
+    metodoCodigo?: string;
+    proveedorOrden?: string | null;
     totalCentavos: number;
   } | null;
   comprobante: {
