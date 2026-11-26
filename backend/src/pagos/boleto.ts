@@ -1,11 +1,16 @@
 import PDFDocument from "pdfkit";
 import QRCode from "qrcode";
 import type { DatosPago } from "../../../shared/pagos";
+import type { MarcaBoleto } from "./marcaBoleto";
 
 const dinero = (n: number) => `$ ${(n / 100).toFixed(2)}`;
 const texto = (valor: unknown) =>
   String(valor ?? "").replace(/[\x00-\x1f]/g, " ");
-export async function generarBoleto(datos: DatosPago): Promise<Buffer> {
+function colorMarca(valor: string | null | undefined, respaldo: string): string {
+  return valor && /^#[0-9a-f]{6}$/i.test(valor) ? valor : respaldo;
+}
+
+export async function generarBoleto(datos: DatosPago, marca: MarcaBoleto = {}): Promise<Buffer> {
   if (
     !datos.compra ||
     datos.compra.estado !== "CONFIRMADA" ||
@@ -29,10 +34,19 @@ export async function generarBoleto(datos: DatosPago): Promise<Buffer> {
     doc.on("end", () => resolve(Buffer.concat(partes)));
     doc.on("error", reject);
   });
+  const primario = colorMarca(marca.colorPrimario, "#08035b");
+  const secundario = colorMarca(marca.colorSecundario, "#00833e");
+  doc.rect(42, 32, 270, 4).fill(primario);
+  doc.rect(312, 32, 100, 4).fill(secundario);
+  let nombreY = 42;
+  if (marca.logo) {
+    doc.image(marca.logo, 42, 43, { fit: [120, 38], valign: "center" });
+    nombreY = 87;
+  }
   doc
     .fillColor("#08035b")
     .fontSize(22)
-    .text(texto(datos.viaje.cooperativa), 42, 42, { width: 370 });
+    .text(texto(datos.viaje.cooperativa), 42, nombreY, { width: 370 });
   doc
     .fontSize(15)
     .text("Boleto de compra confirmada", 42, doc.y + 10, { width: 370 });

@@ -21,6 +21,7 @@ import {
   confirmarPagoPayphone,
 } from "./payphone";
 import { generarBoleto } from "./boleto";
+import { leerMarcaBoleto } from "./marcaBoleto";
 import type { DatosPago } from "../../../shared/pagos";
 import QRCode from "qrcode";
 
@@ -341,7 +342,8 @@ export async function emitir(db: PoolClient, compraId: string, creados: string[]
   if (!documento)
     throw new ErrorPago(409, "La compra no tiene documento para emitir.");
   const datos = await consultar(db, documento.reserva_id);
-  const pdf = await generarBoleto(datos);
+  const marca = await leerMarcaBoleto(db, documento.reserva_id);
+  const pdf = await generarBoleto(datos, marca);
   const archivoId = await guardarArchivo(
     db,
     documento.reserva_id,
