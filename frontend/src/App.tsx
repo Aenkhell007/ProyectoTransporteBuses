@@ -13,7 +13,7 @@ import {VentaOficinaReal} from './features/oficina/VentaOficinaReal';
 import { ReembolsosReal } from './features/oficina/ReembolsosReal';
 import { RevisionComprobanteReal } from './features/oficina/RevisionComprobanteReal';
 import { OficinaComprobantesReal } from './features/oficina/OficinaComprobantesReal';
-import { BusesConectados, BusConectado, IdentidadConectada, GlobalConectada, CompatibilidadesConectadas } from './pages/mikel/EditoresConectados';
+import { BusesConectados, BusConectado, IdentidadConectada, GlobalConectada, CompatibilidadesConectadas, GruposGestionConectada } from './pages/mikel/EditoresConectados';
 import ActivarCuenta from "./pages/auth/ActivarCuenta";
 import ReenviarActivacion from "./pages/auth/ReenviarActivacion";
 import Login from "./pages/auth/Login";
@@ -99,7 +99,7 @@ export function App() {
         <Route path="hoja-ruta" element={<HojaRutaGestion />} />
         <Route path="frecuencias" element={<FrecuenciasGestion />} />
         <Route path="frecuencias/grupos" element={<CompatibilidadesConectadas />} />
-        <Route path="grupos" element={<CompatibilidadesConectadas />} />
+        <Route path="grupos" element={<GruposGestionConectada />} />
         <Route path="*" element={<p className="py-6">Esta sección está pendiente de integración por su responsable.</p>} />
       </Route>
       <Route path="/oficina" element={<AdminLayout variant="oficina" panelFijo />}><Route index element={<OficinaResumenPage />}/><Route path="ventas" element={<VentaOficinaReal />}/><Route path="reservas" element={<OficinaReservasPage />}/><Route path="comprobantes" element={<OficinaComprobantesReal />}/><Route path="comprobantes/ejemplo" element={<RevisionComprobanteEjemplo />} /><Route path="comprobantes/:id" element={<RevisionComprobanteReal />}/><Route path="reembolsos" element={<ReembolsosReal />}/><Route path="*" element={<p>Sección pendiente de integración.</p>}/></Route>

@@ -1,4 +1,4 @@
-export type TipoCelda = 'ASIENTO' | 'PASILLO' | 'BLOQUE';
+export type TipoCelda = 'ASIENTO' | 'PASILLO' | 'BLOQUE' | 'PUERTA';
 
 export interface ClaseAsiento {
   id: string;

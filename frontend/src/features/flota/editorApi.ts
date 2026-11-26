@@ -24,8 +24,32 @@ async function codificar(archivo: File) {
 }
 const ambito = (ruta: string, cooperativaId?: string) => ruta + (cooperativaId ? '?cooperativaId=' + encodeURIComponent(cooperativaId) : '');
 const guardar = <T,>(ruta: string, datos: unknown) => http<T>(`/mikel/${ruta}`, { method: 'PUT', body: JSON.stringify(datos) });
+export interface GrupoCooperativa {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  activo: boolean;
+  buses?: number;
+  frecuencias?: number;
+}
+export interface BusResumenFlota {
+  id: string;
+  unidad: string;
+  placa: string;
+  activo: boolean;
+  chasis?: string;
+  carroceria?: string;
+  grupo_id?: string;
+  grupo_nombre?: string;
+  pisos?: number;
+  asientos_normal?: number;
+  asientos_vip?: number;
+  tiene_bano?: boolean;
+  foto_url?: string | null;
+  servicios?: string[];
+}
 export interface CatalogosEditor {
-  buses: { id: string; unidad: string; placa: string; activo: boolean }[];
+  buses: BusResumenFlota[];
   grupos: { id: string; nombre: string }[];
   clases: ClaseAsiento[];
   servicios: { id: string; nombre: string }[];
@@ -41,5 +65,8 @@ export const editorApi = {
   global: () => http<{ datos: ConfiguracionGlobalDatos; canales: { correo: boolean; whatsapp: boolean }; admiteMfa: boolean }>('/mikel/global'),
   guardarGlobal: (datos: ConfiguracionGlobalDatos) => guardar<ConfiguracionGlobalDatos>('global', datos),
   compatibilidades: (cooperativaId?: string) => http<{ grupos: GrupoCompatible[]; frecuencias: (FrecuenciaCompatible & { version: number })[] }>(ambito('/mikel/compatibilidades', cooperativaId)),
+  listarGrupos: (cooperativaId?: string) => http<{ grupos: GrupoCooperativa[] }>(ambito('/mikel/grupos', cooperativaId)),
+  crearGrupo: (datos: Omit<GrupoCooperativa, 'id' | 'buses' | 'frecuencias'>, cooperativaId?: string) => http<{ grupo: GrupoCooperativa; mensaje: string }>(ambito('/mikel/grupos', cooperativaId), { method: 'POST', body: JSON.stringify(datos) }),
+  actualizarGrupo: (id: string, datos: Omit<GrupoCooperativa, 'id' | 'buses' | 'frecuencias'>, cooperativaId?: string) => guardar<{ grupo: GrupoCooperativa; mensaje: string }>(ambito(`grupos/${encodeURIComponent(id)}`, cooperativaId), datos),
   guardarCompatibilidades: (datos: CompatibilidadGrupos, cooperativaId?: string) => guardar<CompatibilidadGrupos>(ambito('compatibilidades', cooperativaId), datos),
 };

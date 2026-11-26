@@ -20,11 +20,11 @@ export function validarBus(b: any) {
     exigir(c && Number.isInteger(c.piso) && c.piso >= 1 && c.piso <= b.pisos && Number.isInteger(c.fila) && c.fila >= 1 && c.fila <= b.filas && Number.isInteger(c.columna) && c.columna >= 1 && c.columna <= 12, 'Coordenadas del plano inválidas.');
     const p = `${c.piso}:${c.fila}:${c.columna}`;
     exigir(!posiciones.has(p), 'Hay celdas repetidas.'); posiciones.add(p);
-    exigir(['ASIENTO', 'PASILLO', 'BLOQUE'].includes(c.tipo), 'Tipo de celda inválido.');
+    exigir(['ASIENTO', 'PASILLO', 'BLOQUE', 'PUERTA'].includes(c.tipo), 'Tipo de celda inválido.');
     if (c.tipo === 'ASIENTO') {
       exigir(typeof c.codigo === 'string' && c.codigo.length > 0 && c.codigo.length <= 20 && !codigos.has(c.codigo) && typeof c.clase_id === 'string', 'Código o clase de asiento inválidos.');
       codigos.add(c.codigo); asientos++;
-    } else exigir(c.codigo === null && c.clase_id === null, 'Un pasillo o bloque no tiene código ni clase.');
+    } else exigir(c.codigo === null && c.clase_id === null, 'Una celda sin asiento no tiene código ni clase.');
   }
   exigir(asientos > 0, 'Agrega al menos un asiento.');
 }

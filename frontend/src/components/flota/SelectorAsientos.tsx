@@ -36,6 +36,7 @@ export default function SelectorAsientos({ mapa, cantidad, seleccion, onChange }
             <div className="grid gap-2" style={{gridTemplateColumns:`repeat(${columnas},minmax(0,1fr))`}}>
               {celdas.map(c=>{
                 const posicion={gridRow:c.fila,gridColumn:c.columna};
+                if(c.tipo==='PUERTA') return <div key={c.id} style={posicion} className="flex min-h-12 items-center justify-center rounded border border-emerald-300 bg-emerald-900 text-xs text-white" aria-label="Puerta">P</div>;
                 if(c.tipo!=='ASIENTO')return <div key={c.id} style={posicion} aria-hidden="true" className={c.tipo==='BLOQUE'?'min-h-12 rounded-md bg-black/60':'flex items-center justify-center text-[10px] text-white/60'}>{c.tipo==='PASILLO'?c.fila:''}</div>;
                 const elegido=seleccion.includes(c.id),libre=c.estado==='DISPONIBLE';
                 const color=elegido?'border-blue-300 bg-linear-to-b from-blue-500 to-blue-700':libre?'border-green-500 bg-linear-to-b from-green-600 to-green-900':c.estado==='OCUPADO'?'border-red-400 bg-linear-to-b from-red-500 to-red-800':'border-slate-500 bg-[repeating-linear-gradient(135deg,#374151,#374151_6px,#596373_6px,#596373_12px)]';
