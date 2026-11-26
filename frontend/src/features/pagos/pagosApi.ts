@@ -89,4 +89,15 @@ export const pagosApi = {
         body: archivo,
       },
     ),
+  obtenerGoogleWallet: (id: string) =>
+    pedir<
+      | { disponible: true; modo: "OFICIAL"; saveUrl: string; classId: string; objectIds: string[] }
+      | {
+          disponible: false;
+          modo: "DEMO_SIN_CREDENCIALES";
+          motivo: string;
+          guia: string;
+          vistaPrevia: { classId: string; objetos: number; barcode: string; pasajeros: string[] };
+        }
+    >(`/reservas/${encodeURIComponent(id)}/google-wallet`, { method: "POST" }),
 };

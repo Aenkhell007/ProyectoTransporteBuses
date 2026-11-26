@@ -24,6 +24,7 @@ import { generarBoleto } from "./boleto";
 import { leerMarcaBoleto } from "./marcaBoleto";
 import type { DatosPago } from "../../../shared/pagos";
 import QRCode from "qrcode";
+import { ErrorGoogleWallet, generarEnlaceWalletOficial } from "./googleWallet";
 
 import { conservarDatosCompra,conEstadoReembolsos } from "./datos";
 
@@ -137,6 +138,48 @@ pagosRouter.get("/reservas/:id/pago", async (req, res) => {
     responderError(res, e);
   }
 });
+pagosRouter.post("/reservas/:id/google-wallet", async (req, res) => {
+  try {
+    const reservaId = uuid(req.params.id);
+    const datos = await conSesion(token(req), (db) => consultar(db, reservaId));
+    if (datos.compra?.estado !== "CONFIRMADA" ||
+        datos.documento?.estado !== "LISTO" ||
+        !datos.documento.qrId ||
+        datos.pasajeros.length === 0) {
+      throw new ErrorPago(409, "No hay un boleto vigente para guardar.");
+    }
+
+    const wallet = await generarEnlaceWalletOficial({
+      compraId: datos.compra.id,
+      codigo: datos.compra.codigo,
+      qrId: datos.documento.qrId,
+      cooperativa: datos.viaje.cooperativa,
+      origen: datos.viaje.origen,
+      destino: datos.viaje.destino,
+      terminalOrigen: datos.viaje.terminalOrigen,
+      terminalDestino: datos.viaje.terminalDestino,
+      salida: datos.viaje.salida,
+      llegada: datos.viaje.llegada,
+      unidad: datos.viaje.unidad,
+      placa: datos.viaje.placa,
+      servicio: datos.viaje.servicio,
+      pasajeros: datos.pasajeros.map(({ nombre, asiento, piso }) => ({
+        reservaAsientoId: `${piso}_${asiento}`,
+        nombre,
+        asiento,
+        piso,
+      })),
+    });
+    res.set("Cache-Control", "no-store").json(wallet);
+  } catch (e) {
+    if (e instanceof ErrorGoogleWallet) {
+      responderError(res, new ErrorPago(502, "No se pudo preparar el pase de Google Wallet."));
+      return;
+    }
+    responderError(res, e);
+  }
+});
+
 pagosRouter.get("/reservas/:id/boleto/qr", async (req, res) => {
   try {
     const datos = await conSesion(token(req), (db) =>
