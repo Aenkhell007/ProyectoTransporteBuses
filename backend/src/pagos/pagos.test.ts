@@ -8,6 +8,9 @@ import {
   uuid,
 } from "./validacion";
 import { generarBoleto } from "./boleto";
+import sharp from "sharp";
+import { leerMarcaBoleto } from "./marcaBoleto";
+import type { PoolClient } from "pg";
 import { conservarDatosCompra } from "./datos";
 import type { DatosPago } from "../../../shared/pagos";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -218,4 +221,35 @@ test("la confirmación conserva los datos del servicio vendido frente a edicione
   assert.equal(conservados.viaje.placa, "PLACA-VENDIDA");
   assert.equal(conservados.viaje.origen, "CIUDAD-VENDIDA");
   assert.equal(conservados.viaje.destino, datos.viaje.destino);
+});
+
+
+test("boleto: incorpora el logo de la cooperativa sin perder el QR", async () => {
+  const logo = await sharp({
+    create: { width: 60, height: 20, channels: 3, background: "#00833e" },
+  }).png().toBuffer();
+  const db = { query: async (sql: string, params?: string[]) => {
+    if (sql.startsWith("SELECT to_regprocedure")) return { rows: [{ nueva: true, anterior: false }] };
+    assert.deepEqual(params, ["reserva-prueba"]);
+    return { rows: [{ colorPrimario: "#00833e", colorSecundario: "#447788", logo }] };
+  } } as unknown as PoolClient;
+
+  const marca = await leerMarcaBoleto(db, "reserva-prueba");
+  const conLogo = await generarBoleto(datosPrueba(), marca);
+  const sinLogo = await generarBoleto(datosPrueba());
+  const imagenes = (pdf: Buffer) => (pdf.toString("latin1").match(/\/Subtype \/Image\b/g) ?? []).length;
+  assert.ok(imagenes(sinLogo) >= 1);
+  assert.ok(imagenes(conLogo) > imagenes(sinLogo));
+  assert.equal(marca.colorPrimario, "#00833e");
+});
+
+test("boleto: un logo inválido se descarta y el PDF conserva el QR", async () => {
+  const db = { query: async (sql: string) => sql.startsWith("SELECT to_regprocedure")
+    ? { rows: [{ nueva: true, anterior: false }] }
+    : { rows: [{ colorPrimario: "inválido", logo: Buffer.from("no es una imagen") }] }
+  } as unknown as PoolClient;
+
+  const marca = await leerMarcaBoleto(db, "reserva-prueba");
+  assert.equal(marca.logo, null);
+  assert.match((await generarBoleto(datosPrueba(), marca)).toString("latin1"), /\/Subtype \/Image\b/);
 });
