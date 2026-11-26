@@ -31,6 +31,7 @@ import AdminResumenPage from "./features/administracion/AdminResumenPage";
 import { MisViajesPage } from "./pages/mis-viajes/MisViajesPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { InicioPage } from "./pages/compra/InicioPage";
+import { PrivacidadPage } from "./pages/compra/PrivacidadPage";
 
 import SeleccionAsientosPage from "./pages/flota/SeleccionAsientosPage";
 import MetodoPago from "./pages/pagos/MetodoPago";
@@ -208,6 +209,7 @@ export function App() {
         <Route path="/aceptar-invitacion" element={<RestablecerContrasena invitacion />} />
         <Route path="/reenviar-activacion" element={<ReenviarActivacion />} />
         <Route path="/" element={<InicioPage />} />
+        <Route path="/privacidad" element={<PrivacidadPage />} />
         <Route path="/iniciar-sesion" element={<Login />} />
         <Route path="/asientos" element={<SeleccionAsientosPage />} />
         <Route path="/pasajeros" element={<PasajerosPage />} />
