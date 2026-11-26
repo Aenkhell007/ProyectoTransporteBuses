@@ -23,11 +23,35 @@ reembolsosRouter.get("/oficina/reembolsos", async (req, res, next) => {
       await sesionOficina(req, async (db) => ({
         solicitudes: (
           await db.query(
-            `SELECT s.*,(SELECT coalesce(jsonb_agg(a),'[]'::jsonb) FROM jsonb_array_elements(transporte.asientos_reembolso(r.id)) a WHERE (a->>'id')::uuid=ANY(s.reserva_asiento_ids)) AS pasajeros_solicitados,c.codigo,c.total_pagado_centavos,r.id AS reserva_id,coalesce((SELECT pa.nombres || ' ' || pa.apellidos FROM transporte.pasajeros pa JOIN transporte.reserva_asientos ra ON ra.id=pa.reserva_asiento_id WHERE ra.reserva_id=r.id ORDER BY ra.created_at,ra.id LIMIT 1),u.nombres || ' ' || u.apellidos) AS cliente,v.salida,co.nombre AS cooperativa,po.numero_version AS politica_version,po.estado AS politica_estado,ab.evidencia_archivo_id,ab.referencia_externa,ab.ejecutado_at FROM transporte.solicitudes_reembolso s JOIN transporte.compras c ON c.id=s.compra_id JOIN transporte.reservas r ON r.id=c.reserva_id JOIN transporte.usuarios u ON u.id=r.cliente_id JOIN transporte.viajes v ON v.id=r.viaje_id JOIN transporte.cooperativas co ON co.id=s.cooperativa_id JOIN transporte.politicas_reembolso po ON po.id=s.politica_id LEFT JOIN transporte.reembolsos ab ON ab.solicitud_id=s.id WHERE ${alcanceReserva("reembolsos.gestionar")} ORDER BY s.created_at DESC`,
+            `SELECT s.*,(SELECT coalesce(jsonb_agg(a),'[]'::jsonb) FROM jsonb_array_elements(transporte.asientos_reembolso(r.id)) a WHERE (a->>'id')::uuid=ANY(s.reserva_asiento_ids)) AS pasajeros_solicitados,c.codigo,c.total_pagado_centavos,r.id AS reserva_id,coalesce((SELECT pa.nombres || ' ' || pa.apellidos FROM transporte.pasajeros pa JOIN transporte.reserva_asientos ra ON ra.id=pa.reserva_asiento_id WHERE ra.reserva_id=r.id ORDER BY ra.created_at,ra.id LIMIT 1),u.nombres || ' ' || u.apellidos) AS cliente,v.salida,co.nombre AS cooperativa,po.numero_version AS politica_version,po.estado AS politica_estado,ab.evidencia_archivo_id,ab.referencia_externa,ab.ejecutado_at,n.nota AS nota_interna FROM transporte.solicitudes_reembolso s JOIN transporte.compras c ON c.id=s.compra_id JOIN transporte.reservas r ON r.id=c.reserva_id JOIN transporte.usuarios u ON u.id=r.cliente_id JOIN transporte.viajes v ON v.id=r.viaje_id JOIN transporte.cooperativas co ON co.id=s.cooperativa_id JOIN transporte.politicas_reembolso po ON po.id=s.politica_id LEFT JOIN transporte.reembolsos ab ON ab.solicitud_id=s.id LEFT JOIN transporte.notas_internas_reembolso n ON n.solicitud_id=s.id WHERE ${alcanceReserva("reembolsos.gestionar")} ORDER BY s.created_at DESC`,
           )
         ).rows,
       })),
     );
+  } catch (e) {
+    next(e);
+  }
+});
+reembolsosRouter.put("/oficina/reembolsos/:id/nota-interna", async (req, res, next) => {
+  try {
+    const id = uuid(req.params.id);
+    const nota = req.body?.nota;
+    if (typeof nota !== "string" || nota.length > 1000)
+      throw new ErrorOficina(422, "La nota interna admite hasta 1000 caracteres.");
+
+    const guardada = await sesionOficina(req, async (db) => {
+      await solicitud(db, id);
+      const result = await db.query<{ nota_interna: string }>(
+        `INSERT INTO transporte.notas_internas_reembolso (solicitud_id, nota, actualizado_por)
+         VALUES ($1, $2, transporte.actor())
+         ON CONFLICT (solicitud_id) DO UPDATE
+         SET nota = EXCLUDED.nota, actualizado_por = EXCLUDED.actualizado_por, actualizado_at = now()
+         RETURNING nota AS nota_interna`,
+        [id, nota.trim()],
+      );
+      return result.rows[0];
+    });
+    res.json(guardada);
   } catch (e) {
     next(e);
   }

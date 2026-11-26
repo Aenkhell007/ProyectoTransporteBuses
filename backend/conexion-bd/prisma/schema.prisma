@@ -1205,7 +1205,19 @@ model sesiones {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model notas_internas_reembolso {
+  solicitud_id    String                @id @db.Uuid
+  nota            String                @db.VarChar(1000)
+  actualizado_por String                @db.Uuid
+  actualizado_at  DateTime              @default(now()) @db.Timestamptz(6)
+  solicitud       solicitudes_reembolso @relation(fields: [solicitud_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  autor           usuarios              @relation(fields: [actualizado_por], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("transporte")
+}
+
 model solicitudes_reembolso {
+  nota_interna notas_internas_reembolso?
   reserva_asiento_ids String[] @db.Uuid
   base_centavos BigInt
   es_total Boolean @default(true)
@@ -1322,6 +1334,7 @@ model usuario_roles_globales {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model usuarios {
+  notas_internas_reembolso notas_internas_reembolso[]
   version Int @default(1)
   ventas_oficina_peticiones ventas_oficina_peticiones[]
   id                                                                   String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
