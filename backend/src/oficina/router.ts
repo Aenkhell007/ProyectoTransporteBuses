@@ -159,9 +159,7 @@ oficinaRouter.get("/oficina/comprobantes", async (req, res, next) => {
   try {
     res.json(
       await sesionOficina(req, async (db) => ({
-        comprobantes: (await listarReservas(db, true)).filter(
-          (r) => r.comprobante_id,
-        ),
+        comprobantes: await listarReservas(db, true, {}),
       })),
     );
   } catch (e) {
@@ -172,9 +170,8 @@ oficinaRouter.get("/oficina/comprobantes/:id", async (req, res, next) => {
   try {
     res.json(
       await sesionOficina(req, async (db) => {
-        const fila = (await listarReservas(db, true)).find(
-          (r) => r.comprobante_id === identificador(req.params.id),
-        );
+        const id = identificador(req.params.id);
+        const [fila] = await listarReservas(db, true, { id });
         if (!fila) throw new ErrorOficina(404, "Comprobante no disponible.");
         const d = (
           await db.query(
