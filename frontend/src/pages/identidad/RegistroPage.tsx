@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { Link } from "react-router";
 import { authApi } from "../../services/authApi";
+import { POLITICA_PRIVACIDAD } from "../../features/privacidad/politicaPrivacidad";
 import "./registro.css";
 import { PresentacionAuth } from "../../components/auth/PresentacionAuth";
 
@@ -105,7 +106,19 @@ export default function RegistroPage() {
               <input id="registro-aceptaTerminos" name="aceptaTerminos" type="checkbox" required checked={formData.aceptaTerminos} onChange={handleChange} aria-label="Acepto los términos y condiciones y la política de privacidad"/>
               <span><label htmlFor="registro-aceptaTerminos">Acepto los </label><button type="button" onClick={() => setLegal(legal === "terminos" ? null : "terminos")} aria-expanded={legal === "terminos"} aria-controls="registro-legal">términos y condiciones</button> y la <button type="button" onClick={() => setLegal(legal === "privacidad" ? null : "privacidad")} aria-expanded={legal === "privacidad"} aria-controls="registro-legal">política de privacidad</button>.</span>
             </div>
-            {legal && <div id="registro-legal" className="registro-legal"><strong>{legal === "terminos" ? "Términos de la versión académica" : "Privacidad en la versión académica"}</strong><p>{legal === "terminos" ? "Esta versión permite probar la creación de cuentas y el acceso al proyecto. No realiza compras reales. Los términos definitivos están pendientes de publicación." : "Los datos del formulario se guardan en la base compartida del proyecto. El correo se utiliza para bienvenida y recuperación de cuenta. Usa una contraseña exclusiva para esta prueba. La política definitiva está pendiente de publicación."}</p></div>}
+            {legal && <div id="registro-legal" className="registro-legal">
+              {legal === "terminos" ? <>
+                <strong>Términos de la versión académica</strong>
+                <p>Esta versión permite probar la creación de cuentas y el acceso al proyecto. No realiza compras reales. Los términos definitivos están pendientes de publicación.</p>
+              </> : <>
+                <strong>Política de privacidad de la versión académica</strong>
+                <p>Versión {POLITICA_PRIVACIDAD.version} · <time dateTime={POLITICA_PRIVACIDAD.fecha}>{new Intl.DateTimeFormat("es-EC", { dateStyle: "long", timeZone: "UTC" }).format(new Date(POLITICA_PRIVACIDAD.fecha))}</time></p>
+                {POLITICA_PRIVACIDAD.secciones.map(({ titulo, texto }) => (
+                  <p key={titulo}><strong>{titulo}. </strong>{texto}</p>
+                ))}
+                <p><strong>Solicitud de eliminación. </strong>{POLITICA_PRIVACIDAD.solicitudEliminacion} <a href={`mailto:${POLITICA_PRIVACIDAD.contacto}`}>{POLITICA_PRIVACIDAD.contacto}</a>.</p>
+              </>}
+            </div>}
             {error && <p role="alert" className="registro-error">{error}</p>}
             <button className="registro-enviar" type="submit" disabled={enviando}><Icono nombre="usuario"/>{enviando ? "Creando cuenta…" : "Crear cuenta"}</button>
           </fieldset>
