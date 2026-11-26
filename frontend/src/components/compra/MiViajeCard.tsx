@@ -1,3 +1,4 @@
+import { BotonGoogleWallet } from "../pagos/BotonGoogleWallet";
 import { useId } from "react";
 import { Link } from "react-router";
 import type { EstadoMiViaje, MiViaje } from "../../types/compra/misViajes";
@@ -226,6 +227,9 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
                 <Icono nombre="descarga" />
                 Descargar PDF
               </button>
+            )}
+            {viaje.estado === "CONFIRMADA" && listo && (
+              <BotonGoogleWallet reservaId={viaje.reserva_id} className="min-h-10 py-1.5 text-sm" />
             )}
             {viaje.estado === "CONFIRMADA" && (
               <a

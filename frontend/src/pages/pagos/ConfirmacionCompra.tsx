@@ -1,3 +1,4 @@
+import { BotonGoogleWallet } from "../../components/pagos/BotonGoogleWallet";
 import {useEffect,useState} from 'react';
 import {http} from '../../services/http';
 import { Link } from "react-router";
@@ -272,6 +273,9 @@ export default function ConfirmacionCompra() {
               </span>
             </a>
           </nav>
+          <div className="mt-2 sm:max-w-sm">
+            <BotonGoogleWallet reservaId={reservaId} />
+          </div>
           <p className="mt-2 flex items-center gap-[10px] rounded-[5px] bg-[#eaf5ff] px-[15px] py-[9px] text-[14px] [&_svg]:text-[#007cff] max-[601px]:p-2 max-[601px]:text-[12px]">
             <Icono nombre="info" />
             Presenta tu boleto y documento de identidad al abordar. Llega 30
