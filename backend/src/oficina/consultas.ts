@@ -28,8 +28,14 @@ export async function accesoOficina(db: PoolClient) {
   return oficinas;
 }
 
-export async function listarReservas(db: PoolClient, historial = false) {
+export async function listarReservas(
+  db: PoolClient,
+  historial = false,
+  comprobantes?: { id?: string },
+) {
   await accesoOficina(db);
+  const id = comprobantes?.id;
+  const filtro = id ? " AND cp.id=$1" : comprobantes ? " AND cp.id IS NOT NULL" : "";
   return (
     await db.query(`SELECT r.id,r.cooperativa_id,r.oficina_id,r.viaje_id,r.estado,
     CASE WHEN r.estado='PENDIENTE' AND r.expires_at<=now() THEN 'VENCIDA' ELSE r.estado END AS estado_actual,
@@ -55,6 +61,6 @@ export async function listarReservas(db: PoolClient, historial = false) {
     LEFT JOIN transporte.bancos banco ON banco.id::text=i.cuenta_snapshot->>'banco_id'
     LEFT JOIN LATERAL (SELECT s.estado,s.monto_centavos FROM transporte.solicitudes_reembolso s WHERE s.compra_id=c.id ORDER BY s.created_at DESC LIMIT 1) sr ON true
     LEFT JOIN transporte.comprobantes cp ON cp.intento_id=i.id LEFT JOIN transporte.archivos a ON a.id=cp.archivo_id
-    WHERE ${alcanceReserva()} ORDER BY r.created_at DESC`)
+    WHERE ${alcanceReserva()}${filtro} ORDER BY r.created_at DESC`, id ? [id] : [])
   ).rows;
 }
