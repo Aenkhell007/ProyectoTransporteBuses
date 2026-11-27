@@ -35,7 +35,7 @@ import {
   hoyEnEcuador,
   minutosEntre,
 } from "../../features/compra/fechas";
-import { ProgresoCompra } from "../../components/compra/ProgresoCompra";
+import BookingProgress from "../../components/pagos/BookingProgress";
 import { PassengerForm } from "../../components/compra/PassengerForm";
 import { nombreGrupo } from "../../components/compra/TripCard";
 import { BusImagen } from "../../components/compra/BusImagen";
@@ -649,7 +649,7 @@ function Marco({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto w-full max-w-[1440px] px-3 sm:w-[calc(100%-36px)] sm:px-0">
       <div className="space-y-5 rounded-lg bg-white p-3 sm:p-5">
-        <ProgresoCompra pasoActual={4} />
+        <BookingProgress pasoActual={4} />
         {children}
       </div>
     </div>

@@ -8,11 +8,11 @@ import type {
 } from "../../types/compra/reserva";
 import {
   aceptarCotizacion,
-  cancelarReservaResumen,
-  obtenerBeneficiosResumen,
-  obtenerResumen,
-  recotizar,
-} from "../../features/compra/resumenApi";
+  cancelarReserva,
+  obtenerBeneficios,
+  obtenerReserva,
+  cotizarReserva,
+} from "../../features/compra/reservaApi";
 import { ErrorCompra, mensajeDeError } from "../../features/compra/errores";
 import { formatearCentavos } from "../../features/compra/dinero";
 import {
@@ -21,7 +21,7 @@ import {
   formatearFechaNumerica,
   formatearHora,
 } from "../../features/compra/fechas";
-import { ProgresoCompra } from "../../components/compra/ProgresoCompra";
+import BookingProgress from "../../components/pagos/BookingProgress";
 import { TripSummary } from "../../components/compra/TripSummary";
 import { PriceBreakdown } from "../../components/compra/PriceBreakdown";
 import { Icono } from "../../components/compra/Icono";
@@ -61,11 +61,11 @@ export function ResumenCompraPage() {
     setCarga({ estado: "cargando" });
     try {
       const [reserva, beneficios] = await Promise.all([
-        obtenerResumen(reservaId),
-        obtenerBeneficiosResumen(reservaId),
+        obtenerReserva(reservaId),
+        obtenerBeneficios(reservaId),
       ]);
       // Si los pasajeros cambiaron después de la última cotización, se pide una nueva al servidor.
-      const cotizacion = reserva.cotizacion ?? (await recotizar(reservaId));
+      const cotizacion = reserva.cotizacion ?? (await cotizarReserva(reservaId));
       setCarga({
         estado: "listo",
         reserva: { ...reserva, cotizacion },
@@ -192,7 +192,7 @@ export function ResumenCompraPage() {
 
   const editarViaje = async () => {
     try {
-      await cancelarReservaResumen(reserva.reserva_id);
+      await cancelarReserva(reserva.reserva_id);
       navigate(`/viajes?${busqueda}`);
     } catch (e) {
       setConfirmarEdicion(false);
@@ -532,7 +532,7 @@ function Marco({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto w-full max-w-[1440px] px-3 sm:w-[calc(100%-36px)] sm:px-0">
       <div className="space-y-5 rounded-lg bg-white p-3 sm:p-5">
-        <ProgresoCompra pasoActual={5} />
+        <BookingProgress pasoActual={5} />
         {children}
       </div>
     </div>

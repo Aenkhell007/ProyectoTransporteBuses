@@ -1,6 +1,6 @@
 # Módulo de flota y asientos
 
-Responsable: Mikel. La API activa está en `backend/src/flota/router.ts` y `editorRouter.ts`. Las pantallas conectadas están en `frontend/src/pages/mikel/EditoresConectados.tsx`; usan los servicios `features/flota/editorApi.ts`.
+Responsable: Mikel. La API activa está en `backend/src/flota/compatibilidadRouter.ts` y `editorRouter.ts`. Las pantallas conectadas están en `frontend/src/pages/mikel/EditoresConectados.tsx`; usan los servicios `features/flota/editorApi.ts`.
 
 ## Rutas actuales
 
@@ -10,14 +10,13 @@ Responsable: Mikel. La API activa está en `backend/src/flota/router.ts` y `edit
 - `/cooperativa/configuracion`: identidad de la cooperativa.
 - `/asientos`: selección de asientos de un viaje del flujo de compra.
 
-Los ejemplos de desarrollo utilizados se mantienen en `/vista-previa/cooperativa/*` y `/vista-previa/flota/*`. Las páginas anteriores sin rutas, mocks y servicios reemplazados se retiraron en la limpieza del 14/11/2026; su versión original está en Git y en el respaldo local.
+Las rutas antiguas de vista previa de buses, planos e identidad redirigen a las pantallas conectadas. Los ejemplos de selección de asientos redirigen al inicio del flujo de compra.
 
 ## Componentes vigentes
 
-- `components/flota/EditorBus.tsx`, `PlanoEditor.tsx` y `GruposHabilitadosEditor.tsx`.
+- `components/flota/EditorBus.tsx` y `GruposHabilitadosEditor.tsx`.
 - `components/flota/SelectorAsientos.tsx` y `pages/flota/SeleccionAsientosPage.tsx`.
 - `features/flota/plantillasPlano.ts` y sus pruebas.
-- `pages/flota/BusesPage.tsx` y `PlanosBusPage.tsx`: ejemplos utilizados en desarrollo.
 
 ## Reglas
 
