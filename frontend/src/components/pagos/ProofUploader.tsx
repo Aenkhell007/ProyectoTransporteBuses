@@ -93,7 +93,9 @@ export default function ProofUploader({ value, onChange, onValidando, politica }
           <p className="break-all text-sm font-semibold text-blue-950">{value.archivo.name}</p>
           <p className="mt-1 text-xs text-slate-600">{(value.archivo.size / 1024).toLocaleString("es-EC", { maximumFractionDigits: 1 })} KB · {value.mime === "application/pdf" ? "PDF" : "Imagen"}</p>
         </div>
-        <button type="button" onClick={quitar} className="min-h-11 rounded-md border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-red-600">Quitar archivo</button>
+        <button type="button" onClick={quitar} aria-label="Quitar archivo" title="Quitar archivo" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-red-600 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-red-600">
+          <IconoBiblioteca nombre="papelera" className="h-5 w-5" />
+        </button>
       </div>
       {preview && <div className="border-t border-indigo-50 p-3">
         <button type="button" aria-expanded={ampliada} onClick={()=>setAmpliada(!ampliada)} className="flex min-h-10 items-center gap-3 text-sm text-blue-700 underline">

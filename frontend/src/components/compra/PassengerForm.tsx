@@ -148,12 +148,27 @@ export function PassengerForm({
             Datos completos
           </span>
         )}
+        {usarPerfil && (
+          <label className="flex items-center gap-2 text-sm font-medium text-slate-800 sm:ml-auto">
+            <input
+              type="checkbox"
+              checked={usarPerfil.marcado}
+              disabled={usarPerfil.cargando}
+              onChange={(e) => usarPerfil.onCambiar(e.target.checked)}
+              className="h-4 w-4 accent-blue-700"
+            />
+            Usar mis datos de perfil
+            {usarPerfil.cargando && (
+              <span className="text-slate-500">(cargando…)</span>
+            )}
+          </label>
+        )}
         <button
           type="button"
           onClick={onAlternar}
           aria-expanded={abierta}
           aria-controls={`${id}-campos`}
-          className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-blue-600"
+          className={`${usarPerfil ? "ml-auto sm:ml-0" : "ml-auto"} inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-blue-600`}
         >
           <Icono nombre={abierta ? "chevronArriba" : "chevronAbajo"} />
           <span className="sr-only">
@@ -168,21 +183,6 @@ export function PassengerForm({
         hidden={!abierta}
         className="border-t border-slate-100 p-4"
       >
-        {usarPerfil && (
-          <label className="mb-4 flex items-center gap-2 text-sm text-slate-800">
-            <input
-              type="checkbox"
-              checked={usarPerfil.marcado}
-              disabled={usarPerfil.cargando}
-              onChange={(e) => usarPerfil.onCambiar(e.target.checked)}
-              className="h-4 w-4 accent-blue-700"
-            />
-            Usar mis datos de perfil
-            {usarPerfil.cargando && (
-              <span className="text-slate-500">(cargando…)</span>
-            )}
-          </label>
-        )}
 
         <div className="grid gap-4 md:grid-cols-3">
           <Campo id={`${id}-nombres`} etiqueta="Nombres" obligatorio>

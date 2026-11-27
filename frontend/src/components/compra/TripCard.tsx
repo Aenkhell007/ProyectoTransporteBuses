@@ -2,7 +2,6 @@ import { useId, useState } from "react";
 import type {
   ClaseAsientoCodigo,
   DetalleViaje,
-  ServicioBus,
   ViajeResultado,
 } from "../../types/compra/viajes";
 import { formatearCentavos } from "../../features/compra/dinero";
@@ -16,19 +15,38 @@ import { BusImagen } from "./BusImagen";
 import { Icono } from "./Icono";
 import type { NombreIcono } from "./Icono";
 
-export const SERVICIOS_BUS: Record<ServicioBus, [NombreIcono, string]> = {
+export const SERVICIOS_BUS: Record<string, [NombreIcono, string]> = {
   AIRE: ["clima", "Aire acondicionado"],
   ASIENTO_CAMA: ["asiento", "Asientos cama 160°"],
   ASIENTO_RECLINABLE: ["asiento", "Asientos reclinables"],
+  RECLINABLE: ["asiento", "Asientos reclinables"],
   WIFI: ["wifi", "WiFi"],
   BANO: ["bano", "Baño"],
+  COMIDA: ["comida", "Bocaditos y bebidas"],
+  SNACKS: ["comida", "Bocaditos y bebidas"],
+  BOCADITOS: ["comida", "Bocaditos y bebidas"],
   PANTALLAS: ["pantalla", "Pantallas"],
+  PANTALLA: ["pantalla", "Pantallas"],
+  ENTRETENIMIENTO: ["pantalla", "Entretenimiento"],
   ENCHUFES: ["enchufe", "Enchufes USB"],
+  USB: ["enchufe", "Enchufes USB"],
   PORTAEQUIPAJE: ["maleta", "Portaequipaje"],
+  MALETERO: ["maleta", "Maletero"],
 };
+
+export function infoServicioBus(codigo: string): [NombreIcono, string] {
+  const clave = String(codigo ?? "").trim().toUpperCase();
+  if (SERVICIOS_BUS[clave]) return SERVICIOS_BUS[clave];
+  const legible = clave
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/^\w/, (c) => c.toUpperCase());
+  return ["bus", legible || codigo];
+}
 
 export const NOMBRE_CLASE: Record<ClaseAsientoCodigo, string> = {
   NORMAL: "Normal",
+  VIP: "VIP",
   EJECUTIVO: "VIP",
 };
 
@@ -108,14 +126,29 @@ export function TripCard({
           </ul>
           <h3
             id={`${id}-titulo`}
-            className="mt-1.5 text-lg font-bold text-[#08035b]"
+            className="mt-1.5 flex items-center gap-2 text-lg font-bold text-[#08035b]"
           >
-            {viaje.cooperativa}
+            {viaje.cooperativa.trim().toLowerCase() === "gran continental" ? (
+              <img
+                src="/images/Logo%20G-C.png"
+                alt=""
+                aria-hidden="true"
+                className="h-7 w-auto shrink-0 rounded object-contain"
+              />
+            ) : (
+              <span
+                aria-hidden="true"
+                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded bg-blue-50 text-blue-700"
+              >
+                <Icono nombre="bus" className="h-4 w-4" />
+              </span>
+            )}
+            <span>{viaje.cooperativa}</span>
             <span className="sr-only">
               , salida {formatearHora(viaje.salida)} desde {viaje.origen.ciudad}
             </span>
           </h3>
-          <p className="flex flex-wrap items-baseline gap-x-3 text-xl font-bold text-[#08035b]">
+          <p className="mt-1 flex flex-wrap items-baseline gap-x-3 text-xl font-bold text-[#08035b]">
             <time dateTime={viaje.salida}>{formatearHora(viaje.salida)}</time>
             <Icono
               nombre="flechaDerecha"
@@ -140,11 +173,8 @@ export function TripCard({
               terminal={viaje.destino.terminal}
             />
           </div>
-          <p className="mt-2 text-sm text-slate-700">
+          <p className="mt-2 text-sm font-medium text-slate-700">
             Unidad {bus.unidad} · Placa {bus.placa}
-          </p>
-          <p className="text-sm text-slate-500">
-            Chasis {bus.chasis} · Carrocería {bus.carroceria}
           </p>
           <button
             type="button"
@@ -176,6 +206,12 @@ export function TripCard({
               ? "asiento disponible"
               : "asientos disponibles"}
           </p>
+          {(viaje.disponibles_normal !== undefined || viaje.disponibles_vip !== undefined) && (
+            <p className="text-xs text-slate-600 lg:text-right">
+              Normal: <strong>{viaje.disponibles_normal ?? 0}</strong> · VIP:{" "}
+              <strong>{viaje.disponibles_vip ?? 0}</strong>
+            </p>
+          )}
           <button
             type="button"
             onClick={onSeleccionar}
@@ -194,12 +230,15 @@ export function TripCard({
         className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-slate-100 pt-2 text-xs text-slate-600"
         aria-label="Servicios del bus"
       >
-        {bus.servicios.map((s) => (
-          <li key={s} className="flex items-center gap-1.5">
-            <Icono nombre={(SERVICIOS_BUS[s] ?? ["bus", s])[0] as NombreIcono} className="h-4 w-4" />
-            {(SERVICIOS_BUS[s] ?? ["bus", s])[1]}
-          </li>
-        ))}
+        {bus.servicios.map((s) => {
+          const [icono, etiqueta] = infoServicioBus(s);
+          return (
+            <li key={s} className="flex items-center gap-1.5">
+              <Icono nombre={icono} className="h-4 w-4 shrink-0" />
+              {etiqueta}
+            </li>
+          );
+        })}
       </ul>
 
       <div
@@ -222,10 +261,6 @@ export function TripCard({
               <dd>{detalle.detalle.bus.unidad}</dd>
               <dt className="text-slate-500">Placa</dt>
               <dd>{detalle.detalle.bus.placa}</dd>
-              <dt className="text-slate-500">Chasis</dt>
-              <dd>{detalle.detalle.bus.chasis}</dd>
-              <dt className="text-slate-500">Carrocería</dt>
-              <dd>{detalle.detalle.bus.carroceria}</dd>
               <dt className="text-slate-500">Pisos</dt>
               <dd>{detalle.detalle.bus.pisos}</dd>
             </dl>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
+import { AMBITOS_OPERACION, PROVINCIAS_ECUADOR, type AmbitoOperacion } from '../../constants/ecuador';
 import { ConfiguracionCooperativaTabs, IconoConfiguracion } from './ConfiguracionCooperativaTabs';
 import { botonConfiguracion, entradaConfiguracion, guardarConfiguracion } from './EditorConfiguracionGlobal';
 
@@ -9,6 +10,8 @@ export interface IdentidadCooperativaDatos {
   nombre: string;
   razonSocial: string;
   ruc: string;
+  ambitoOperacion?: AmbitoOperacion;
+  provincia?: string;
   lema: string;
   logoUrl: string;
   primario: string;
@@ -20,6 +23,7 @@ export interface IdentidadCooperativaDatos {
   direccion: string;
   facebook: string;
   instagram: string;
+  oficinas?: { id: string; nombre: string; direccion: string; telefono: string; activa: boolean }[];
 }
 
 function luminancia(hex: string) {
@@ -48,23 +52,37 @@ export function validarIdentidad(datos: IdentidadCooperativaDatos) {
   if (!redValida(datos.facebook, ['facebook.com', 'www.facebook.com'])) errores.facebook = 'Usa una dirección HTTPS de Facebook.';
   if (!redValida(datos.instagram, ['instagram.com', 'www.instagram.com'])) errores.instagram = 'Usa una dirección HTTPS de Instagram.';
   if (datos.lema.length > 160) errores.lema = 'El lema admite hasta 160 caracteres.';
+  if (datos.ambitoOperacion && datos.ambitoOperacion !== 'INTERPROVINCIAL' && !(datos.provincia ?? '').trim()) {
+    errores.provincia = 'Selecciona la provincia de operación.';
+  }
   return errores;
 }
 
 async function validarLogo(archivo: File) {
-  if (archivo.size > 2 * 1024 * 1024 || archivo.size === 0) throw new Error('El logo debe pesar como máximo 2 MB.');
+  if (archivo.size > 5 * 1024 * 1024 || archivo.size === 0) throw new Error('El logo debe pesar como máximo 5 MB.');
   if (archivo.type === 'image/png') {
     const firma = new Uint8Array(await archivo.slice(0, 8).arrayBuffer());
     if (firma.join(',') !== '137,80,78,71,13,10,26,10') throw new Error('El archivo no es un PNG válido.');
-    const imagen = await createImageBitmap(archivo);
-    const dimensionesValidas = imagen.width <= 4096 && imagen.height <= 4096;
-    imagen.close();
-    if (!dimensionesValidas) throw new Error('El logo no debe superar 4096 × 4096 píxeles.');
+  } else if (archivo.type === 'image/jpeg') {
+    const firma = new Uint8Array(await archivo.slice(0, 3).arrayBuffer());
+    if (firma[0] !== 0xff || firma[1] !== 0xd8 || firma[2] !== 0xff) throw new Error('El archivo no es un JPG válido.');
+  } else if (archivo.type === 'image/webp') {
+    const firma = new Uint8Array(await archivo.slice(0, 12).arrayBuffer());
+    const riff = firma[0] === 82 && firma[1] === 73 && firma[2] === 70 && firma[3] === 70;
+    const webp = firma[8] === 87 && firma[9] === 69 && firma[10] === 66 && firma[11] === 80;
+    if (!riff || !webp) throw new Error('El archivo no es un WebP válido.');
   } else if (archivo.type === 'image/svg+xml') {
     const documento = new DOMParser().parseFromString(await archivo.text(), 'image/svg+xml');
     const permitidos = new Set(['svg', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'title', 'desc', 'defs', 'linearGradient', 'radialGradient', 'stop', 'clipPath']);
-    if (documento.documentElement.localName !== 'svg' || documento.querySelector('parsererror') || [...documento.querySelectorAll('*')].some(nodo => !permitidos.has(nodo.localName) || [...nodo.attributes].some(a => /^on/i.test(a.name) || /href|style/i.test(a.name) || /url\s*\(\s*(?!#)[^)]+\)/i.test(a.value)))) throw new Error('Usa un SVG estático sin scripts, estilos ni recursos externos, o un PNG.');
-  } else throw new Error('Selecciona un logo PNG o SVG.');
+    if (documento.documentElement.localName !== 'svg' || documento.querySelector('parsererror') || [...documento.querySelectorAll('*')].some(nodo => !permitidos.has(nodo.localName) || [...nodo.attributes].some(a => /^on/i.test(a.name) || /href|style/i.test(a.name) || /url\s*\(\s*(?!#)[^)]+\)/i.test(a.value)))) throw new Error('Usa un SVG estático sin scripts, estilos ni recursos externos, o una imagen PNG, JPG o WebP.');
+    return;
+  } else {
+    throw new Error('Selecciona un logo en formato PNG, JPG, WebP o SVG.');
+  }
+  const imagen = await createImageBitmap(archivo);
+  const dimensionesValidas = imagen.width <= 8192 && imagen.height <= 8192;
+  imagen.close();
+  if (!dimensionesValidas) throw new Error('El logo no debe superar 8192 × 8192 píxeles.');
 }
 
 interface Props {
@@ -83,8 +101,11 @@ export default function EditorIdentidad({ inicial, onGuardar }: Props) {
   const [validandoLogo, setValidandoLogo] = useState(false);
   const [logoError, setLogoError] = useState('');
   const [previewLogo, setPreviewLogo] = useState('');
+  const [logoRoto, setLogoRoto] = useState(false);
   const generacion = useRef(0);
   const archivoInput = useRef<HTMLInputElement>(null);
+  const logoEfectivo = previewLogo || datos.logoUrl || (datos.nombre.trim().toLowerCase() === 'gran continental' ? '/images/Logo%20G-C.png' : '');
+  useEffect(() => { setLogoRoto(false); }, [previewLogo, datos.logoUrl]);
   useEffect(() => { if (!logo) { setPreviewLogo(''); return; } const url = URL.createObjectURL(logo); setPreviewLogo(url); return () => URL.revokeObjectURL(url); }, [logo]);
   useEffect(() => () => { generacion.current += 1; }, []);
   const modificado = JSON.stringify(datos) !== JSON.stringify(base) || !!logo;
@@ -129,9 +150,61 @@ export default function EditorIdentidad({ inicial, onGuardar }: Props) {
     <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
       <fieldset disabled={ocupado} className="min-w-0 space-y-3">
         <TarjetaIdentidad titulo="Identidad de la cooperativa" icono="identidad">
-          <div className="mb-4 grid items-center gap-4 sm:grid-cols-2"><div className="grid h-28 place-items-center rounded-lg border border-blue-100 bg-white p-3"><img src={previewLogo || datos.logoUrl} alt="Logo de la cooperativa" className="max-h-24 w-full object-contain" /></div><div><label className={botonConfiguracion + ' inline-flex cursor-pointer items-center gap-2'}><IconoConfiguracion nombre="subir" className="h-5 w-5" />Cambiar logo<input ref={archivoInput} type="file" accept="image/png,image/svg+xml" className="sr-only" onChange={e => void cargarLogo(e.target.files?.[0])} /></label><p className="mt-2 text-xs leading-5 text-indigo-700">Formatos permitidos: PNG, SVG. Máximo 2 MB.<br/>Tamaño recomendado: 400 × 200 px.</p></div></div>
+          <div className="mb-4 grid items-center gap-4 sm:grid-cols-2"><div className="grid h-28 place-items-center rounded-lg border border-blue-100 bg-white p-3">{logoEfectivo && !logoRoto ? <img src={logoEfectivo} alt="Logo de la cooperativa" onError={() => setLogoRoto(true)} className="max-h-24 w-full object-contain" /> : <div className="flex flex-col items-center justify-center gap-1 text-center text-xs text-slate-500"><IconoConfiguracion nombre="identidad" className="h-8 w-8 text-blue-300" /><span>Sin logo cargado</span></div>}</div><div><label className={botonConfiguracion + ' inline-flex cursor-pointer items-center gap-2'}><IconoConfiguracion nombre="subir" className="h-5 w-5" />Cambiar logo<input ref={archivoInput} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="sr-only" onChange={e => void cargarLogo(e.target.files?.[0])} /></label><p className="mt-2 text-xs leading-5 text-indigo-700">Formatos permitidos: PNG, JPG, WebP o SVG. Máximo 5 MB.<br/>Recomendado: fondo transparente, 400 × 200 px (se optimiza automáticamente).</p></div></div>
           {logoError && <p role="alert" className="mb-3 text-sm text-red-700">{logoError}</p>}{validandoLogo && <p role="status">Validando logo…</p>}
-          <div className="grid gap-3 sm:grid-cols-2">{campo('nombre', 'Nombre comercial *')}{campo('razonSocial', 'Razón social *')}{campo('ruc', 'RUC *')}{campo('lema', 'Lema')}</div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {campo('nombre', 'Nombre comercial *')}
+            {campo('razonSocial', 'Razón social *')}
+            {campo('ruc', 'RUC *')}
+            {campo('lema', 'Lema')}
+            <label className="grid gap-1.5 text-sm">
+              Ámbito de operación
+              <select
+                className={entradaConfiguracion}
+                value={datos.ambitoOperacion ?? 'INTERPROVINCIAL'}
+                onChange={(e) => {
+                  const ambito = e.target.value as AmbitoOperacion;
+                  setDatos((d) => ({
+                    ...d,
+                    ambitoOperacion: ambito,
+                    provincia: ambito === 'INTERPROVINCIAL' ? '' : (d.provincia ?? ''),
+                  }));
+                  setMensaje('');
+                  setError('');
+                  setErrores((err) => ({ ...err, ambitoOperacion: undefined, provincia: undefined }));
+                }}
+              >
+                {AMBITOS_OPERACION.map((op) => (
+                  <option key={op.codigo} value={op.codigo}>{op.etiqueta}</option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-1.5 text-sm">
+              {(datos.ambitoOperacion ?? 'INTERPROVINCIAL') === 'INTERPROVINCIAL'
+                ? 'Provincia sede (opcional)'
+                : 'Provincia de operación *'}
+              <select
+                className={entradaConfiguracion}
+                value={datos.provincia ?? ''}
+                aria-invalid={!!errores.provincia}
+                aria-describedby={errores.provincia ? 'error-provincia' : undefined}
+                onChange={(e) => cambiar('provincia', e.target.value)}
+              >
+                <option value="">Selecciona provincia…</option>
+                {PROVINCIAS_ECUADOR.map((prov) => (
+                  <option key={prov} value={prov}>{prov}</option>
+                ))}
+              </select>
+              {errores.provincia && (
+                <span id="error-provincia" className="text-xs text-red-700">{errores.provincia}</span>
+              )}
+            </label>
+          </div>
+          <p className="mt-2 text-xs text-indigo-700">
+            {(datos.ambitoOperacion ?? 'INTERPROVINCIAL') === 'INTERPROVINCIAL'
+              ? 'Operación interprovincial: habilitada entre terminales de todo el país.'
+              : `Georreferenciación provincial activa: las rutas y paraderos se restringen a ${datos.provincia || 'la provincia elegida'}.`}
+          </p>
         </TarjetaIdentidad>
         <TarjetaIdentidad titulo="Colores de la aplicación" icono="colores"><div className="grid grid-cols-1 gap-3 sm:grid-cols-3">{([['primario', 'Color primario'], ['secundario', 'Color secundario'], ['texto', 'Color de texto']] as const).map(([nombre, etiqueta]) => <label key={nombre} className="grid gap-2 text-xs">{etiqueta}<span className="flex min-w-0 items-center overflow-hidden rounded-md border border-indigo-200 bg-blue-50/30"><input type="color" aria-label={'Elegir ' + etiqueta.toLowerCase()} value={colores[nombre]} onChange={e => cambiar(nombre, e.target.value)} className="h-10 w-10 shrink-0 cursor-pointer border-0 bg-transparent p-1" /><input aria-label={'Código ' + etiqueta.toLowerCase()} value={String(datos[nombre])} onChange={e => cambiar(nombre, e.target.value)} maxLength={7} aria-invalid={!!errores[nombre]} className="min-w-0 w-full bg-transparent px-2 py-2 text-xs uppercase outline-blue-600" /></span>{errores[nombre] && <span className="text-red-700">{errores[nombre]}</span>}</label>)}</div><p className="mt-2 text-[11px] text-indigo-700">Los colores no alteran el logo. Contraste mínimo del texto: 4.5:1.</p></TarjetaIdentidad>
         <TarjetaIdentidad titulo="Datos de contacto" icono="telefono"><div className="grid gap-3 sm:grid-cols-2">{campo('email', 'Correo de soporte *', 'email')}{campo('telefono', 'Teléfono', 'tel')}{campo('whatsapp', 'WhatsApp', 'tel')}{campo('direccion', 'Dirección')}</div></TarjetaIdentidad>
@@ -140,7 +213,7 @@ export default function EditorIdentidad({ inicial, onGuardar }: Props) {
       <aside className="min-w-0 space-y-3">
         <TarjetaIdentidad titulo="Vista previa" icono="ojo"><p className="-mt-2 mb-3 text-xs text-indigo-700">Así se verá la identidad de tu cooperativa en el sitio de los clientes.</p>
           <div aria-label="Vista previa de la identidad" className="overflow-hidden rounded-lg border border-indigo-100 bg-white shadow-sm" style={{ color: colores.texto }}>
-            <div className="flex items-center justify-between p-3"><img src={previewLogo || datos.logoUrl} alt="Logo en la vista previa" className="h-14 w-36 object-contain" /><span aria-hidden="true" className="text-2xl">☰</span></div>
+            <div className="flex items-center justify-between p-3">{logoEfectivo && !logoRoto ? <img src={logoEfectivo} alt="Logo en la vista previa" onError={() => setLogoRoto(true)} className="h-14 w-36 object-contain" /> : <span className="inline-flex h-14 items-center gap-2 text-sm font-bold"><IconoConfiguracion nombre="identidad" className="h-6 w-6 text-blue-700" />{datos.nombre || 'Tu cooperativa'}</span>}<span aria-hidden="true" className="text-2xl">☰</span></div>
             <div className="flex justify-between gap-2 border-b border-blue-100 px-3 pb-3 text-[10px]"><span>Inicio</span><span>Buses</span><span>Rutas</span><span>Terminales</span><span>Contacto</span></div>
             <div className="relative bg-slate-900"><img src="/images/home/hero-gran-continental.webp" alt="Bus en los Andes" className="h-40 w-full object-cover opacity-70" /><div className="absolute inset-0 flex flex-col justify-center p-4 text-white"><h3 className="max-w-48 text-xl font-bold leading-tight">Viaja con {datos.nombre || 'tu cooperativa'}</h3><p className="mt-2 text-xs italic">{datos.lema}</p></div></div>
             <div className="space-y-3 bg-slate-50 p-3"><div className="rounded-lg bg-white p-2 shadow-sm"><div className="mb-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-xs"><div className="rounded-lg border border-blue-100 p-2"><span className="block text-[10px]">Origen</span><strong>Quito</strong></div><span aria-hidden="true">⇄</span><div className="rounded-lg border border-blue-100 p-2"><span className="block text-[10px]">Destino</span><strong>Guayaquil</strong></div></div><span className="flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold" style={{ background: colores.primario, color: textoBoton }}><IconoConfiguracion nombre="lupa" className="h-4 w-4"/>Buscar pasajes</span></div>

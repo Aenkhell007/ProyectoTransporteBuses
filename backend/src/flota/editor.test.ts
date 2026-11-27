@@ -16,16 +16,36 @@ test('bus: una puerta se guarda como celda sin código ni clase', () => {
   assert.throws(() => validarBus({ ...bus, celdas: [celda, { ...puerta, codigo: 'P1' }] }));
 });
 test('bus: no admite payload incompleto ni placa o correo inválido',()=>{
-  for(const d of [null,{}, {...bus,placa:'abc'}, {...bus,correo:'incorrecto'}, {...bus,activo:'true'}, {...bus,celdas:[]}])assert.throws(()=>validarBus(d));
+  for(const d of [null,{}, {...bus,placa:'abc'}, {...bus,placa:'ABC-123'}, {...bus,placa:'ABC-12345'}, {...bus,correo:'incorrecto'}, {...bus,activo:'true'}, {...bus,celdas:[]}])assert.throws(()=>validarBus(d));
 });
 const global = {idioma:'es-EC',moneda:'USD',zonaHoraria:'America/Guayaquil',sesionHoras:8,mfaAdministradores:false,formatos:['JPG','PDF'],maxArchivoMB:5,correo:false,whatsapp:false};
+test('bus: admite celdas PUERTA válidas sin código ni clase y rechaza PUERTA con código',()=>{
+  assert.doesNotThrow(()=>validarBus({
+    ...bus,
+    celdas:[
+      celda,
+      {piso:1,fila:1,columna:4,tipo:'PUERTA',codigo:null,clase_id:null},
+      {piso:1,fila:1,columna:5,tipo:'PUERTA',codigo:null,clase_id:null},
+    ],
+  }));
+  assert.throws(()=>validarBus({
+    ...bus,
+    celdas:[celda,{piso:1,fila:1,columna:4,tipo:'PUERTA',codigo:'P1',clase_id:null}],
+  }));
+});
 test('global: límites válidos y proveedores ausentes no se pueden activar',()=>{
   assert.doesNotThrow(()=>validarGlobal(global));
   for(const d of [{...global,sesionHoras:25},{...global,formatos:[]},{...global,formatos:['EXE']},{...global,maxArchivoMB:6},{...global,mfaAdministradores:true},{...global,whatsapp:true}])assert.throws(()=>validarGlobal(d));
 });
-test('identidad: rechaza enlaces ejecutables y redes ajenas',()=>{
+test('identidad: rechaza enlaces ejecutables, redes ajenas y exige provincia en ámbitos locales',()=>{
   const identidad={nombre:'Prueba',razonSocial:'Cooperativa de prueba',ruc:'1234567890001',email:'test@example.com',primario:'#ff0018',secundario:'#00833e',texto:'#08035b',telefono:'',whatsapp:'',lema:'',direccion:'',facebook:'https://facebook.com/prueba',instagram:''};
   assert.doesNotThrow(()=>validarIdentidad(identidad));
+  assert.doesNotThrow(()=>validarIdentidad({...identidad,ambitoOperacion:'INTERPROVINCIAL',provincia:''}));
+  assert.doesNotThrow(()=>validarIdentidad({...identidad,ambitoOperacion:'URBANA',provincia:'Tungurahua'}));
+  assert.doesNotThrow(()=>validarIdentidad({...identidad,ambitoOperacion:'RURAL',provincia:'Pichincha'}));
+  assert.throws(()=>validarIdentidad({...identidad,ambitoOperacion:'URBANA',provincia:''}));
+  assert.throws(()=>validarIdentidad({...identidad,ambitoOperacion:'RURAL',provincia:'   '}));
+  assert.throws(()=>validarIdentidad({...identidad,ambitoOperacion:'INVALIDO',provincia:'Azuay'}));
   assert.throws(()=>validarIdentidad({...identidad,facebook:'javascript:alert(1)'}));
   assert.throws(()=>validarIdentidad({...identidad,facebook:'https://facebook.com.ejemplo.com'}));
   assert.throws(()=>validarIdentidad({...identidad,primario:'red'}));

@@ -1,3 +1,5 @@
+import { ancestrosFramePermitidos } from "../origen";
+
 export class ErrorPago extends Error {
   constructor(
     public status: number,
@@ -53,6 +55,33 @@ export function nombreSeguro(valor: unknown): string {
       .replace(/^\.+/, "")
       .slice(-100) || "comprobante"
   );
+}
+export function cabecerasArchivoPago(
+  rutaPrivada: string,
+  mime: string,
+  solicitaInline: boolean,
+): Record<string, string> {
+  const inline =
+    solicitaInline &&
+    ["image/png", "image/jpeg", "application/pdf"].includes(mime);
+  const nombre = nombreSeguro(rutaPrivada.split("/").pop());
+  if (!inline) {
+    return {
+      "Content-Type": mime,
+      "Content-Security-Policy": "default-src 'none'; sandbox",
+      "Content-Disposition": `attachment; filename="${nombre}"`,
+    };
+  }
+  const ancestros = ancestrosFramePermitidos();
+  return {
+    "Content-Type": mime,
+    "X-Frame-Options": "SAMEORIGIN",
+    "Content-Security-Policy":
+      mime === "application/pdf"
+        ? `frame-ancestors ${ancestros}`
+        : `default-src 'none'; img-src 'self'; frame-ancestors ${ancestros}`,
+    "Content-Disposition": `inline; filename="${nombre}"`,
+  };
 }
 export function referenciaValida(valor: unknown, obligatoria: boolean) {
   const ref = typeof valor === "string" ? valor.trim() : "";

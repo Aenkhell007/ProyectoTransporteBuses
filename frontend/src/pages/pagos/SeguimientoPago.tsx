@@ -110,9 +110,7 @@ export default function SeguimientoPago() {
         Actualizar estado
       </button>
       <div className="min-w-0 font-[Arial,Helvetica,sans-serif] text-[#08035b] [&_a]:no-underline [&_a:focus-visible]:outline-3 [&_a:focus-visible]:outline-[#007cff] [&_a:focus-visible]:outline-offset-4 [&_summary:focus-visible]:outline-3 [&_summary:focus-visible]:outline-[#007cff] [&_summary:focus-visible]:outline-offset-4">
-        {!reservaId ||
-        !flujo ||
-        (!flujo.comprobante &&
+        {(!flujo.comprobante &&
           estado !== "vencida" &&
           estado !== "cancelada" &&
           estado !== "aprobado") ||
@@ -132,7 +130,7 @@ export default function SeguimientoPago() {
           </div>
         ) : (
           <>
-            <div className="">
+            <div>
               <div className="min-w-0">
                 <div className="clear-both px-[14px] pt-[5px] pb-5 text-center [&_h2]:text-[29px] [&_h2]:font-bold [&_h2]:leading-[1.3] [&_h2]:tracking-[-.7px] max-[761px]:px-[5px] max-[761px]:pt-[10px] max-[761px]:pb-[14px] max-[761px]:[&_h2]:text-[22px] max-[761px]:[&_h2]:tracking-[-.5px]">
                   <ComprobanteRecibido estado={estado} />

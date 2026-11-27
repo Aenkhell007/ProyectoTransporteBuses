@@ -44,6 +44,17 @@ test('Benjamín: frecuencia → tarifas → borrador → publicación → reserv
  assert.equal((await api('frecuencias',{},'PUT',actor.token,c,'https://ajeno.invalid')).status,403);
  const f={codigo:'TEST-FRE',hora:'08:00',resolucion:'RES-PRUEBA',tipo:'DIRECTO',activa:true,grupos:[g],paradas:[{terminalId:t1,minutos:0},{terminalId:t2,minutos:120}]};
  const alta=await api('frecuencias',f);assert.equal(alta.status,200,JSON.stringify(alta));const fid=alta.datos.id;
+ const completo=await api('contexto');assert.equal(completo.status,200);
+ const partes:Record<string,string[]>={resumen:['frecuencias','grupos','buses','viajes','indisponibilidades'],frecuencias:['frecuencias','grupos','terminales'],tarifas:['frecuencias','grupos','tarifas','beneficios','clases','impuestos'],planificacion:['frecuencias','grupos','buses','viajes','conductores','indisponibilidades'],politica:[]};
+ const listas=['frecuencias','grupos','buses','viajes','tarifas','beneficios','terminales','clases','impuestos','conductores','indisponibilidades'];
+ for(const [vista,campos]of Object.entries(partes)){
+  const parcial=await api('contexto?vista='+vista);assert.equal(parcial.status,200);
+  assert.deepEqual(parcial.datos.cooperativa,completo.datos.cooperativa);assert.deepEqual(parcial.datos.permisos,completo.datos.permisos);
+  for(const campo of listas)assert.deepEqual(parcial.datos[campo],campos.includes(campo)?completo.datos[campo]:[],vista+': '+campo);
+ }
+ assert.equal((await api('contexto?vista=__proto__')).status,422);
+ assert.equal((await api('contexto?vista=politica',undefined,'GET',cliente.token)).status,403);
+
  assert.equal((await api('frecuencias',{...f,codigo:'OTRA',paradas:[{terminalId:t1,minutos:0},{terminalId:t1,minutos:60}]})).status,422);
  assert.equal((await api('frecuencias',{...f,id:fid,version:0})).status,409);
  const dia=new Date(Date.now()+7*86400000).toISOString().slice(0,10);

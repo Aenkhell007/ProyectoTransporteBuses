@@ -125,36 +125,6 @@ export function FiltrosViajesPanel({
             ))}
           </select>
         </Filtro>
-        <Filtro id={`${id}-chasis`} icono="bus" etiqueta="Chasis">
-          <select
-            id={`${id}-chasis`}
-            value={filtros.chasis}
-            onChange={(e) => cambiar("chasis", e.target.value)}
-            className={control}
-          >
-            <option value="">Todas las marcas</option>
-            {opciones.chasis.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </Filtro>
-        <Filtro id={`${id}-carroceria`} icono="bus" etiqueta="Carrocería">
-          <select
-            id={`${id}-carroceria`}
-            value={filtros.carroceria}
-            onChange={(e) => cambiar("carroceria", e.target.value)}
-            className={control}
-          >
-            <option value="">Todas las marcas</option>
-            {opciones.carrocerias.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </Filtro>
         <Filtro id={`${id}-tipo`} icono="reloj" etiqueta="Tipo de viaje">
           <select
             id={`${id}-tipo`}

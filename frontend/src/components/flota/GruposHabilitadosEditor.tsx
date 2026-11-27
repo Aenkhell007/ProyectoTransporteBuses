@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router';
+import { Link } from 'react-router';
 import { IconoConfiguracion } from '../configuracion/ConfiguracionCooperativaTabs';
 import { useState } from 'react';
 import { botonConfiguracion, guardarConfiguracion, entradaConfiguracion } from '../configuracion/EditorConfiguracionGlobal';
@@ -22,14 +22,12 @@ interface Props {
 }
 
 export default function GruposHabilitadosEditor({ grupos, frecuencias, inicial, onGuardar }: Props) {
-  const { pathname } = useLocation();
-  const gruposHref = pathname.startsWith('/cooperativa') ? '/cooperativa/grupos' : '/vista-previa/cooperativa/grupos';
+  const gruposHref = '/cooperativa/grupos';
   const [base, setBase] = useState(inicial);
   const [confirmados, setConfirmados] = useState<Record<string, CompatibilidadGrupos>>({ [inicial.frecuenciaId]: inicial });
   const [datos, setDatos] = useState(inicial);
   const [busqueda, setBusqueda] = useState('');
   const [grupoId, setGrupoId] = useState<string | null>(inicial.grupoIds[0] ?? grupos[0]?.id ?? null);
-  const [tab, setTab] = useState('grupos');
   const [revisado, setRevisado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState('');
@@ -62,19 +60,22 @@ export default function GruposHabilitadosEditor({ grupos, frecuencias, inicial, 
     finally { setGuardando(false); }
   }
   return <section className="space-y-4 text-[#08035b]">
-    <header><h1 className="text-2xl font-bold sm:text-3xl">Gestión de frecuencias</h1><p className="mt-1 text-sm text-indigo-700">Registra frecuencias autorizadas y sus paradas.</p></header>
+    <header><h1 className="text-2xl font-bold sm:text-3xl">Gestión de frecuencias</h1><p className="mt-1 text-sm text-indigo-700">Asigna uno, varios o todos los grupos de buses que operan cada frecuencia autorizada.</p></header>
     {!onGuardar && <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">Vista previa con datos de ejemplo. Los cambios se conservan en esta pantalla; integración con el servidor pendiente.</p>}
-    <div role="tablist" aria-label="Frecuencias y compatibilidades" className="flex border-b border-indigo-100">{[['frecuencias', 'Frecuencias'], ['grupos', 'Grupos habilitados']].map(([id, nombre]) => <button key={id} type="button" role="tab" id={'tab-' + id} aria-controls={'panel-' + id} aria-selected={tab === id} onClick={() => setTab(id)} className={'min-h-12 px-5 text-sm ' + (tab === id ? 'border-b-2 border-blue-600 font-bold' : '')}>{nombre}</button>)}</div>
-    <div role="tabpanel" id="panel-frecuencias" aria-labelledby="tab-frecuencias" hidden={tab !== 'frecuencias'} className="space-y-3">
-      {frecuencias.map(f => <article key={f.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-indigo-100 p-4"><div><h2 className="font-bold">{f.codigo} · {f.origen} → {f.destino}</h2><p className="mt-1 text-sm">{f.hora} · {f.activa ? 'Activa' : 'Inactiva'}</p></div><button type="button" className={botonConfiguracion} disabled={modificado || guardando} onClick={() => { const ids = grupos.filter(g => g.frecuenciaIds.includes(f.id)).map(g => g.id); const siguiente = confirmados[f.id] ?? { version: f.version ?? inicial.version, frecuenciaId: f.id, grupoIds: ids }; setDatos(siguiente); setBase(siguiente); setTab('grupos'); setGrupoId(null); setMensaje(''); setError(''); setRevisado(false); }}>Ver grupos</button></article>)}
-      {frecuencias.length === 0 && <p>No hay frecuencias disponibles.</p>}
-      {modificado && <p role="status" className="text-sm text-amber-900">Confirma o cancela los cambios antes de abrir otra frecuencia.</p>}
-
+    <div className="flex flex-wrap items-end justify-between gap-3 border-b border-indigo-100">
+      <nav aria-label="Frecuencias y compatibilidades" className="flex">
+        <Link to="/cooperativa/frecuencias" className="min-h-12 px-5 py-3 text-sm hover:text-blue-700">Frecuencias</Link>
+        <span aria-current="page" className="min-h-12 border-b-2 border-blue-600 px-5 py-3 text-sm font-bold">Grupos habilitados</span>
+      </nav>
+      <Link to="/cooperativa/frecuencias" className={guardarConfiguracion + ' mb-2 inline-flex items-center gap-1.5 no-underline'}>＋ Nueva frecuencia</Link>
     </div>
-    <div role="tabpanel" id="panel-grupos" aria-labelledby="tab-grupos" hidden={tab !== 'grupos'} className="space-y-4">
+    <div role="tabpanel" id="panel-grupos" className="space-y-4">
       {frecuencia ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-blue-200 bg-gradient-to-r from-sky-100 to-blue-50 p-4"><strong className="flex flex-wrap items-center gap-3 text-lg sm:text-xl"><IconoConfiguracion nombre="bus" className="h-8 w-8"/>{frecuencia.codigo}<span aria-hidden="true">·</span>{frecuencia.origen} → {frecuencia.destino}<span aria-hidden="true">·</span>{frecuencia.hora}</strong><span className={'rounded-full px-4 py-1.5 text-sm ' + (frecuencia.activa ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800')}>● {frecuencia.activa ? 'Activa' : 'Inactiva'}</span></div> : <p role="alert">Selecciona una frecuencia válida.</p>}
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
-        <section className="min-w-0 rounded-lg border border-blue-100 p-4 sm:p-5"><h2 className="mb-4 flex items-center gap-2 text-lg font-bold"><IconoConfiguracion nombre="personas"/>Grupos compatibles</h2>
+        <section className="min-w-0 rounded-lg border border-blue-100 p-4 sm:p-5">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="flex items-center gap-2 text-lg font-bold"><IconoConfiguracion nombre="personas"/>Grupos habilitados ({datos.grupoIds.length})</h2>
+          </div>
           <div className="mb-4 flex flex-wrap gap-3"><label className="relative min-w-40 flex-1"><span className="sr-only">Buscar grupo por nombre</span><IconoConfiguracion nombre="lupa" className="absolute left-3 top-3 h-5 w-5 text-indigo-400"/><input type="search" placeholder="Buscar grupo por nombre" className={entradaConfiguracion + ' pl-10'} value={busqueda} onChange={e => setBusqueda(e.target.value)} /></label><Link to={gruposHref} className={botonConfiguracion + ' inline-flex items-center gap-2'}><IconoConfiguracion nombre="ajustes" className="h-5 w-5"/>Gestionar grupos</Link></div>
           <button
             type="button"

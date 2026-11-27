@@ -1,7 +1,8 @@
 import { Icono, type NombreIcono } from "../../components/compra/Icono";
 import "./oficina.css";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { http } from "../../services/http";
+import { http, leerHttpCache } from "../../services/http";
+import { CargaSeccion, useMostrarCarga } from "../../components/ui/CargaSeccion";
 export const dinero = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
     n,
@@ -69,14 +70,25 @@ export function Indicadores({items}: {items: {nombre: string; valor: string|numb
  return <div key={i.nombre} className="of-indicador"><span className={"of-icono of-icono--"+color}><Icono nombre={iconoPara(i.nombre)} className="size-8" /></span><div><p>{i.nombre}</p><strong>{i.valor}</strong></div></div>;
  })}</div>;
 }
-export function useConsulta<T>(ruta: string) {
-  const [datos, setDatos] = useState<T | null>(null);
+export function useConsulta<T>(ruta: string, activo = true) {
+  const inicial = activo ? leerHttpCache<T>(ruta) : null;
+  const [datos, setDatos] = useState<T | null>(inicial);
   const [error, setError] = useState("");
-  const [cargando, setCargando] = useState(true);
+  const [cargando, setCargando] = useState(activo && !inicial);
   const [version, setVersion] = useState(0);
   useEffect(() => {
+    if (!activo) {
+      setCargando(false);
+      return;
+    }
     const c = new AbortController();
-    setCargando(true);
+    const enCache = version === 0 ? leerHttpCache<T>(ruta) : null;
+    if (enCache) {
+      setDatos(enCache);
+      setCargando(false);
+    } else if (!datos) {
+      setCargando(true);
+    }
     setError("");
     http<T>(ruta, { signal: c.signal })
       .then((d) => {
@@ -90,7 +102,7 @@ export function useConsulta<T>(ruta: string) {
         if (!c.signal.aborted) setCargando(false);
       });
     return () => c.abort();
-  }, [ruta, version]);
+  }, [ruta, version, activo]);
   return { datos, error, cargando, recargar: () => setVersion((v) => v + 1) };
 }
 export function ConsultaEstado({
@@ -102,6 +114,9 @@ export function ConsultaEstado({
   error: string;
   recargar: () => void;
 }) {
+  const mostrarSkeleton = useMostrarCarga(cargando && !error, 250);
+  if (mostrarSkeleton) return <CargaSeccion />;
+  if (!error) return null;
   return (
     <>
       {cargando && (
@@ -127,10 +142,12 @@ export function ConsultaEstado({
 export function Dialogo({
   titulo,
   cerrar,
+  textoCerrar = 'Cerrar detalle',
   children,
 }: {
   titulo: string;
   cerrar: () => void;
+  textoCerrar?: string;
   children: ReactNode;
 }) {
   const caja = useRef<HTMLDivElement>(null);
@@ -176,7 +193,7 @@ export function Dialogo({
         }}
       >
         <button type="button" className={boton} onClick={cerrar}>
-          Cerrar detalle
+          {textoCerrar}
         </button>
         <h2 className="my-4 text-xl font-bold">{titulo}</h2>
         {children}

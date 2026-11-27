@@ -14,6 +14,9 @@ export interface LineaCotizacion {
   /** Descuento del beneficio en puntos base (3000 = 30 %). */
   descuento_bp: number | null;
   base_centavos: number;
+  tarifa_normal_centavos?: number;
+  recargo_vip_centavos?: number;
+  recargo_vip_pct?: number;
   descuento_centavos: number;
   servicio_centavos: number;
   impuesto_bp: number;
@@ -29,6 +32,8 @@ export interface Cotizacion {
   version: number;
   moneda: "USD";
   base_centavos: number;
+  tarifa_normal_centavos?: number;
+  recargo_vip_centavos?: number;
   descuento_centavos: number;
   servicio_centavos: number;
   subtotal_neto_centavos: number;

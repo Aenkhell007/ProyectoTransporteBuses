@@ -1,12 +1,19 @@
 import { listarViajesPropios, tarjetaViaje } from "./misViajes";
-import { conservarDatosCompra } from "../pagos/datos";
+import { conservarDatosCompra, conEstadoReembolsos } from "../pagos/datos";
+import {
+  enriquecerCotizacionConVip,
+  obtenerDetalleVipMarca,
+} from "../pagos/desgloseVip";
+import { limpiarTrasError } from "../pagos/router";
 import type { DatosPago } from "../../../shared/pagos";
 import express, { Router } from "express";
 import type { Request, Response, NextFunction } from "express";
+import type { PoolClient } from "pg";
 import { randomUUID } from "node:crypto";
 import { pool } from "../database";
 import { conSesion } from "../sesion";
 import { validarArchivo, nombreSeguro, ErrorPago } from "../pagos/validacion";
+import { origenPermitido } from "../origen";
 import { guardarArchivo } from "../pagos/archivos";
 
 export const compraRouter = Router();
@@ -123,13 +130,9 @@ function ruta(trabajo: (req: Request, res: Response) => Promise<unknown>) {
 compraRouter.use((req: Request, res: Response, next: NextFunction) => {
   res.setHeader("Cache-Control", "no-store");
   if (!["GET", "HEAD", "OPTIONS"].includes(req.method)) {
-    const permitidos = [
-      process.env.FRONTEND_URL ?? "http://127.0.0.1:5173",
-      "http://localhost:5173",
-    ];
     if (
       req.headers["sec-fetch-site"] === "cross-site" ||
-      (req.headers.origin && !permitidos.includes(req.headers.origin))
+      (req.headers.origin && !origenPermitido(req.headers.origin))
     ) {
       error(res, new ErrorCompraServidor(403, "Origen no permitido."));
       return;
@@ -137,9 +140,17 @@ compraRouter.use((req: Request, res: Response, next: NextFunction) => {
   }
   next();
 });
-const catalogos = async () =>
-  (await pool.query("SELECT transporte.compra_catalogos() datos")).rows[0]
-    .datos;
+// Catálogo público: comparte solo la consulta en curso entre los endpoints.
+// Al terminar no se conserva una respuesta que pueda ocultar cambios de datos.
+let catalogoPendiente: Promise<any> | null = null;
+function catalogos() {
+  if (!catalogoPendiente) {
+    const consulta = pool.query('SELECT transporte.compra_catalogos() datos').then(r=>r.rows[0].datos);
+    catalogoPendiente = consulta;
+    void consulta.finally(()=>{if(catalogoPendiente===consulta)catalogoPendiente=null;}).catch(()=>{});
+  }
+  return catalogoPendiente;
+}
 compraRouter.get('/catalogos/contacto',ruta(async(_req,res)=>{
   res.json({data:(await pool.query('SELECT transporte.contacto_publico() datos')).rows[0].datos});
 }));
@@ -196,7 +207,7 @@ compraRouter.get(
     };
     if (q.cooperativa) p.cooperativa = id(q.cooperativa, "cooperativa");
     for (const [k, opciones] of Object.entries({
-      clase: ["NORMAL", "EJECUTIVO"],
+      clase: ["NORMAL", "VIP", "EJECUTIVO"],
       tipo_viaje: ["DIRECTO", "CON_PARADAS"],
       hora: ["MADRUGADA", "MANANA", "TARDE", "NOCHE"],
       orden: ["salida", "precio"],
@@ -204,7 +215,7 @@ compraRouter.get(
       if (q[k]) {
         if (typeof q[k] !== "string" || !opciones.includes(q[k] as string))
           throw new ErrorCompraServidor(422, "Filtro no válido.", k);
-        p[k] = q[k];
+        p[k] = k === "clase" && q[k] === "EJECUTIVO" ? "VIP" : q[k];
       }
     }
     for (const k of ["chasis", "carroceria"])
@@ -226,21 +237,58 @@ compraRouter.get(
         "El mínimo supera al máximo.",
         "precio_min",
       );
-    res.json(
-      (
-        await pool.query("SELECT transporte.compra_buscar($1::jsonb) datos", [
-          JSON.stringify(p),
-        ])
-      ).rows[0].datos,
-    );
+    const resultado = (
+      await pool.query("SELECT transporte.compra_buscar($1::jsonb) datos", [
+        JSON.stringify(p),
+      ])
+    ).rows[0].datos as { data?: Array<{ viaje_id: string; origen_orden: number; destino_orden: number; disponibles_normal?: number; disponibles_vip?: number }> };
+    if (Array.isArray(resultado?.data) && resultado.data.length > 0) {
+      try {
+        const items = resultado.data;
+        const filas = (
+          await pool.query(
+            "SELECT viaje_id,origen_orden,destino_orden,disponibles_normal,disponibles_vip FROM transporte.disponibilidad_clases_viajes($1::uuid[],$2::int[],$3::int[])",
+            [
+              items.map((x) => x.viaje_id),
+              items.map((x) => x.origen_orden),
+              items.map((x) => x.destino_orden),
+            ],
+          )
+        ).rows as Array<{
+          viaje_id: string;
+          origen_orden: number;
+          destino_orden: number;
+          disponibles_normal: number;
+          disponibles_vip: number;
+        }>;
+        const mapa = new Map<string, { normal: number; vip: number }>();
+        for (const f of filas) {
+          mapa.set(`${f.viaje_id}:${f.origen_orden}:${f.destino_orden}`, {
+            normal: Number(f.disponibles_normal ?? 0),
+            vip: Number(f.disponibles_vip ?? 0),
+          });
+        }
+        for (const item of items) {
+          const disp = mapa.get(`${item.viaje_id}:${item.origen_orden}:${item.destino_orden}`);
+          if (disp) {
+            item.disponibles_normal = disp.normal;
+            item.disponibles_vip = disp.vip;
+          }
+        }
+      } catch {
+        // Conserva el resultado base de compra_buscar si falla el desglose opcional.
+      }
+    }
+    res.json(resultado);
   }),
 );
 compraRouter.get(
   "/viajes/:id",
   ruta(async (req, res) => {
+    const viajeId = id(req.params.id);
     const datos = (
       await pool.query("SELECT transporte.compra_detalle($1,$2,$3) datos", [
-        id(req.params.id),
+        viajeId,
         req.query.origen_orden
           ? entero(req.query.origen_orden, 0, 10000, "origen_orden")
           : null,
@@ -249,6 +297,23 @@ compraRouter.get(
           : null,
       ])
     ).rows[0].datos;
+    if (
+      datos &&
+      typeof datos.origen_orden === "number" &&
+      typeof datos.destino_orden === "number"
+    ) {
+      try {
+        const t = (
+          await pool.query(
+            "SELECT transporte.compra_tarifas_viaje($1,$2,$3) AS tarifas",
+            [viajeId, datos.origen_orden, datos.destino_orden],
+          )
+        ).rows[0]?.tarifas;
+        if (t && typeof t === "object") datos.tarifas_clase = t;
+      } catch {
+        // Conserva el detalle base si la consulta de tarifas por clase no está disponible.
+      }
+    }
     res.json(datos);
   }),
 );
@@ -329,18 +394,28 @@ compraRouter.post(
     res.status(201).json(datos);
   }),
 );
+async function resumenReservaConVip(db: PoolClient, rid: string) {
+  const datos = (
+    await db.query("SELECT transporte.compra_resumen($1) datos", [rid])
+  ).rows[0].datos;
+  if (datos?.cotizacion) {
+    const detalle = await obtenerDetalleVipMarca(db, rid);
+    if (detalle) {
+      datos.cotizacion = enriquecerCotizacionConVip(
+        datos.cotizacion,
+        detalle.tarifaNormalCentavos,
+      );
+    }
+  }
+  return datos;
+}
+
 compraRouter.get(
   "/reservas/:id/resumen",
   ruta(async (req, res) =>
     res.json(
-      await conSesion(
-        token(req),
-        async (db) =>
-          (
-            await db.query("SELECT transporte.compra_resumen($1) datos", [
-              id(req.params.id),
-            ])
-          ).rows[0].datos,
+      await conSesion(token(req), (db) =>
+        resumenReservaConVip(db, id(req.params.id)),
       ),
     ),
   ),
@@ -490,9 +565,7 @@ compraRouter.post(
       await conSesion(token(req), async (db) => {
         const rid = id(req.params.id);
         await db.query("SELECT transporte.cotizar($1)", [rid]);
-        return (
-          await db.query("SELECT transporte.compra_resumen($1) datos", [rid])
-        ).rows[0].datos.cotizacion;
+        return (await resumenReservaConVip(db, rid)).cotizacion;
       }),
     ),
   ),
@@ -532,26 +605,36 @@ compraRouter.post(
       5 * 1024 * 1024,
       ["image/jpeg", "image/png", "application/pdf"],
     );
-    const nombre = nombreSeguro(
-      decodeURIComponent(String(req.headers["x-file-name"] ?? "respaldo")),
-    );
+    let nombreCrudo = String(req.headers["x-file-name"] ?? "respaldo");
+    try {
+      nombreCrudo = decodeURIComponent(nombreCrudo);
+    } catch {
+      // Conservar nombre original sanitizado si contiene secuencias % inválidas.
+    }
+    const nombre = nombreSeguro(nombreCrudo);
     const creados: string[] = [];
-    const archivo = await conSesion(token(req), async (db) => {
-      const r = (
-        await db.query("SELECT transporte.compra_resumen($1) datos", [rid])
-      ).rows[0].datos;
-      if (r.estado !== "PENDIENTE")
-        throw new ErrorCompraServidor(409, "La reserva ya no es editable.");
-      return guardarArchivo(
-        db,
-        rid,
-        datos,
-        nombre,
-        String(req.headers["content-type"]).split(";")[0],
-        "RESPALDO",
-        creados,
-      );
-    });
+    let archivo: string;
+    try {
+      archivo = await conSesion(token(req), async (db) => {
+        const r = (
+          await db.query("SELECT transporte.compra_resumen($1) datos", [rid])
+        ).rows[0].datos;
+        if (r.estado !== "PENDIENTE")
+          throw new ErrorCompraServidor(409, "La reserva ya no es editable.");
+        return guardarArchivo(
+          db,
+          rid,
+          datos,
+          nombre,
+          String(req.headers["content-type"]).split(";")[0],
+          "RESPALDO",
+          creados,
+        );
+      });
+    } catch (error) {
+      await limpiarTrasError(req, creados);
+      throw error;
+    }
     res.status(201).json({ archivo_id: archivo });
   }),
 );
@@ -613,7 +696,8 @@ compraRouter.get("/mis-viajes/:id",ruta(async(req,res)=>{
  const viaje=await conSesion(token(req),async db=>{
   const propia=await db.query("SELECT r.id FROM transporte.reservas r LEFT JOIN transporte.compras c ON c.reserva_id=r.id WHERE r.cliente_id=transporte.actor() AND(r.id=$1 OR c.id=$1)",[identificador]);
   if(!propia.rowCount)throw new ErrorCompraServidor(404,"Reserva no disponible.");
-  const d=conservarDatosCompra((await db.query("SELECT transporte.consultar_pago_cliente($1) datos",[propia.rows[0].id])).rows[0].datos as DatosPago);
+  const baseDatos=conservarDatosCompra((await db.query("SELECT transporte.consultar_pago_cliente($1) datos",[propia.rows[0].id])).rows[0].datos as DatosPago);
+  const d=await conEstadoReembolsos(db,baseDatos);
   const estado=d.compra?.estado==='CONFIRMADA'?(Date.parse(d.viaje.salida)>Date.now()?'CONFIRMADA':'FINALIZADO'):d.compra?.estado??(d.reserva.estado==='CANCELADA'?'CANCELADA':d.reserva.estado==='VENCIDA'||Date.parse(d.reserva.expires_at)<=Date.now()?'VENCIDA':d.intento?.estado==='EN_REVISION'?'PAGO_EN_VERIFICACION':d.intento?.estado==='RECHAZADO'?'RECHAZADA':'PENDIENTE_PAGO');
   return tarjetaViaje(d,estado);
  });res.json(numeroSeguro(viaje));

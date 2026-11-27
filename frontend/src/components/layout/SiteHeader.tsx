@@ -138,8 +138,21 @@ function HeaderLink({ href = '/', onClick, ...props }: ComponentProps<'a'>) {
     onClick?.(event);
     if (!event.defaultPrevented && event.button === 0 &&
         !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey &&
-        (!props.target || props.target === '_self') && href === '/') {
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        (!props.target || props.target === '_self')) {
+      if (href === '/') {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        document.getElementById('gc-public-scroll')?.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      } else if (href.startsWith('/#') || href.startsWith('#')) {
+        const hashPart = href.slice(href.indexOf('#') + 1);
+        if (hashPart) {
+          try {
+            const targetId = decodeURIComponent(hashPart);
+            document.getElementById(targetId)?.scrollIntoView({ block: 'start' });
+          } catch {
+            // Ignora fragmentos de URL malformados.
+          }
+        }
+      }
     }
   }} />;
 }

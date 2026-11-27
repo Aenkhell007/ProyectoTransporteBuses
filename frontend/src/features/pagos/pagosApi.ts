@@ -1,3 +1,4 @@
+import { solicitar } from '../../services/solicitudes';
 import {avisarSesionVencida} from '../auth/sesionVencida';
 import type { DatosPago } from "../../../../shared/pagos";
 export type { DatosPago };
@@ -14,7 +15,7 @@ export class ErrorPagoApi extends Error {
   }
 }
 async function pedir<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
-  const respuesta = await fetch(`${base}${ruta}`, {
+  const respuesta = await solicitar(`${base}${ruta}`, {
     ...opciones,
     credentials: "include",
   });
@@ -37,7 +38,18 @@ export function enlaceArchivo(id: string, archivoId: string, ver = false) {
 export function enlaceQr(id: string) {
   return `${base}/reservas/${encodeURIComponent(id)}/boleto/qr`;
 }
+export function enlaceLogoCooperativa(id: string) {
+  return `${base}/reservas/${encodeURIComponent(id)}/cooperativa/logo`;
+}
 export const pagosApi = {
+  consultar: (id: string, signal?: AbortSignal) =>
+    pedir<DatosPago>(`/reservas/${encodeURIComponent(id)}/pago`, { signal }),
+  crearIntento: (id: string, cuentaId: string, clave: string) =>
+    pedir<{ id: string }>(`/reservas/${encodeURIComponent(id)}/intentos-pago`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cuentaId, clave }),
+    }),
   prepararPayphone: (id: string, modo: "card" | "payphone" = "card") =>
     pedir<{
       intentoId: string;
@@ -62,14 +74,6 @@ export const pagosApi = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, clientTransactionId }),
-    }),
-  consultar: (id: string, signal?: AbortSignal) =>
-    pedir<DatosPago>(`/reservas/${encodeURIComponent(id)}/pago`, { signal }),
-  crearIntento: (id: string, cuentaId: string, clave: string) =>
-    pedir<{ id: string }>(`/reservas/${encodeURIComponent(id)}/intentos-pago`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cuentaId, clave }),
     }),
   enviar: (
     id: string,

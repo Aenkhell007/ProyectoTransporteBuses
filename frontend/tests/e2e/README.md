@@ -13,3 +13,8 @@ node frontend/tests/e2e/seleccion-cooperativa.cjs
 ```
 
 La existencia de capturas no equivale a una prueba de conexión real. Las transacciones, RLS, propiedad de reservas y permisos se prueban por separado en `backend/src/*/*.db.test.ts`.
+
+
+## Regresión de carga de datos
+
+`node frontend/tests/e2e/rendimiento.cjs` comprueba que StrictMode y la sincronización del ámbito en la URL generan una sola consulta de sesión y contexto, y que cambiar de cooperativa consulta datos nuevos. Usa únicamente fixtures y latencia simulada.

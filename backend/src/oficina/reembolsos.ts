@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import express, { Router } from "express";
 import { sesionOficina, ErrorOficina } from "./acceso";
 import { alcanceReserva } from "./consultas";
-import { uuid, validarArchivo, nombreSeguro } from "../pagos/validacion";
+import { uuid, validarArchivo, nombreSeguro, cabecerasArchivoPago } from "../pagos/validacion";
 import { guardarArchivo, leerArchivo } from "../pagos/archivos";
 import type { PoolClient } from "pg";
 export const reembolsosRouter = Router();
@@ -178,6 +178,13 @@ reembolsosRouter.post(
         "image/jpeg",
         "application/pdf",
       ]);
+      const rawNombre = String(req.get("x-file-name") ?? "");
+      let nombreArchivo = rawNombre;
+      try {
+        nombreArchivo = decodeURIComponent(rawNombre);
+      } catch {
+        nombreArchivo = rawNombre;
+      }
       const result = await sesionOficina(req, async (db) => {
         const s = await solicitud(db, id);
         await db.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
@@ -205,7 +212,7 @@ reembolsosRouter.post(
           db,
           s.reserva_id,
           req.body,
-          nombreSeguro(req.get("x-file-name")),
+          nombreSeguro(nombreArchivo),
           mime,
           "REEMBOLSO",
           creados,
@@ -240,13 +247,7 @@ reembolsosRouter.get(
         return r;
       });
       res
-        .type(a.mime)
-        .set(
-          "Content-Disposition",
-          'attachment; filename="' +
-            nombreSeguro(a.ruta_privada.split("/").pop()) +
-            '"',
-        )
+        .set(cabecerasArchivoPago(a.ruta_privada, a.mime, false))
         .send(await leerArchivo(a.ruta_privada));
     } catch (e) {
       next(e);

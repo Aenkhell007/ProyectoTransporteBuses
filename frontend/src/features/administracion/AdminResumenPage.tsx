@@ -5,6 +5,8 @@ import {
   fetchAdminResumenData,
   mensajeErrorResumen,
 } from "./AdminResumenPage.service";
+import { leerHttpCache } from "../../services/http";
+import { CargaSeccion, useMostrarCarga } from "../../components/ui/CargaSeccion";
 import { Icono, type NombreIcono } from "../../components/compra/Icono";
 import { Dialogo, Indicadores } from "../oficina/ui";
 import type {
@@ -20,14 +22,20 @@ type EstadoResumen =
 export function AdminResumenPage() {
   const navigate = useNavigate();
   const [detalle, setDetalle] = useState<CooperativaItem | null>(null);
-  const [estado, setEstado] = useState<EstadoResumen>({ tipo: "cargando" });
-  const [intento, setIntento] = useState(0);
   const [fecha, setFecha] = useState(() =>
     new Date().toLocaleDateString("en-CA", { timeZone: "America/Guayaquil" }),
   );
+  const [estado, setEstado] = useState<EstadoResumen>(() => {
+    const cache = leerHttpCache<AdminResumenResponse>(`/admin/resumen?hasta=${encodeURIComponent(fecha)}`);
+    return cache ? { tipo: "listo", datos: cache } : { tipo: "cargando" };
+  });
+  const [intento, setIntento] = useState(0);
+  const mostrarCarga = useMostrarCarga(estado.tipo === "cargando", 250);
 
   useEffect(() => {
     const consulta = new AbortController();
+    const cache = intento === 0 ? leerHttpCache<AdminResumenResponse>(`/admin/resumen?hasta=${encodeURIComponent(fecha)}`) : null;
+    if (cache) setEstado({ tipo: "listo", datos: cache });
     fetchAdminResumenData(undefined, fecha, consulta.signal)
       .then((datos) => {
         if (!consulta.signal.aborted) setEstado({ tipo: "listo", datos });
@@ -41,11 +49,7 @@ export function AdminResumenPage() {
   }, [intento, fecha]);
 
   if (estado.tipo === "cargando") {
-    return (
-      <p role="status" className="p-4">
-        Cargando panel de administración…
-      </p>
-    );
+    return mostrarCarga ? <CargaSeccion /> : null;
   }
 
   if (estado.tipo === "error") {
@@ -68,14 +72,15 @@ export function AdminResumenPage() {
     );
   }
 
-  const datos = estado.datos;
+  const datos = estado.tipo === "listo" ? estado.datos : null;
+  if (!datos) return null;
 
   const { kpis, cooperativas, usuariosPorRol, tendenciaUsuarios } = datos;
   const escala=escalaRegistros(tendenciaUsuarios.map(t=>t.registros));
   const puntos=tendenciaUsuarios.map((t,i)=>({...t,x:tendenciaUsuarios.length===1?280:44+i*464/(tendenciaUsuarios.length-1),y:174-t.registros/escala.tope*144}));
   const linea=puntos.map(p=>p.x+","+p.y).join(" ");
   const area=puntos.length>1?puntos[0].x+",174 "+linea+" "+puntos[puntos.length-1].x+",174":"";
-  const rolVisible=(rol:string)=>/admin/i.test(rol)?"Administrador":/oficin/i.test(rol)?"Oficinista":/cooperativa/i.test(rol)?"Cooperativa":/chofer|conductor/i.test(rol)?"Chofer":/cliente/i.test(rol)?"Cliente":rol;
+  const rolVisible=(rol:string)=>/cooperativa/i.test(rol)?"Cooperativa":/admin/i.test(rol)?"Administrador":/oficin/i.test(rol)?"Oficinista":/personal del bus|chofer|conductor/i.test(rol)?"Chofer":/cliente/i.test(rol)?"Cliente":rol;
   const orden=["Cliente","Oficinista","Cooperativa","Chofer","Administrador"];
   const roles=orden.map(rol=>({rol,cantidad:usuariosPorRol.filter(r=>rolVisible(r.rol)===rol).reduce((n,r)=>n+r.cantidad,0)}));
   const extras=usuariosPorRol.filter(r=>!orden.includes(rolVisible(r.rol)));roles.push(...extras);
@@ -91,7 +96,7 @@ export function AdminResumenPage() {
     <section className="min-w-0 rounded-lg border border-blue-100 bg-white p-3 sm:p-4"><h2 className="mb-3 flex items-center gap-2 text-lg font-bold tracking-tight text-[#1002b4] sm:text-xl"><Icono nombre="grafico" className="size-7"/>Usuarios registrados · últimos 7 días</h2>{!puntos.length?<p className="p-4 text-sm text-blue-800">No hay registros en este período.</p>:<svg className="h-auto min-h-48 w-full" viewBox="0 0 552 218" role="img"><title>Usuarios registrados por día: {puntos.map(p=>etiquetaFecha(p.fecha)+": "+p.registros).join("; ")}</title>{escala.marcas.map(n=><g key={n}><line x1="44" y1={174-n/escala.tope*144} x2="508" y2={174-n/escala.tope*144} stroke="#dce8f6"/><text x="34" y={178-n/escala.tope*144} fontSize="11" textAnchor="end" fill="#244488">{n}</text></g>)}{puntos.map(p=><line key={p.fecha} x1={p.x} y1="30" x2={p.x} y2="174" stroke="#e8eff9"/>)}{area&&<polygon points={area} fill="#d5f5df" fillOpacity=".85"/>}<polyline points={linea} fill="none" stroke="#009c41" strokeWidth="3"/>{puntos.map(p=><g key={p.fecha}><circle cx={p.x} cy={p.y} r="5" fill="#008c38" stroke="white" strokeWidth="2"><title>{etiquetaFecha(p.fecha)}: {p.registros}</title></circle><text x={p.x} y="198" fontSize="11" textAnchor="middle" fill="#244488">{etiquetaFecha(p.fecha)}</text></g>)}</svg>}</section>
     <section className="min-w-0 rounded-lg border border-blue-100 bg-white p-3 sm:p-4"><div className="mb-4 flex flex-wrap items-center justify-between gap-2"><h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-[#1002b4] sm:text-xl"><Icono nombre="personas" className="size-7"/>Usuarios por rol</h2><span className="text-xs text-blue-700">Total: {kpis.usuariosRegistrados}</span></div><div className="space-y-3">{roles.map(r=><div key={r.rol} className="grid grid-cols-[minmax(130px,1.2fr)_2rem_minmax(0,1fr)] items-center gap-2 text-sm"><span className="flex min-w-0 items-center gap-2 text-blue-800"><span className={"grid size-8 shrink-0 place-items-center rounded-full "+(r.rol==="Cooperativa"?"bg-green-50 text-green-700":r.rol==="Oficinista"?"bg-violet-50 text-violet-700":r.rol==="Chofer"?"bg-orange-50 text-orange-600":"bg-blue-50 text-blue-700")}><Icono nombre={iconoRol(r.rol)} className="size-5"/></span><span className="min-w-0 wrap-break-word">{r.rol}</span></span><strong className="text-right text-blue-950">{r.cantidad}</strong><div className="h-3 overflow-hidden rounded-full bg-slate-200" role="meter" aria-label={r.rol} aria-valuemin={0} aria-valuemax={Math.max(kpis.usuariosRegistrados,r.cantidad,1)} aria-valuenow={r.cantidad}><div className="h-full rounded-full bg-linear-to-r from-green-600 to-green-400" style={{width:Math.min(100,r.cantidad/Math.max(kpis.usuariosRegistrados,1)*100)+"%"}}/></div></div>)}</div></section>
    </div>
-   <section className="rounded-lg border border-blue-100 bg-white p-3 sm:p-4"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="flex items-center gap-3 text-xl font-bold tracking-tight text-[#1002b4] sm:text-2xl"><Icono nombre="personas" className="size-8"/>Cooperativas registradas</h2><button onClick={()=>navigate("/panel/cooperativas")} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#ff0018] px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"><span className="grid size-5 place-items-center rounded-full bg-white text-lg leading-none text-red-600" aria-hidden="true">+</span>Nueva cooperativa</button></div>
+   <section className="rounded-lg border border-blue-100 bg-white p-3 sm:p-4"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="flex items-center gap-3 text-xl font-bold tracking-tight text-[#1002b4] sm:text-2xl"><Icono nombre="personas" className="size-8"/>Cooperativas registradas</h2><button onClick={()=>navigate("/panel/cooperativas/nueva")} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#ff0018] px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"><span className="grid size-5 place-items-center rounded-full bg-white text-lg leading-none text-red-600" aria-hidden="true">+</span>Nueva cooperativa</button></div>
    <div className="hidden lg:block"><table className="w-full table-fixed text-left text-sm"><colgroup><col className="w-[32%]"/><col className="w-[30%]"/><col className="w-[10%]"/><col className="w-[13%]"/><col className="w-[15%]"/></colgroup><thead><tr>{["Cooperativa","Responsable","Buses","Estado","Acción"].map(t=><th key={t}>{t}</th>)}</tr></thead><tbody>{cooperativas.map(coop=><tr key={coop.id}><td><div className="flex items-center gap-3">{logo(coop)}<strong className="min-w-0 wrap-break-word text-blue-900">{coop.nombre}</strong></div></td><td className="wrap-break-word text-blue-800">{coop.responsable}</td><td className="font-semibold text-blue-800">{coop.buses}</td><td>{estadoCoop(coop)}</td><td><button onClick={()=>setDetalle(coop)} className="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-md border border-blue-500 px-2 py-1 text-sm text-blue-700 hover:bg-blue-50"><Icono nombre="documento" className="size-4"/>Ver detalle</button></td></tr>)}</tbody></table></div>
    <div className="space-y-2 lg:hidden">{cooperativas.map(coop=><button key={coop.id} onClick={()=>setDetalle(coop)} className="flex w-full items-center gap-3 rounded-md border border-blue-100 p-3 text-left text-sm">{logo(coop)}<span className="min-w-0 flex-1"><strong className="block wrap-break-word text-blue-900">{coop.nombre}</strong><small className="block text-blue-700">{coop.responsable}</small></span><span className="shrink-0 text-blue-800">{coop.buses}<small className="block">buses</small></span>{estadoCoop(coop)}<Icono nombre="chevronDerecha" className="size-4 text-blue-700"/></button>)}</div>
    {!cooperativas.length&&<p className="rounded-md bg-blue-50 p-4 text-sm text-blue-800">No hay cooperativas registradas.</p>}

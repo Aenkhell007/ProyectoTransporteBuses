@@ -20,6 +20,7 @@ import {
 } from "../compra/pasajeros";
 import { hoyEnEcuador, diaEnEcuador } from "../compra/fechas";
 import { PassengerForm } from "../../components/compra/PassengerForm";
+import { ComboBusqueda } from "../../components/ui/ComboBusqueda";
 
 import SelectorAsientos from "../../components/flota/SelectorAsientos";
 import type {
@@ -61,7 +62,7 @@ export function VentaOficinaReal() {
   const [params, setParams] = useSearchParams(),
     rid = params.get("reserva_id");
   const contexto = useConsulta<{ oficinas: Oficina[] }>("/oficina/contexto"),
-    ciudades = useConsulta<{ data: { id: string; nombre: string }[] }>(
+    ciudades = useConsulta<{ data: { id: string; nombre: string; provincia?: string }[] }>(
       "/catalogos/ciudades",
     );
   const [oficina, setOficina] = useState(""),
@@ -69,6 +70,10 @@ export function VentaOficinaReal() {
     [destino, setDestino] = useState(""),
     [fecha, setFecha] = useState(hoyEnEcuador()),
     [cantidad, setCantidad] = useState(1);
+  useEffect(() => {
+    const primera = contexto.datos?.oficinas[0]?.id;
+    if (primera && !oficina) setOficina(primera);
+  }, [contexto.datos, oficina]);
   const [viajes, setViajes] = useState<ViajeResultado[]>([]),
     [cursor, setCursor] = useState<string | null>(null),
     [buscado, setBuscado] = useState(false),
@@ -147,8 +152,10 @@ export function VentaOficinaReal() {
   }, [rid]);
   async function buscar(mas = false) {
     await trabajar(async () => {
-      if (!oficina || !origen || !destino || origen === destino)
-        throw new Error("Selecciona la oficina y dos ciudades diferentes.");
+      if (!oficina)
+        throw new Error("Tu cuenta no tiene una oficina activa asignada.");
+      if (!origen || !destino || origen === destino)
+        throw new Error("Selecciona un origen y un destino diferentes.");
       const p = new URLSearchParams({
         origen_ciudad_id: origen,
         destino_ciudad_id: destino,
@@ -343,6 +350,7 @@ export function VentaOficinaReal() {
                 setParams({});
                 setPaso(1);
                 setReserva(null);
+                setCobro(null);
                 setResultado(false);
                 setCobro(null);
                 setClave(crypto.randomUUID());
@@ -371,51 +379,39 @@ export function VentaOficinaReal() {
                     e.preventDefault();
                     void buscar();
                   }}
-                  className="grid items-end gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                  className="grid items-end gap-4 sm:grid-cols-2 lg:grid-cols-5"
                 >
                   {[
-                    {
-                      texto: "Oficina",
-                      valor: oficina,
-                      cambiar: setOficina,
-                      lista:
-                        contexto.datos?.oficinas.map((o) => ({
-                          id: o.id,
-                          nombre: o.cooperativa + " · " + o.nombre,
-                        })) ?? [],
-                    },
                     {
                       texto: "Origen",
                       valor: origen,
                       cambiar: setOrigen,
-                      lista: ciudades.datos?.data ?? [],
                     },
                     {
                       texto: "Destino",
                       valor: destino,
                       cambiar: setDestino,
-                      lista: ciudades.datos?.data ?? [],
                     },
                   ].map((c) => (
                     <label key={c.texto}>
                       {c.texto}
-                      <select
-                        required
-                        className={campo}
+                      <ComboBusqueda
                         value={c.valor}
-                        onChange={(e) => {
-                          c.cambiar(e.target.value);
+                        onChange={(val) => {
+                          c.cambiar(val);
                           setViajes([]);
                           setBuscado(false);
                         }}
-                      >
-                        <option value="">Selecciona…</option>
-                        {c.lista.map((o) => (
-                          <option key={o.id} value={o.id}>
-                            {o.nombre}
-                          </option>
-                        ))}
-                      </select>
+                        opciones={(ciudades.datos?.data ?? []).map((o) => ({
+                          valor: o.id,
+                          etiqueta: o.provincia
+                            ? `${o.nombre} (${o.provincia})`
+                            : o.nombre,
+                          subtitulo: o.provincia,
+                        }))}
+                        placeholder="Cantón o provincia…"
+                        className={campo}
+                      />
                     </label>
                   ))}
                   <label>
@@ -527,9 +523,8 @@ export function VentaOficinaReal() {
           )}
           {reserva && (
             <Aviso>
-              Reserva: {reserva.reserva_id}. Retención hasta{" "}
-              {fechaHora(reserva.expires_at)}. Los datos se guardan al
-              continuar; el cobro requiere confirmación.
+              Retención activa hasta {fechaHora(reserva.expires_at)}. Los datos
+              se guardan al continuar; el cobro requiere confirmación.
             </Aviso>
           )}
           {paso === 3 && reserva && (
@@ -590,12 +585,11 @@ export function VentaOficinaReal() {
 
                 <div className="mb-4 flex flex-wrap gap-2 text-sm"><span className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-green-800">● Efectivo</span><span className="rounded-md border border-slate-100 px-3 py-2 text-slate-400">Tarjeta · Próximamente</span><button className={boton} disabled={ocupado} onClick={()=>void transferir()}>Transferencia</button></div>
                 <dl className="of-cobro-desglose space-y-2 rounded-md border border-blue-100 p-3">
-                  <div className="flex justify-between gap-3 border-b border-blue-100 pb-2 text-lg font-bold"><dt>Total a pagar</dt><dd>{dinero(reserva.cotizacion.total_centavos/100)}</dd></div>
                   <div className="flex justify-between gap-3"><dt>Subtotal base</dt><dd>{dinero(reserva.cotizacion.base_centavos/100)}</dd></div>
                   <div className="flex justify-between gap-3 text-green-700"><dt>Descuento total</dt><dd>− {dinero(reserva.cotizacion.descuento_centavos/100)}</dd></div>
                   <div className="flex justify-between gap-3"><dt>Cargo por servicio</dt><dd>{dinero(reserva.cotizacion.servicio_centavos/100)}</dd></div>
                   <div className="flex justify-between gap-3"><dt>IVA ({reserva.cotizacion.impuesto_bp/100}%)</dt><dd>{dinero(reserva.cotizacion.iva_centavos/100)}</dd></div>
-                  <div className="flex justify-between gap-3 border-t border-blue-100 pt-2 font-bold"><dt>Total a pagar</dt><dd>{dinero(reserva.cotizacion.total_centavos/100)}</dd></div>
+                  <div className="flex justify-between gap-3 border-t border-blue-100 pt-2 text-lg font-bold"><dt>Total a pagar</dt><dd>{dinero(reserva.cotizacion.total_centavos/100)}</dd></div>
                 </dl>
                 <label className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
                   Efectivo recibido (USD)
@@ -637,13 +631,6 @@ export function VentaOficinaReal() {
                   >
                     <Icono nombre="boleto" className="size-5"/>Cobrar y emitir boleto
                   </button>
-                </div>
-                <div className="mt-4 border-t border-blue-100 pt-4">
-                  <p className="text-xs">
-                    Tarjeta: próximamente. Para transferencia, adjunta el
-                    comprobante y espera su revisión.
-                  </p>
-                  <button className={boton + " mt-2"} disabled={ocupado} onClick={()=>void transferir()}>Continuar con transferencia</button>
                 </div>
               </PanelVenta>
             </div>

@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.api.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "rootDir": "..",
+    "outDir": "dist",
+    "sourceMap": false
+  },
+  "files": [],
+  "include": [
+    "src/**/*.ts",
+    "../shared/**/*.ts"
+  ],
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.db.test.ts"
+  ]
+}

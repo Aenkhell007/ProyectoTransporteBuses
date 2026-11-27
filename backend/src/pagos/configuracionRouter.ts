@@ -1,3 +1,4 @@
+import { consultarLote } from '../lecturas';
 import express from 'express';
 import { payphoneConfigurado } from './payphone';
 import type { Request } from 'express';
@@ -5,6 +6,7 @@ import type { PoolClient } from 'pg';
 import { createHash, randomUUID } from 'node:crypto';
 import sharp from 'sharp';
 import { conSesion } from '../sesion';
+import { origenPermitido } from '../origen';
 import { ErrorPago, uuid } from './validacion';
 import { ErrorConfiguracion, exigirPago, FORMATOS, textoPago, validarPolitica } from './configuracionValidacion';
 
@@ -18,27 +20,57 @@ async function ambito(db: PoolClient, id: string) {
   if (!r.rows.length) throw new ErrorConfiguracion(403, 'No tienes permiso para configurar los pagos de esta cooperativa.');
   return r.rows[0];
 }
-async function limitesGlobales(db: PoolClient) {
-  const r = (await db.query('SELECT transporte.limites_editor() AS valor')).rows[0]?.valor;
+function parsearLimites(r: any) {
   const formatos = ['JPG', 'PNG', 'PDF'].filter(f => !Array.isArray(r?.formatos) || r.formatos.includes(f));
   return { formatos, maximoMB: Math.min(5, Number(r?.maxArchivoMB) || 5) };
 }
 export async function leerConfiguracion(db: PoolClient, coop: string) {
   const cooperativa = await ambito(db, coop);
-  const politica = (await db.query('SELECT * FROM transporte.politica_comprobantes WHERE cooperativa_id=$1', [coop])).rows[0];
-  const cuentas = (await db.query(`SELECT c.*,b.nombre banco FROM transporte.cuentas_bancarias c JOIN transporte.bancos b ON b.id=c.banco_id WHERE c.cooperativa_id=$1 ORDER BY c.predeterminada DESC,c.created_at,c.id`, [coop])).rows.map(c => ({
+  const loteLectura = await consultarLote(db, [
+    { sql: 'SELECT * FROM transporte.politica_comprobantes WHERE cooperativa_id=$1', valores: [coop] },
+    { sql: `SELECT c.*,b.nombre banco FROM transporte.cuentas_bancarias c JOIN transporte.bancos b ON b.id=c.banco_id WHERE c.cooperativa_id=$1 ORDER BY c.predeterminada DESC,c.created_at,c.id`, valores: [coop] },
+    { sql: `SELECT m.codigo,m.nombre,m.tipo,m.adaptador_disponible,coalesce(c.habilitado,false) habilitado,coalesce(c.instrucciones,'') instrucciones FROM transporte.metodos_pago m LEFT JOIN transporte.cooperativa_metodos_pago c ON c.metodo_id=m.id AND c.cooperativa_id=$1 ORDER BY m.codigo`, valores: [coop] },
+    { sql: 'SELECT id,nombre FROM transporte.bancos WHERE activo ORDER BY nombre', valores: [] },
+    { sql: 'SELECT transporte.limites_editor() AS valor', valores: [] }
+  ]);
+
+  const politica = loteLectura[0][0];
+  const cuentas = loteLectura[1].map(c => ({
     id: c.id, version: c.version, bancoId: c.banco_id, banco: c.banco, tipo: c.tipo === 'CORRIENTE' ? 'Corriente' : 'Ahorros', numero: c.numero, titular: c.titular,
     ruc: c.documento_titular, alias: c.alias ?? '', moneda: 'USD', activa: c.activa, predeterminada: c.predeterminada,
     qrId: c.qr_archivo_id, qrSrc: c.qr_archivo_id ? `/api/configuracion/pagos/${coop}/cuentas/${c.id}/qr?v=${c.version}` : '',
   }));
-  const metodos = (await db.query(`SELECT m.codigo,m.nombre,m.tipo,m.adaptador_disponible,coalesce(c.habilitado,false) habilitado,coalesce(c.instrucciones,'') instrucciones FROM transporte.metodos_pago m LEFT JOIN transporte.cooperativa_metodos_pago c ON c.metodo_id=m.id AND c.cooperativa_id=$1 ORDER BY m.codigo`, [coop])).rows.map(m => ({
-    codigo: m.codigo, nombre: m.nombre, descripcion: m.codigo === 'PAYPHONE' ? 'Pago en línea con tarjeta o aplicación PayPhone.' : m.tipo === 'PASARELA' ? 'Proveedor pendiente de integración técnica.' : m.codigo === 'BANCO' ? 'Transferencia o depósito con revisión del comprobante.' : 'Cobro presencial por el personal autorizado.',
-    habilitado: m.habilitado && m.adaptador_disponible && ['BANCO', 'EFECTIVO', 'PAYPHONE'].includes(m.codigo), disponible: m.adaptador_disponible && ['BANCO', 'EFECTIVO', 'PAYPHONE'].includes(m.codigo),
-    instrucciones: m.instrucciones, estado: m.codigo === 'PAYPHONE' ? (payphoneConfigurado() ? 'Configurado en el servidor' : 'Pendiente de configuración del servidor') : m.tipo === 'PASARELA' ? 'Pendiente de conexión' : undefined,
-  }));
+  const activoPayphone = payphoneConfigurado();
+  const metodos = loteLectura[2].map(m => {
+    const disponible = Boolean(m.adaptador_disponible && ['BANCO', 'EFECTIVO', 'PAYPHONE'].includes(m.codigo));
+    const habilitado = Boolean(m.habilitado && disponible);
+    return {
+      codigo: m.codigo,
+      nombre: m.nombre,
+      descripcion:
+        m.codigo === 'PAYPHONE'
+          ? 'Pago en línea con tarjeta de crédito/débito o app PayPhone.'
+          : m.tipo === 'PASARELA'
+            ? 'Proveedor pendiente de integración técnica.'
+            : m.codigo === 'BANCO'
+              ? 'Transferencia o depósito con revisión del comprobante.'
+              : 'Cobro presencial por el personal autorizado.',
+      habilitado,
+      disponible,
+      instrucciones: m.instrucciones,
+      estado:
+        m.codigo === 'PAYPHONE'
+          ? activoPayphone
+            ? 'Conectado'
+            : 'Falta PAYPHONE_TOKEN'
+          : m.tipo === 'PASARELA'
+            ? 'Pendiente de conexión'
+            : undefined,
+    };
+  });
   return { cooperativa, version: politica?.version ?? 0, cuentas, metodos, formatos: politica ? Object.keys(FORMATOS).filter(f => politica.mimes.includes(FORMATOS[f])) : ['JPG', 'PNG', 'PDF'],
     maximoMB: Math.min(5, Number(politica?.max_bytes ?? 5242880) / 1048576), referenciaObligatoria: politica?.referencia_obligatoria ?? false,
-    bancos: (await db.query('SELECT id,nombre FROM transporte.bancos WHERE activo ORDER BY nombre')).rows, limites: await limitesGlobales(db) };
+    bancos: loteLectura[3], limites: parsearLimites(loteLectura[4][0]?.valor) };
 }
 async function guardarQr(db: PoolClient, coop: string, valor: unknown) {
   exigirPago(typeof valor === 'string' && valor.length > 0 && valor.length <= 7_000_000 && /^[A-Za-z0-9+/]+={0,2}$/.test(valor), 'El QR debe ser una imagen JPG o PNG de hasta 5 MB.');
@@ -109,7 +141,7 @@ export function crearConfiguracionPagosRouter(contexto: typeof sesion = sesion) 
   const router = express.Router();
   router.use((req, res, next) => {
     res.set({ 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
-    if (!['GET', 'HEAD'].includes(req.method) && (!req.get('origin') || ![process.env.FRONTEND_URL ?? 'http://127.0.0.1:5173', 'http://127.0.0.1:5173', 'http://localhost:5173'].includes(req.get('origin')!) || req.get('sec-fetch-site') === 'cross-site')) return next(new ErrorConfiguracion(403, 'Origen de solicitud no permitido.'));
+    if (!['GET', 'HEAD'].includes(req.method) && (!origenPermitido(req.get('origin')) || req.get('sec-fetch-site') === 'cross-site')) return next(new ErrorConfiguracion(403, 'Origen de solicitud no permitido.'));
     next();
   });
   router.use(express.json({ limit: '8mb' }));

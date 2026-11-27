@@ -1,5 +1,6 @@
 import {IconoBiblioteca} from '../ui/IconoBiblioteca';
 import { useState } from "react";
+import { detectarBanos, detectarPuertas } from "../../features/flota/plantillasPlano";
 import type { EstadoCelda, MapaViaje } from "../../types/mapaViaje";
 
 interface Props {
@@ -31,18 +32,38 @@ export default function SelectorAsientos({ mapa, cantidad, seleccion, onChange }
         const celdas=mapa.celdas.filter(c=>c.piso===piso);
         const columnas=Math.max(...celdas.map(c=>c.columna),1);
         const capacidad=celdas.filter(c=>c.tipo==='ASIENTO').length;
+        const banos = detectarBanos(celdas);
+        const puertas = detectarPuertas(celdas);
         return <section key={piso} aria-label={`Piso ${piso}`} className={`${pisoActual!==piso?'hidden':''} mx-auto w-full max-w-[340px]`}>
           {pisos.length>1 && <h3 className={`mb-2 rounded-lg px-2 py-3 text-center text-xs font-bold uppercase text-[#08035b] ${piso===1?'bg-emerald-100':'bg-blue-100'}`}>Cubierta {piso===1?'inferior':piso===2?'superior':piso} ({capacidad} asientos)</h3>}
           <div className="relative overflow-hidden rounded-t-[48px] rounded-b-[38px] border-[7px] border-slate-300 bg-[linear-gradient(105deg,#141719,#414648_48%,#1b1e20)] p-3 shadow-[inset_0_0_0_3px_#16191a,0_8px_12px_#0003] before:absolute before:inset-y-8 before:left-0 before:w-1 before:bg-[linear-gradient(#008b46_0_30%,#fff_30%_43%,#ef1424_43%_65%,#fff_65%_75%,#008b46_75%)] after:absolute after:inset-y-8 after:right-0 after:w-1 after:bg-[linear-gradient(#008b46_0_30%,#fff_30%_43%,#ef1424_43%_65%,#fff_65%_75%,#008b46_75%)]">
             <div className="mb-5 mt-2 flex h-10 items-center justify-between gap-3 border-b border-white/20 px-2 pb-3 text-xs font-semibold text-white">
-              <span className="rounded bg-black/50 px-3 py-2">FRENTE</span>
-              <IconoBiblioteca nombre="bus" className="size-8 text-slate-200"/>
+              {piso === 1 ? (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" aria-label="Volante del conductor" className="size-7 text-slate-200">
+                  <circle cx="12" cy="12" r="9" />
+                  <circle cx="12" cy="12" r="2.2" />
+                  <path d="M12 14.2V21M3.6 9.5l6.4 2m10.4-2-6.4 2" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <span className="rounded bg-black/50 px-3 py-2">FRENTE</span>
+              )}
+              <span className="rounded bg-black/50 px-3 py-2">PUERTA</span>
             </div>
             <div className="grid gap-2" style={{gridTemplateColumns:`repeat(${columnas},minmax(0,1fr))`}}>
               {celdas.map(c=>{
+                const clave = `${c.piso}-${c.fila}-${c.columna}`;
+                if(c.tipo!=='ASIENTO'){
+                  if(banos.cubiertas.has(clave) || puertas.cubiertas.has(clave)) return null;
+                  if(banos.inicios.has(clave)) {
+                    return <div key={c.id} style={{gridRow:c.fila,gridColumn:`${c.columna} / span 2`}} aria-hidden="true" className="flex min-h-14 items-center justify-center gap-1.5 rounded-lg border border-sky-400/70 bg-sky-950/90 px-2 text-xs font-bold tracking-wide text-sky-100 shadow-inner"><IconoBiblioteca nombre="bano" className="size-4 text-sky-300" /><span>BAÑO</span></div>;
+                  }
+                  if(puertas.inicios.has(clave)) {
+                    return <div key={c.id} style={{gridRow:c.fila,gridColumn:`${c.columna} / span 2`}} aria-hidden="true" className="flex min-h-14 items-center justify-center gap-1.5 rounded-lg border border-emerald-400/70 bg-emerald-950/90 px-2 text-xs font-bold tracking-wide text-emerald-100 shadow-inner"><IconoBiblioteca nombre="puerta" className="size-4 text-emerald-300" /><span>PUERTA</span></div>;
+                  }
+                  const posicion={gridRow:c.fila,gridColumn:c.columna};
+                  return <div key={c.id} style={posicion} aria-hidden="true" className={c.tipo==='PUERTA'?'flex min-h-12 items-center justify-center rounded-md border border-emerald-400/70 bg-emerald-950/90 text-emerald-200':c.tipo==='BLOQUE'?'min-h-12 rounded-md bg-black/60':'flex items-center justify-center text-[10px] text-white/60'}>{c.tipo==='PUERTA'?<IconoBiblioteca nombre="puerta" className="size-4" />:c.tipo==='PASILLO'?c.fila:''}</div>;
+                }
                 const posicion={gridRow:c.fila,gridColumn:c.columna};
-                if(c.tipo==='PUERTA') return <div key={c.id} style={posicion} className="flex min-h-12 items-center justify-center rounded border border-emerald-300 bg-emerald-950 px-1 text-center text-[10px] font-semibold text-white">Puerta</div>;
-                if(c.tipo!=='ASIENTO')return <div key={c.id} style={posicion} aria-hidden="true" className={c.tipo==='BLOQUE'?'min-h-12 rounded-md bg-black/60':'flex items-center justify-center text-[10px] text-white/60'}>{c.tipo==='PASILLO'?c.fila:''}</div>;
                 const elegido=seleccion.includes(c.id),libre=c.estado==='DISPONIBLE',vip=c.clase==='EJECUTIVO';
                 const color=elegido?'border-blue-300 bg-linear-to-b from-blue-500 to-blue-700':libre?(vip?'border-amber-400 bg-linear-to-b from-amber-700 to-amber-950':'border-green-500 bg-linear-to-b from-green-600 to-green-900'):c.estado==='OCUPADO'?'border-red-400 bg-linear-to-b from-red-500 to-red-800':'border-slate-500 bg-[repeating-linear-gradient(135deg,#374151,#374151_6px,#596373_6px,#596373_12px)]';
                 return <button key={c.id} type="button" style={posicion} aria-label={`Asiento ${c.codigo}, ${vip ? 'VIP' : c.clase ?? ''}, ${elegido?'seleccionado':nombres[c.estado]}`} aria-pressed={elegido} disabled={!libre||(!elegido&&seleccion.length>=cantidad)} onClick={()=>onChange(elegido?seleccion.filter(id=>id!==c.id):[...seleccion,c.id])} className={`relative flex min-h-14 flex-col items-center justify-end rounded-lg border p-1 pb-2 font-bold text-white shadow-[inset_0_0_5px_#ffffff44,0_2px_2px_#0008] transition hover:brightness-110 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-yellow-300 disabled:cursor-not-allowed ${color}`}>

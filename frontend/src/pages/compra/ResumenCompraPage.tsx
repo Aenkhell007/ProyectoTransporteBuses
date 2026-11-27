@@ -295,6 +295,7 @@ export function ResumenCompraPage() {
 
           <Seccion
             icono="personas"
+            colorIcono="bg-green-700"
             titulo="Pasajeros registrados"
             resumen={`${reserva.cantidad} ${reserva.cantidad === 1 ? "pasajero" : "pasajeros"}`}
             accion={enlaceEditar(enlacePasajeros, "los pasajeros")}
@@ -312,8 +313,15 @@ export function ResumenCompraPage() {
                         ? `${f.pasajero.nombres} ${f.pasajero.apellidos}`
                         : "—"}
                     </span>
-                    <span className="rounded bg-blue-50 px-2 py-0.5 text-blue-800">
-                      {f.asiento.codigo}
+                    <span className="flex items-center gap-1">
+                      {(f.asiento.clase === "VIP" || f.asiento.clase === "EJECUTIVO" || (f.linea?.recargo_vip_centavos ?? 0) > 0) && (
+                        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
+                          VIP
+                        </span>
+                      )}
+                      <span className="rounded bg-blue-50 px-2 py-0.5 text-blue-800">
+                        {f.asiento.codigo}
+                      </span>
                     </span>
                   </p>
                   <p className="text-slate-600">
@@ -326,6 +334,13 @@ export function ResumenCompraPage() {
                     <p className="mt-1 flex justify-between">
                       <span className="text-slate-600">
                         {formatearCentavos(f.linea.base_centavos)}
+                        {(f.linea.recargo_vip_centavos ?? 0) > 0 && (
+                          <span className="block text-xs font-medium text-amber-700">
+                            Base {formatearCentavos(f.linea.tarifa_normal_centavos!)} + VIP
+                            {(f.linea.recargo_vip_pct ?? 0) > 0 ? ` (+${f.linea.recargo_vip_pct}%)` : ""}:{" "}
+                            {formatearCentavos(f.linea.recargo_vip_centavos!)}
+                          </span>
+                        )}
                         {f.linea.descuento_centavos > 0 && (
                           <span className="text-green-700">
                             {" "}
@@ -375,50 +390,73 @@ export function ResumenCompraPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filas.map((f, i) => (
-                    <tr
-                      key={f.asiento.reserva_asiento_id}
-                      className="border-b border-slate-100"
-                    >
-                      <td className="py-2">{i + 1}</td>
-                      <th scope="row" className="py-2 text-left font-normal">
-                        {f.pasajero
-                          ? `${f.pasajero.nombres} ${f.pasajero.apellidos}`
-                          : "—"}
-                      </th>
-                      <td className="py-2 text-slate-600">{tipo(f)}</td>
-                      <td className="py-2">
-                        <span className="sr-only">
-                          {f.pasajero
-                            ? TIPO_DOCUMENTO[f.pasajero.tipo_documento]
-                            : ""}{" "}
-                        </span>
-                        {f.pasajero?.documento ?? "—"}
-                      </td>
-                      <td className="py-2">
-                        <span className="rounded bg-blue-50 px-2 py-0.5 font-semibold text-blue-800">
-                          {f.asiento.codigo}
-                        </span>
-                      </td>
-                      <td className="py-2 text-right">
-                        {f.linea
-                          ? formatearCentavos(f.linea.base_centavos)
-                          : "—"}
-                      </td>
-                      <td
-                        className={`py-2 text-right ${f.linea && f.linea.descuento_centavos > 0 ? "text-green-700" : ""}`}
+                  {filas.map((f, i) => {
+                    const esVip =
+                      f.asiento.clase === "VIP" ||
+                      f.asiento.clase === "EJECUTIVO" ||
+                      (f.linea?.recargo_vip_centavos ?? 0) > 0;
+                    const recargo = f.linea?.recargo_vip_centavos ?? 0;
+                    return (
+                      <tr
+                        key={f.asiento.reserva_asiento_id}
+                        className="border-b border-slate-100"
                       >
-                        {f.linea && f.linea.descuento_centavos > 0
-                          ? formatearCentavos(-f.linea.descuento_centavos)
-                          : "-"}
-                      </td>
-                      <td className="py-2 text-right font-semibold">
-                        {f.linea
-                          ? formatearCentavos(f.linea.subtotal_neto_centavos)
-                          : "—"}
-                      </td>
-                    </tr>
-                  ))}
+                        <td className="py-2">{i + 1}</td>
+                        <th scope="row" className="py-2 text-left font-normal">
+                          {f.pasajero
+                            ? `${f.pasajero.nombres} ${f.pasajero.apellidos}`
+                            : "—"}
+                        </th>
+                        <td className="py-2 text-slate-600">{tipo(f)}</td>
+                        <td className="py-2">
+                          <span className="sr-only">
+                            {f.pasajero
+                              ? TIPO_DOCUMENTO[f.pasajero.tipo_documento]
+                              : ""}{" "}
+                          </span>
+                          {f.pasajero?.documento ?? "—"}
+                        </td>
+                        <td className="py-2">
+                          <span className="inline-flex items-center gap-1">
+                            <span className="rounded bg-blue-50 px-2 py-0.5 font-semibold text-blue-800">
+                              {f.asiento.codigo}
+                            </span>
+                            {esVip && (
+                              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
+                                VIP
+                              </span>
+                            )}
+                          </span>
+                        </td>
+                        <td className="py-2 text-right">
+                          {f.linea
+                            ? formatearCentavos(f.linea.base_centavos)
+                            : "—"}
+                          {f.linea && recargo > 0 && (
+                            <span className="block text-[11px] font-medium text-amber-700">
+                              Normal {formatearCentavos(f.linea.tarifa_normal_centavos!)} +{" "}
+                              {formatearCentavos(recargo)}
+                              {(f.linea.recargo_vip_pct ?? 0) > 0
+                                ? ` (+${f.linea.recargo_vip_pct}%)`
+                                : ""}
+                            </span>
+                          )}
+                        </td>
+                        <td
+                          className={`py-2 text-right ${f.linea && f.linea.descuento_centavos > 0 ? "text-green-700" : ""}`}
+                        >
+                          {f.linea && f.linea.descuento_centavos > 0
+                            ? formatearCentavos(-f.linea.descuento_centavos)
+                            : "-"}
+                        </td>
+                        <td className="py-2 text-right font-semibold">
+                          {f.linea
+                            ? formatearCentavos(f.linea.subtotal_neto_centavos)
+                            : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -542,12 +580,14 @@ function Marco({ children }: { children: ReactNode }) {
 /** Sección con encabezado; en móvil se puede plegar sin cambiar los valores. */
 function Seccion({
   icono,
+  colorIcono = "bg-[#ff0018]",
   titulo,
   resumen,
   accion,
   children,
 }: {
   icono: NombreIcono;
+  colorIcono?: string;
   titulo: string;
   resumen: string;
   accion?: ReactNode;
@@ -565,7 +605,7 @@ function Seccion({
           id={`${id}-titulo`}
           className="flex items-center gap-2 text-lg font-bold text-[#08035b]"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-[#ff0018] text-white">
+          <span className={`flex h-8 w-8 items-center justify-center rounded-md text-white ${colorIcono}`}>
             <Icono nombre={icono} className="h-4 w-4" />
           </span>
           <span>

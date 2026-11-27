@@ -1,4 +1,5 @@
 import { ConfiguracionCooperativaTabs } from '../../components/configuracion/ConfiguracionCooperativaTabs';
+import { IconoBiblioteca } from '../../components/ui/IconoBiblioteca';
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import FormularioCuentaBancaria from '../../components/configuracion/FormularioCuentaBancaria';
@@ -33,15 +34,20 @@ export default function ConfiguracionPagosPage({ panelCooperativa = false }: { p
   const hayCambios = configuracion !== guardada;
   useEffect(() => {
     let activo = true;
-    configuracionPagosApi.cooperativas().then(async r => {
+    const idUrl = params.get('cooperativaId');
+    (async () => {
+      const [r, datosUrl] = await Promise.all([
+        configuracionPagosApi.cooperativas(),
+        idUrl ? configuracionPagosApi.consultar(idUrl).catch(() => null) : Promise.resolve(null),
+      ]);
       if (!activo) return;
       setCooperativas(r.cooperativas);
       if (!r.cooperativas.length) throw new Error('Tu cuenta no tiene permiso para configurar pagos en ninguna cooperativa.');
-      const inicial=r.cooperativas.find(c=>c.id===params.get('cooperativaId'))??r.cooperativas[0];
-      const datos = await configuracionPagosApi.consultar(inicial.id);
-      if(activo&&!params.get('cooperativaId')){const p=new URLSearchParams(params);p.set('cooperativaId',inicial.id);setParams(p,{replace:true});}
+      const inicial = r.cooperativas.find(c => c.id === idUrl) ?? r.cooperativas[0];
+      const datos = (idUrl && inicial.id === idUrl && datosUrl) ? datosUrl : await configuracionPagosApi.consultar(inicial.id);
+      if (activo && !idUrl) { const p = new URLSearchParams(params); p.set('cooperativaId', inicial.id); setParams(p, { replace: true }); }
       if (activo) { setConfiguracion(datos); setGuardada(datos); }
-    }).catch(e => { if (activo) setError(e instanceof Error ? e.message : 'No se pudo cargar la configuración.'); })
+    })().catch(e => { if (activo) setError(e instanceof Error ? e.message : 'No se pudo cargar la configuración.'); })
       .finally(() => { if (activo) setCargando(false); });
     return () => { activo = false; };
   }, []);
@@ -77,11 +83,11 @@ export default function ConfiguracionPagosPage({ panelCooperativa = false }: { p
     catch(e) {return e instanceof Error?e.message:'No se pudo guardar la cuenta.';}
   }
   async function guardarConfiguracion() {try {await persistir(configuracion);} catch(e) {setError(e instanceof Error?e.message:'No se pudo guardar.');}}
-  function cancelarCambios() {setConfiguracion(guardada);limpiarMensajes();setMensaje('Se restauró la configuración guardada en PostgreSQL.');}
+  function cancelarCambios() {setConfiguracion(guardada);limpiarMensajes();setMensaje('Se restauró la configuración guardada.');}
   if(cargando) return <p role="status" className="p-6 text-blue-950">Consultando configuración de pagos…</p>;
   if(!configuracion.cooperativa.id) return <section className="p-6 text-blue-950"><h1 className="text-2xl font-bold">Configuración de pagos</h1><p role="alert" className="mt-4">{error || 'No hay una cooperativa autorizada.'}</p><button className={botonSecundario} onClick={()=>window.location.reload()}>Reintentar</button></section>;
   const cuentaEdicion = editando ?? configuracion.cuentas.find(c => c.id === params.get('cuenta'));
-  if(agregandoCuenta) return <section className="mx-auto my-6 max-w-7xl rounded-lg bg-white p-4 text-blue-950 sm:p-6"><p className="mb-4 text-sm">Cooperativa: {configuracion.cooperativa.nombre}</p><FormularioCuentaBancaria key={cuentaEdicion?.id??'nueva'} iniciales={cuentaEdicion} bancosDisponibles={configuracion.bancos.map(b=>b.nombre)} onGuardar={agregarCuenta} onCancelar={()=>{if(!ocupado){setAgregandoCuenta(false);setEditando(undefined);}}} /></section>;
+  if(agregandoCuenta) return <section className="mx-auto my-6 max-w-7xl rounded-lg bg-white p-4 text-blue-950 sm:p-6">{panelCooperativa && <ConfiguracionCooperativaTabs />}<p className="mb-4 text-sm">Cooperativa: {configuracion.cooperativa.nombre}</p><FormularioCuentaBancaria key={cuentaEdicion?.id??'nueva'} iniciales={cuentaEdicion} bancosDisponibles={configuracion.bancos.map(b=>b.nombre)} onGuardar={agregarCuenta} onCancelar={()=>{if(!ocupado){setAgregandoCuenta(false);setEditando(undefined);}}} /></section>;
   return (
     <section className="py-4 text-blue-950">
       <fieldset disabled={ocupado} className="min-w-0">
@@ -108,17 +114,22 @@ export default function ConfiguracionPagosPage({ panelCooperativa = false }: { p
         </li>
       </ul>}
 
-      <div className="mb-5 flex flex-wrap items-end gap-3 rounded-md bg-blue-50 p-4 text-sm text-blue-900">
-        <label className="grid min-w-48 flex-1 gap-1">Cooperativa<select className={campo} value={configuracion.cooperativa.id} onChange={e => cambiarCooperativa(e.target.value)}>{cooperativas.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</select></label>
-        <button className={botonSecundario} onClick={() => recargar()}>Recargar datos</button>
-        <p className="w-full">{hayCambios ? 'Hay cambios pendientes de guardar.' : 'Configuración consultada en PostgreSQL.'}</p>
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3 rounded-md bg-blue-50 p-4 text-sm text-blue-900">
+        {cooperativas.length > 1 ? (
+          <label className="grid min-w-48 flex-1 gap-1">Cooperativa<select className={campo} value={configuracion.cooperativa.id} onChange={e => cambiarCooperativa(e.target.value)}>{cooperativas.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</select></label>
+        ) : (
+          <p className="font-medium">Cooperativa: {configuracion.cooperativa.nombre}</p>
+        )}
+        <button className={botonSecundario + ' inline-flex items-center gap-2'} onClick={() => recargar()}><IconoBiblioteca nombre="buscar" className="size-4" />Recargar datos</button>
+        <p className="w-full text-xs text-blue-800">{hayCambios ? 'Hay cambios pendientes de guardar.' : 'Configuración cargada correctamente.'}</p>
       </div>
 
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.8fr)_minmax(280px,1fr)]">
         <section className={panel} aria-labelledby="titulo-cuentas">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 id="titulo-cuentas" className="text-lg font-bold">
+              <h2 id="titulo-cuentas" className="flex items-center gap-2 text-lg font-bold">
+                <IconoBiblioteca nombre="banco" className="size-5 text-blue-800" />
                 Cuentas bancarias receptoras
               </h2>
 
@@ -250,7 +261,8 @@ export default function ConfiguracionPagosPage({ panelCooperativa = false }: { p
         </section>
 
         <section className={panel} aria-labelledby="titulo-metodos">
-          <h2 id="titulo-metodos" className="text-lg font-bold">
+          <h2 id="titulo-metodos" className="flex items-center gap-2 text-lg font-bold">
+            <IconoBiblioteca nombre="tarjeta" className="size-5 text-blue-800" />
             Métodos de pago
           </h2>
 
@@ -264,14 +276,29 @@ export default function ConfiguracionPagosPage({ panelCooperativa = false }: { p
                 key={metodo.codigo}
                 className="flex items-center justify-between gap-3 py-3"
               >
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <h3 className="text-sm font-semibold">{metodo.nombre}</h3>
 
                   <p className="mt-1 text-xs text-slate-500">
                     {metodo.descripcion}
                   </p>
 
-                  {metodo.disponible && <label className="mt-2 block text-xs">Instrucciones<textarea maxLength={1000} value={metodo.instrucciones} onChange={e => setConfiguracion(actual => ({...actual, metodos: actual.metodos.map(m => m.codigo === metodo.codigo ? {...m, instrucciones: e.target.value} : m)}))} className={campo} /></label>}
+                  {metodo.disponible && (
+                    <details className="mt-2 text-xs">
+                      <summary className="cursor-pointer font-medium text-blue-700 hover:underline">
+                        Editar instrucciones para el pasajero
+                      </summary>
+                      <label className="mt-2 block">
+                        <span className="sr-only">Instrucciones de {metodo.nombre}</span>
+                        <textarea
+                          maxLength={1000}
+                          value={metodo.instrucciones}
+                          onChange={e => setConfiguracion(actual => ({...actual, metodos: actual.metodos.map(m => m.codigo === metodo.codigo ? {...m, instrucciones: e.target.value} : m)}))}
+                          className={campo}
+                        />
+                      </label>
+                    </details>
+                  )}
                   {metodo.estado && (
                     <span className="mt-2 inline-block rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-600">
                       {metodo.estado}
@@ -302,8 +329,9 @@ export default function ConfiguracionPagosPage({ panelCooperativa = false }: { p
           </div>
 
           <p className="mt-3 rounded-md bg-blue-50 p-3 text-xs leading-5 text-blue-900">
-            PayPhone requiere configuración del servidor y se habilita por cooperativa.
-            El cobro directo con tarjeta y PayPal siguen pendientes de integración.
+            PayPhone admite cobros con tarjeta o saldo PayPhone al configurar{" "}
+            <code>PAYPHONE_TOKEN</code> en el servidor. Tarjeta directa y PayPal
+            permanecen pendientes de integración.
           </p>
         </section>
       </div>
@@ -476,8 +504,9 @@ export default function ConfiguracionPagosPage({ panelCooperativa = false }: { p
         <button
           type="button"
           onClick={guardarConfiguracion}
-          className="min-h-11 rounded-md bg-red-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-red-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
         >
+          <IconoBiblioteca nombre="guardar" className="size-4" />
           {ocupado ? "Guardando…" : "Guardar configuración"}
         </button>
       </div>

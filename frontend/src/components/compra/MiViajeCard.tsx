@@ -229,7 +229,9 @@ export function MiViajeCard({ viaje }: { viaje: MiViaje }) {
               </button>
             )}
             {viaje.estado === "CONFIRMADA" && listo && (
-              <BotonGoogleWallet reservaId={viaje.reserva_id} className="min-h-10 py-1.5 text-sm" />
+              <div className="sm:w-auto">
+                <BotonGoogleWallet reservaId={viaje.reserva_id} className="min-h-10 py-1.5 text-sm" />
+              </div>
             )}
             {viaje.estado === "CONFIRMADA" && (
               <a

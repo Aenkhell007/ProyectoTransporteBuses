@@ -29,6 +29,7 @@ import {
   faClock,
   faCreditCard,
   faCrown,
+  faDoorOpen,
   faDownload,
   faEnvelope,
   faEye,
@@ -64,12 +65,14 @@ import {
   faSort,
   faSuitcaseRolling,
   faTicket,
+  faTrashCan,
   faTriangleExclamation,
   faTv,
   faUniversalAccess,
   faUser,
   faUserTie,
   faUsers,
+  faUtensils,
   faWifi,
   faXmark
 } from '@fortawesome/free-solid-svg-icons';
@@ -94,6 +97,7 @@ const iconos = {
   clima: faSnowflake,
   wifi: faWifi,
   bano: faRestroom,
+  comida: faUtensils,
   enchufe: faPlug,
   pantalla: faTv,
   maleta: faSuitcaseRolling,
@@ -128,6 +132,7 @@ const iconos = {
   grupo: faUsers,
   edificio: faBuilding,
   volante: faBusSimple,
+  puerta: faDoorOpen,
   ruta: faRoute,
   guardar: faFloppyDisk,
   mas: faCirclePlus,
@@ -154,6 +159,7 @@ const iconos = {
   colores: faPalette,
   redes: faShareNodes,
   recibo: faReceipt,
+  papelera: faTrashCan,
 } as const;
 export type NombreIconoBiblioteca = keyof typeof iconos;
 

@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { Link } from "react-router";
 import { enviarContacto, obtenerContactoPublico, type ContactoPublico } from "../../../features/compra/catalogoApi";
 import {
   CONTACTO_VACIO,
@@ -56,7 +57,7 @@ export function ContactoSeccion() {
             titulo="WhatsApp"
             texto="Escríbenos y recibe atención rápida."
             accion={
-              whatsapp ? <a href={'https://wa.me/'+whatsapp} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-md bg-green-700 px-4 text-sm text-white">Escribir por WhatsApp</a> : <span className="inline-flex min-h-11 items-center rounded-md bg-slate-100 px-4 text-sm text-slate-600">Número por confirmar</span>
+              whatsapp ? <a href={'https://wa.me/'+whatsapp} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-md bg-[#ff0018] px-4 text-sm font-semibold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">Escríbenos <Icono nombre="externo" className="h-4 w-4" /></a> : <span className="inline-flex min-h-11 items-center rounded-md bg-slate-100 px-4 text-sm text-slate-600">Número por confirmar</span>
             }
           />
           <Canal
@@ -70,6 +71,7 @@ export function ContactoSeccion() {
             color="bg-red-600"
             titulo="Oficinas"
             texto={<span>{contacto?.direccion || 'La dirección de atención se mostrará cuando la cooperativa la registre.'}{contacto?.telefono&&<span className="mt-1 block">Teléfono: {contacto.telefono}</span>}</span>}
+            accion={<Icono nombre="chevronDerecha" className="h-4 w-4 shrink-0 text-[#ff0018]" />}
           />
         </ul>
         <FormularioContactoTarjeta />
@@ -284,15 +286,13 @@ function FormularioContactoTarjeta() {
           />
           <span>
             He leído y acepto la{" "}
-            <a
-              href="/privacidad"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to="/privacidad"
               className="font-semibold text-red-700 hover:underline focus-visible:outline-2 focus-visible:outline-blue-600"
             >
               Política de Privacidad
-            </a>
-            {" "}(abre en otra pestaña).
+            </Link>
+            .
           </span>
         </label>
         {ayuda("consentimiento")}
