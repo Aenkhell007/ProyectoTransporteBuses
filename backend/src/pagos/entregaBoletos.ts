@@ -34,4 +34,31 @@ export async function procesarEntregas(deps={db:pool,leer:leerArchivo,enviar:ent
  await deps.db.query('SELECT transporte.finalizar_entrega_boleto($1,$2,$3,$4)',[n.notificacion_id,aceptado,referencia,error]);
  }}
 }
-export function iniciarEntregas(){let ocupado=false;const ejecutar=async()=>{if(ocupado)return;ocupado=true;try{await procesarEntregas();}catch{console.error('No se pudo procesar la cola de boletos.');}finally{ocupado=false;}};void ejecutar();const timer=setInterval(()=>void ejecutar(),60000);timer.unref();return()=>clearInterval(timer);}
+let procesandoEntregas = false;
+let entregaPendiente = false;
+
+export function dispararEntregas(): void {
+  entregaPendiente = true;
+  if (!procesandoEntregas) void ejecutarEntregas();
+}
+
+async function ejecutarEntregas() {
+  procesandoEntregas = true;
+  try {
+    do {
+      entregaPendiente = false;
+      await procesarEntregas();
+    } while (entregaPendiente);
+  } catch {
+    console.error("No se pudo procesar la cola de boletos.");
+  } finally {
+    procesandoEntregas = false;
+  }
+}
+
+export function iniciarEntregas() {
+  dispararEntregas();
+  const timer = setInterval(dispararEntregas, 60000);
+  timer.unref();
+  return () => clearInterval(timer);
+}

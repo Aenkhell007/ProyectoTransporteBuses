@@ -1,4 +1,4 @@
-import {canalesEntrega,backendEntregaId} from './entregaBoletos';
+import { backendEntregaId, canalesEntrega, dispararEntregas } from "./entregaBoletos";
 import { alcanceReserva } from '../oficina/consultas';
 import express, { Router } from "express";
 import type { Request, Response, NextFunction } from "express";
@@ -359,6 +359,7 @@ pagosRouter.post("/pagos/comprobantes/:id/revision", async (req, res) => {
       if (aprobar && compraId) await emitir(db, compraId, creados);
       return { compraId };
     });
+    if (aprobar && resultado.compraId) dispararEntregas();
     res.json(resultado);
   } catch (e) {
     await limpiarTrasError(req, creados);
@@ -426,6 +427,7 @@ pagosRouter.post("/pagos/compras/:id/documento", async (req, res) => {
         );
       await emitir(db, id, creados);
     });
+    dispararEntregas();
     res.status(204).end();
   } catch (e) {
     await limpiarTrasError(req, creados);
@@ -594,6 +596,7 @@ pagosRouter.post("/pagos/payphone/confirmar", async (req, res) => {
     });
 
     if (paso1.yaAprobado) {
+      dispararEntregas();
       res.json({
         estado: "APROBADO",
         reservaId: paso1.intento.reservaId,
@@ -683,6 +686,7 @@ pagosRouter.post("/pagos/payphone/confirmar", async (req, res) => {
       return cid;
     });
 
+    dispararEntregas();
     res.json({
       estado: "APROBADO",
       reservaId: paso1.intento.reservaId,
