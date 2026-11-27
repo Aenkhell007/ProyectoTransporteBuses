@@ -1,0 +1,74 @@
+name: gran-continental
+
+networks:
+  red_interna:
+    driver: bridge
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ${DOCKER_ENV_FILE:-.env.docker}
+    environment:
+      HOST: 0.0.0.0
+      PORT: "3000"
+      NODE_ENV: production
+      # Demostración HTTP en 127.0.0.1:5173. En despliegue público HTTPS usar COOKIE_SECURE=true.
+      COOKIE_SECURE: "${DOCKER_COOKIE_SECURE:-false}"
+      PAGOS_ARCHIVOS_DIR: /app/backend/.data/pagos
+      # BIENVENIDAS_EMAIL_ACTIVO, BOLETOS_EMAIL_ACTIVO, BOLETOS_WHATSAPP_ACTIVO y BOLETOS_DESDE se definen en .env.docker.
+    networks:
+      - red_interna
+    volumes:
+      - type: bind
+        source: ${DOCKER_CERTS_DIR:-./backend/conexion-bd/certs}
+        target: /app/backend/conexion-bd/certs
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./backend/secrets
+        target: /run/secrets
+        read_only: true
+        bind:
+          create_host_path: false
+      - datos_pagos:/app/backend/.data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      start_period: 20s
+      retries: 5
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+    restart: unless-stopped
+    networks:
+      - red_interna
+    ports:
+      - "127.0.0.1:${DOCKER_FRONTEND_PORT:-5173}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/nginx-health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+volumes:
+  datos_pagos:
