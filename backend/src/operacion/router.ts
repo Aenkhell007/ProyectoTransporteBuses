@@ -24,7 +24,7 @@ async function versionFrecuencia(db:PoolClient,c:string,id:string,version:unknow
   return f;
 }
 async function catalogo(db:PoolClient,c:string,desde:string,hasta:string) {
-  const cooperativa=(await db.query('SELECT id,nombre FROM transporte.cooperativas WHERE id=$1',[c])).rows[0];
+  const cooperativa=(await db.query('SELECT id,nombre,ambito_operacion,provincia FROM transporte.cooperativas WHERE id=$1',[c])).rows[0];
   const frecuencias=(await db.query(`SELECT f.id,f.codigo,to_char(f.hora_salida,'HH24:MI') hora,f.resolucion_ant resolucion,f.tipo_viaje tipo,f.activa,f.version,f.ruta_id,
     r.nombre ruta,coalesce((SELECT jsonb_agg(jsonb_build_object('terminalId',p.terminal_id,'minutos',p.minutos_desde_origen,'orden',p.orden,'ciudad',ci.nombre,'terminal',t.nombre) ORDER BY p.orden) FROM transporte.ruta_paradas p JOIN transporte.terminales t ON t.id=p.terminal_id JOIN transporte.ciudades ci ON ci.id=t.ciudad_id WHERE p.ruta_id=f.ruta_id),'[]') paradas,
     coalesce((SELECT jsonb_agg(grupo_id) FROM transporte.frecuencia_grupo WHERE frecuencia_id=f.id),'[]') grupos,
@@ -35,25 +35,51 @@ async function catalogo(db:PoolClient,c:string,desde:string,hasta:string) {
   const viajes=(await db.query(`SELECT v.id,v.frecuencia_id,v.bus_id,v.plano_id,v.conductor_id,v.estado,v.version,v.salida,v.llegada,v.liberacion_bus,to_char(v.salida AT TIME ZONE 'America/Guayaquil','YYYY-MM-DD') fecha,to_char(v.salida AT TIME ZONE 'America/Guayaquil','HH24:MI') hora FROM transporte.viajes v WHERE v.cooperativa_id=$1 AND (v.salida AT TIME ZONE 'America/Guayaquil')::date BETWEEN $2::date AND $3::date ORDER BY v.salida,v.id`,[c,desde,hasta])).rows;
   const tarifas=(await db.query(`SELECT id,frecuencia_id,grupo_id,clase_id,origen_orden,destino_orden,precio_centavos::int precio,servicio_centavos::int servicio,impuesto_id,impuesto_servicio_id,lower(vigencia)::text desde,upper(vigencia)::text hasta,activa FROM transporte.tarifas WHERE cooperativa_id=$1 ORDER BY frecuencia_id,origen_orden,destino_orden`,[c])).rows;
   const beneficios=(await db.query(`SELECT id,codigo,nombre,descuento_bp,edad_min,edad_max_exclusiva,condiciones,activo,lower(vigencia)::text desde,upper(vigencia)::text hasta,updated_at::text revision FROM transporte.beneficios WHERE cooperativa_id=$1 ORDER BY codigo,created_at`,[c])).rows;
-  const terminales=(await db.query('SELECT t.id,t.nombre,c.nombre ciudad FROM transporte.terminales t JOIN transporte.ciudades c ON c.id=t.ciudad_id WHERE t.activa AND c.activa ORDER BY c.nombre,t.nombre')).rows;
+  const terminales=(await db.query('SELECT t.id,t.nombre,c.nombre ciudad FROM transporte.terminales t JOIN transporte.ciudades c ON c.id=t.ciudad_id WHERE t.activa AND c.activa AND (t.cooperativa_id IS NULL OR t.cooperativa_id=$1) ORDER BY c.nombre,t.nombre',[c])).rows;
+  const cantonesProvincia = cooperativa.provincia && ['URBANA', 'RURAL'].includes(cooperativa.ambito_operacion)
+    ? (await db.query(`
+        SELECT id, nombre, provincia FROM transporte.ciudades
+        WHERE activa AND lower(trim(provincia)) = lower(trim($1))
+        ORDER BY nombre`, [cooperativa.provincia])).rows
+    : [];
   const clases=(await db.query('SELECT id,nombre,codigo FROM transporte.clases_asiento ORDER BY nombre')).rows;
   const impuestos=(await db.query('SELECT id,nombre,puntos_base,concepto FROM transporte.impuestos WHERE activo ORDER BY concepto,nombre')).rows;
   const conductores=(await db.query(`SELECT DISTINCT u.id,u.nombres||' '||u.apellidos nombre FROM transporte.usuarios u JOIN transporte.membresias m ON m.usuario_id=u.id JOIN transporte.roles r ON r.id=m.rol_id WHERE m.cooperativa_id=$1 AND m.activa AND u.activo AND r.codigo='PERSONAL_BUS' ORDER BY nombre`,[c])).rows;
   const indisponibilidades=(await db.query('SELECT bus_id,desde,hasta,motivo FROM transporte.indisponibilidades_bus WHERE cooperativa_id=$1 AND hasta>=$2::date AND desde<($3::date+1)',[c,desde,hasta])).rows;
   const permisos=(await db.query("SELECT transporte.puede('operacion.admin',$1) operacion,transporte.puede('tarifas.admin',$1) tarifas",[c])).rows[0];
-  return {cooperativa,frecuencias,grupos,buses,viajes,tarifas,beneficios,terminales,clases,impuestos,conductores,indisponibilidades,permisos};
+  return {cooperativa,frecuencias,grupos,buses,viajes,tarifas,beneficios,terminales,cantonesProvincia,clases,impuestos,conductores,indisponibilidades,permisos};
 }
 export function crearOperacionRouter(contexto:typeof sesion=sesion) {
  const router=express.Router();
  router.use(express.json({limit:'128kb'}));
  router.use((req,res,next)=>{res.set({'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});if(req.method!=='GET'&&![process.env.FRONTEND_URL??'http://127.0.0.1:5173','http://localhost:5173'].includes(req.get('origin')??''))return next(new ErrorOperacion(403,'Origen no autorizado.'));next();});
  router.get('/contexto',async(req,res,next)=>{try{res.json(await contexto(req,async db=>{const a=await ambito(db,req);const hoy=new Date().toLocaleDateString('en-CA',{timeZone:'America/Guayaquil'});const r=rango(req.query.desde??hoy,req.query.hasta??hoy);return {...await catalogo(db,a.id,r.desde,r.hasta),cooperativas:a.disponibles};}));}catch(e){next(e);}});
+ router.post('/paraderos', async (req, res, next) => {
+   try {
+     const { ciudadId, nombre } = req.body ?? {};
+     const canton = uuid(ciudadId);
+     const nombreParadero = texto(nombre);
+     exigir(nombreParadero.length >= 2, 'El nombre del paradero debe tener al menos dos caracteres.');
+
+     const paradero = await contexto(req, async db => {
+       const { id } = await ambito(db, req, 'operacion.admin');
+       const resultado = await db.query<{ id: string }>(
+         "SELECT transporte.registrar_paradero_local($1,$2,$3,'PARADERO') AS id",
+         [id, canton, nombreParadero],
+       );
+       return { id: resultado.rows[0].id, mensaje: 'Paradero registrado. Ya puedes seleccionarlo en la frecuencia.' };
+     });
+     res.status(201).json(paradero);
+   } catch (error) {
+     next(error);
+   }
+ });
  router.put('/frecuencias',async(req,res,next)=>{try{res.json(await contexto(req,async db=>{
   const {id:c}=await ambito(db,req,'operacion.admin'),d=req.body,ps=paradas(d.paradas),codigo=texto(d.codigo,50),resolucion=texto(d.resolucion),h=hora(d.hora);
   exigir(d.tipo==='DIRECTO'||d.tipo==='CON_PARADAS','Selecciona un tipo de viaje.');exigir(typeof d.activa==='boolean','Selecciona el estado.');exigir(d.tipo!=='DIRECTO'||ps.length===2,'Una frecuencia directa solo tiene origen y destino.');
   exigir(Array.isArray(d.grupos)&&d.grupos.length>0&&d.grupos.length<=50,'Habilita al menos un grupo de buses.');const gs=[...new Set<string>(d.grupos.map(uuid))];
   exigir((await db.query('SELECT id FROM transporte.grupos_bus WHERE cooperativa_id=$1 AND activo AND id=ANY($2::uuid[])',[c,gs])).rowCount===gs.length,'Los grupos deben estar activos y pertenecer a esta cooperativa.');
-  exigir((await db.query('SELECT id FROM transporte.terminales WHERE activa AND id=ANY($1::uuid[])',[ps.map(p=>uuid(p.terminalId))])).rowCount===ps.length,'Las terminales deben estar activas.');
+  exigir((await db.query('SELECT id FROM transporte.terminales WHERE activa AND id=ANY($1::uuid[]) AND (cooperativa_id IS NULL OR cooperativa_id=$2)',[ps.map(p=>uuid(p.terminalId)),c])).rowCount===ps.length,'Las terminales y paraderos deben estar activos y disponibles para esta cooperativa.');
   let id=d.id?uuid(d.id):null;let rutaId:string;
   if(id){const f=await versionFrecuencia(db,c,id,d.version);rutaId=f.ruta_id;const usadas=(await db.query('SELECT 1 FROM transporte.viajes WHERE frecuencia_id=$1 LIMIT 1',[id])).rowCount;
    const old=(await db.query('SELECT terminal_id AS "terminalId",minutos_desde_origen AS minutos FROM transporte.ruta_paradas WHERE ruta_id=$1 ORDER BY orden',[rutaId])).rows;
