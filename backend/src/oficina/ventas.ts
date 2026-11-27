@@ -15,7 +15,7 @@ ventasRouter.post("/oficina/ventas/reservas", async (req, res, next) => {
     if (
       !Number.isInteger(b.origen_orden) ||
       !Number.isInteger(b.destino_orden) ||
-      b.origen_orden < 1 ||
+      b.origen_orden < 0 ||
       b.destino_orden <= b.origen_orden ||
       !Array.isArray(b.asiento_ids) ||
       b.asiento_ids.length < 1 ||
@@ -119,7 +119,19 @@ ventasRouter.post("/oficina/ventas/:id/cobro", async (req, res, next) => {
         ])
       ).rows[0].id;
       await emitir(db, compra, creados);
-      return { compra_id: compra, reserva_id: id };
+      const { rows: [pago] } = await db.query<{
+        total_centavos: number;
+        recibido_centavos: number;
+        cambio_centavos: number;
+      }>(
+        `SELECT p.monto_centavos::int AS total_centavos, p.recibido_centavos::int, p.cambio_centavos::int
+         FROM transporte.compras c
+         JOIN transporte.pagos p ON p.id = c.pago_id AND p.cooperativa_id = c.cooperativa_id
+         WHERE c.id = $1 AND c.reserva_id = $2 AND p.recibido_centavos IS NOT NULL`,
+        [compra, id],
+      );
+      if (!pago) throw new ErrorOficina(409, "No se encontró el cobro en efectivo de esta compra.");
+      return { compra_id: compra, reserva_id: id, ...pago };
     });
     dispararEntregas();
     res.json(datos);

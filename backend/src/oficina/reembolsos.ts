@@ -1,3 +1,4 @@
+import { dispararEntregas } from '../pagos/entregaBoletos';
 import {emitir,limpiarTrasError} from '../pagos/router';
 import { createHash } from "node:crypto";
 import express, { Router } from "express";
@@ -123,16 +124,28 @@ reembolsosRouter.post(
           422,
           "Indica la decisión y su motivo (máximo 500 caracteres).",
         );
-      const creados:string[]=[];
-      try {await sesionOficina(req, async (db) => {
-        const seleccionada=await solicitud(db, uuid(req.params.id));
-        await db.query("SELECT transporte.decidir_reembolso($1,$2,$3)", [
-          req.params.id,
-          aprobar,
-          motivo.trim(),
-        ]);
-        if(aprobar&&(await db.query("SELECT estado FROM transporte.compras WHERE id=$1",[seleccionada.compra_id])).rows[0]?.estado==='CONFIRMADA')await emitir(db,seleccionada.compra_id,creados);
-      });}catch(e){await limpiarTrasError(req,creados);throw e;}
+      const creados: string[] = [];
+      let seReemitio: boolean;
+      try {
+        seReemitio = await sesionOficina(req, async (db) => {
+          const id = uuid(req.params.id);
+          const seleccionada = await solicitud(db, id);
+          await db.query("SELECT transporte.decidir_reembolso($1,$2,$3)", [id, aprobar, motivo.trim()]);
+          if (!aprobar) return false;
+
+          const { rows: [compra] } = await db.query("SELECT estado FROM transporte.compras WHERE id=$1", [
+            seleccionada.compra_id,
+          ]);
+          if (compra?.estado !== "CONFIRMADA") return false;
+
+          await emitir(db, seleccionada.compra_id, creados);
+          return true;
+        });
+      } catch (e) {
+        await limpiarTrasError(req, creados);
+        throw e;
+      }
+      if (seReemitio) dispararEntregas();
       res.status(204).end();
     } catch (e) {
       next(e);
