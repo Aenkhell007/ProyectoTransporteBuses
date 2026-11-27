@@ -14,11 +14,22 @@ export interface PasajeroPago {
   categoria: string;
   asiento: string;
   piso: number;
+  reservaAsientoId?: string;
+  clase?: string;
+  tarifaNormalCentavos?: number;
+  recargoVipCentavos?: number;
+  recargoVipPct?: number;
   tarifaCentavos: number;
   descuentoCentavos: number;
   servicioCentavos: number;
   ivaCentavos: number;
   impuestoBp: number;
+}
+export interface MarcaCooperativaPago {
+  colorPrimario: string;
+  colorSecundario: string;
+  colorTexto: string;
+  tieneLogo: boolean;
 }
 export interface ViajePago {
   salida: string;
@@ -27,6 +38,7 @@ export interface ViajePago {
   destino: string;
   terminalOrigen: string;
   terminalDestino: string;
+  cooperativaId?: string;
   cooperativa: string;
   unidad: string;
   placa: string;
@@ -34,6 +46,7 @@ export interface ViajePago {
   carroceria: string;
   servicio: string;
   pisos: number;
+  marca?: MarcaCooperativaPago;
 }
 export interface DatosPago {
   reembolsos?: {cancelados:string[];enTramiteCentavos:number;ejecutadoCentavos:number};
@@ -49,6 +62,8 @@ export interface DatosPago {
   viaje: ViajePago;
   cotizacion: {
     base_centavos: number;
+    tarifa_normal_centavos?: number;
+    recargo_vip_centavos?: number;
     descuento_centavos: number;
     servicio_centavos: number;
     subtotal_neto_centavos: number;

@@ -1,0 +1,944 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE transporte.schema_version (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  version text NOT NULL UNIQUE,
+  descripcion text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT schema_version_pkey PRIMARY KEY (id)
+);
+CREATE TABLE transporte.usuarios (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  nombres character varying NOT NULL CHECK (length(TRIM(BOTH FROM nombres)) > 0),
+  apellidos character varying NOT NULL CHECK (length(TRIM(BOTH FROM apellidos)) > 0),
+  tipo_documento text NOT NULL DEFAULT 'CEDULA'::text CHECK (tipo_documento = ANY (ARRAY['CEDULA'::text, 'PASAPORTE'::text, 'OTRO'::text])),
+  documento character varying NOT NULL,
+  email character varying NOT NULL CHECK (email::text ~ '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$'::text),
+  telefono character varying,
+  nacimiento date,
+  activo boolean NOT NULL DEFAULT true,
+  email_verificado_at timestamp with time zone,
+  telefono_verificado_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT usuarios_pkey PRIMARY KEY (id)
+);
+CREATE TABLE transporte.credenciales (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  usuario_id uuid NOT NULL UNIQUE,
+  password_hash text NOT NULL CHECK (length(password_hash) >= 30),
+  algoritmo text NOT NULL DEFAULT 'scrypt-v1'::text,
+  password_updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT credenciales_pkey PRIMARY KEY (id),
+  CONSTRAINT credenciales_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES transporte.usuarios(id)
+);
+CREATE TABLE transporte.sesiones (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  usuario_id uuid NOT NULL,
+  token_hash character NOT NULL UNIQUE CHECK (token_hash ~ '^[0-9a-f]{64}$'::text),
+  expires_at timestamp with time zone NOT NULL,
+  revocada_at timestamp with time zone,
+  ip inet,
+  user_agent character varying,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT sesiones_pkey PRIMARY KEY (id),
+  CONSTRAINT sesiones_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES transporte.usuarios(id)
+);
+CREATE TABLE transporte.tokens_identidad (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  usuario_id uuid NOT NULL,
+  proposito text NOT NULL CHECK (proposito = ANY (ARRAY['RECUPERACION'::text, 'VERIFICAR_EMAIL'::text, 'INVITACION'::text])),
+  token_hash character NOT NULL UNIQUE,
+  expires_at timestamp with time zone NOT NULL,
+  consumido_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT tokens_identidad_pkey PRIMARY KEY (id),
+  CONSTRAINT tokens_identidad_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES transporte.usuarios(id)
+);
+CREATE TABLE transporte.consentimientos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  usuario_id uuid,
+  tipo text NOT NULL,
+  version text NOT NULL,
+  aceptado_at timestamp with time zone NOT NULL DEFAULT now(),
+  ip inet,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT consentimientos_pkey PRIMARY KEY (id),
+  CONSTRAINT consentimientos_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES transporte.usuarios(id)
+);
+CREATE TABLE transporte.roles (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  codigo text NOT NULL UNIQUE,
+  nombre text NOT NULL,
+  ambito text NOT NULL CHECK (ambito = ANY (ARRAY['GLOBAL'::text, 'COOPERATIVA'::text, 'CLIENTE'::text])),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT roles_pkey PRIMARY KEY (id)
+);
+CREATE TABLE transporte.permisos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  codigo text NOT NULL UNIQUE,
+  descripcion text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT permisos_pkey PRIMARY KEY (id)
+);
+CREATE TABLE transporte.rol_permiso (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  rol_id uuid NOT NULL,
+  permiso_id uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT rol_permiso_pkey PRIMARY KEY (id),
+  CONSTRAINT rol_permiso_rol_id_fkey FOREIGN KEY (rol_id) REFERENCES transporte.roles(id),
+  CONSTRAINT rol_permiso_permiso_id_fkey FOREIGN KEY (permiso_id) REFERENCES transporte.permisos(id)
+);
+CREATE TABLE transporte.usuario_roles_globales (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  usuario_id uuid NOT NULL,
+  rol_id uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT usuario_roles_globales_pkey PRIMARY KEY (id),
+  CONSTRAINT usuario_roles_globales_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES transporte.usuarios(id),
+  CONSTRAINT usuario_roles_globales_rol_id_fkey FOREIGN KEY (rol_id) REFERENCES transporte.roles(id)
+);
+CREATE TABLE transporte.cooperativas (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  nombre character varying NOT NULL,
+  razon_social character varying NOT NULL,
+  ruc character varying NOT NULL UNIQUE,
+  activa boolean NOT NULL DEFAULT true,
+  version integer NOT NULL DEFAULT 1 CHECK (version > 0),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT cooperativas_pkey PRIMARY KEY (id)
+);
+CREATE TABLE transporte.oficinas (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  nombre character varying NOT NULL,
+  direccion character varying NOT NULL,
+  telefono character varying,
+  activa boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT oficinas_pkey PRIMARY KEY (id),
+  CONSTRAINT oficinas_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id)
+);
+CREATE TABLE transporte.membresias (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  usuario_id uuid NOT NULL,
+  rol_id uuid NOT NULL,
+  oficina_id uuid,
+  activa boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT membresias_pkey PRIMARY KEY (id),
+  CONSTRAINT membresias_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT membresias_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES transporte.usuarios(id),
+  CONSTRAINT membresias_rol_id_fkey FOREIGN KEY (rol_id) REFERENCES transporte.roles(id),
+  CONSTRAINT membresias_cooperativa_id_oficina_id_fkey FOREIGN KEY (oficina_id) REFERENCES transporte.oficinas(id),
+  CONSTRAINT membresias_cooperativa_id_oficina_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.oficinas(cooperativa_id)
+);
+CREATE TABLE transporte.config_global (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  clave text NOT NULL UNIQUE,
+  valor jsonb NOT NULL,
+  version integer NOT NULL DEFAULT 1,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT config_global_pkey PRIMARY KEY (id)
+);
+CREATE TABLE transporte.archivos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  propietario_id uuid NOT NULL,
+  cooperativa_id uuid,
+  categoria text NOT NULL CHECK (categoria = ANY (ARRAY['COMPROBANTE'::text, 'FOTO_BUS'::text, 'LOGO'::text, 'QR_BANCARIO'::text, 'RESPALDO'::text, 'DOCUMENTO'::text, 'REEMBOLSO'::text])),
+  ruta_privada text NOT NULL UNIQUE,
+  mime text NOT NULL,
+  bytes bigint NOT NULL CHECK (bytes > 0),
+  sha256 character NOT NULL CHECK (sha256 ~ '^[0-9a-f]{64}$'::text),
+  validado_servidor boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT archivos_pkey PRIMARY KEY (id),
+  CONSTRAINT archivos_propietario_id_fkey FOREIGN KEY (propietario_id) REFERENCES transporte.usuarios(id),
+  CONSTRAINT archivos_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id)
+);
+CREATE TABLE transporte.config_cooperativa (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL UNIQUE,
+  lema character varying,
+  logo_archivo_id uuid,
+  color_primario character NOT NULL DEFAULT '#CB102E'::bpchar CHECK (color_primario ~ '^#[0-9A-Fa-f]{6}$'::text),
+  color_secundario character NOT NULL DEFAULT '#00833E'::bpchar CHECK (color_secundario ~ '^#[0-9A-Fa-f]{6}$'::text),
+  color_texto character NOT NULL DEFAULT '#1A2A33'::bpchar CHECK (color_texto ~ '^#[0-9A-Fa-f]{6}$'::text),
+  soporte_email character varying,
+  telefono character varying,
+  whatsapp character varying,
+  direccion text,
+  facebook_url text,
+  instagram_url text,
+  sobre_nosotros text,
+  version integer NOT NULL DEFAULT 1,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT config_cooperativa_pkey PRIMARY KEY (id),
+  CONSTRAINT config_cooperativa_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT config_cooperativa_logo_archivo_id_fkey FOREIGN KEY (logo_archivo_id) REFERENCES transporte.archivos(id)
+);
+CREATE TABLE transporte.ciudades (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  nombre character varying NOT NULL,
+  provincia character varying NOT NULL,
+  activa boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT ciudades_pkey PRIMARY KEY (id)
+);
+CREATE TABLE transporte.terminales (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  ciudad_id uuid NOT NULL,
+  nombre character varying NOT NULL,
+  direccion text,
+  activa boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT terminales_pkey PRIMARY KEY (id),
+  CONSTRAINT terminales_ciudad_id_fkey FOREIGN KEY (ciudad_id) REFERENCES transporte.ciudades(id)
+);
+CREATE TABLE transporte.rutas (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  nombre character varying NOT NULL,
+  activa boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT rutas_pkey PRIMARY KEY (id),
+  CONSTRAINT rutas_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id)
+);
+CREATE TABLE transporte.ruta_paradas (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  ruta_id uuid NOT NULL,
+  terminal_id uuid NOT NULL,
+  orden integer NOT NULL CHECK (orden >= 0),
+  minutos_desde_origen integer NOT NULL CHECK (minutos_desde_origen >= 0),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT ruta_paradas_pkey PRIMARY KEY (id),
+  CONSTRAINT ruta_paradas_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT ruta_paradas_terminal_id_fkey FOREIGN KEY (terminal_id) REFERENCES transporte.terminales(id),
+  CONSTRAINT ruta_paradas_cooperativa_id_ruta_id_fkey FOREIGN KEY (ruta_id) REFERENCES transporte.rutas(id),
+  CONSTRAINT ruta_paradas_cooperativa_id_ruta_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.rutas(cooperativa_id)
+);
+CREATE TABLE transporte.grupos_bus (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  nombre character varying NOT NULL,
+  descripcion text,
+  activo boolean NOT NULL DEFAULT true,
+  plantilla jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT grupos_bus_pkey PRIMARY KEY (id),
+  CONSTRAINT grupos_bus_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id)
+);
+CREATE TABLE transporte.grupo_dias_parada (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  grupo_id uuid NOT NULL,
+  dia_iso integer NOT NULL CHECK (dia_iso >= 1 AND dia_iso <= 7),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT grupo_dias_parada_pkey PRIMARY KEY (id),
+  CONSTRAINT grupo_dias_parada_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT grupo_dias_parada_cooperativa_id_grupo_id_fkey FOREIGN KEY (grupo_id) REFERENCES transporte.grupos_bus(id),
+  CONSTRAINT grupo_dias_parada_cooperativa_id_grupo_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.grupos_bus(cooperativa_id)
+);
+CREATE TABLE transporte.grupo_turnos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  grupo_id uuid NOT NULL,
+  nombre character varying NOT NULL,
+  orden integer NOT NULL CHECK (orden > 0),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT grupo_turnos_pkey PRIMARY KEY (id),
+  CONSTRAINT grupo_turnos_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT grupo_turnos_cooperativa_id_grupo_id_fkey FOREIGN KEY (grupo_id) REFERENCES transporte.grupos_bus(id),
+  CONSTRAINT grupo_turnos_cooperativa_id_grupo_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.grupos_bus(cooperativa_id)
+);
+CREATE TABLE transporte.frecuencias (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  ruta_id uuid NOT NULL,
+  codigo character varying NOT NULL,
+  hora_salida time without time zone NOT NULL,
+  resolucion_ant character varying NOT NULL CHECK (length(TRIM(BOTH FROM resolucion_ant)) > 0),
+  tipo_viaje text NOT NULL CHECK (tipo_viaje = ANY (ARRAY['DIRECTO'::text, 'CON_PARADAS'::text])),
+  activa boolean NOT NULL DEFAULT true,
+  version integer NOT NULL DEFAULT 1,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT frecuencias_pkey PRIMARY KEY (id),
+  CONSTRAINT frecuencias_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT frecuencias_cooperativa_id_ruta_id_fkey FOREIGN KEY (ruta_id) REFERENCES transporte.rutas(id),
+  CONSTRAINT frecuencias_cooperativa_id_ruta_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.rutas(cooperativa_id)
+);
+CREATE TABLE transporte.frecuencia_grupo (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  frecuencia_id uuid NOT NULL,
+  grupo_id uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT frecuencia_grupo_pkey PRIMARY KEY (id),
+  CONSTRAINT frecuencia_grupo_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT frecuencia_grupo_cooperativa_id_frecuencia_id_fkey FOREIGN KEY (frecuencia_id) REFERENCES transporte.frecuencias(id),
+  CONSTRAINT frecuencia_grupo_cooperativa_id_frecuencia_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.frecuencias(cooperativa_id),
+  CONSTRAINT frecuencia_grupo_cooperativa_id_grupo_id_fkey FOREIGN KEY (grupo_id) REFERENCES transporte.grupos_bus(id),
+  CONSTRAINT frecuencia_grupo_cooperativa_id_grupo_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.grupos_bus(cooperativa_id)
+);
+CREATE TABLE transporte.buses (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  grupo_id uuid NOT NULL,
+  unidad character varying NOT NULL,
+  placa character varying NOT NULL UNIQUE,
+  chasis character varying NOT NULL,
+  carroceria character varying NOT NULL,
+  correo_contacto character varying,
+  propietario character varying,
+  activo boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT buses_pkey PRIMARY KEY (id),
+  CONSTRAINT buses_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT buses_cooperativa_id_grupo_id_fkey FOREIGN KEY (grupo_id) REFERENCES transporte.grupos_bus(id),
+  CONSTRAINT buses_cooperativa_id_grupo_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.grupos_bus(cooperativa_id)
+);
+CREATE TABLE transporte.equipamientos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  codigo text NOT NULL UNIQUE,
+  nombre text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT equipamientos_pkey PRIMARY KEY (id)
+);
+CREATE TABLE transporte.bus_equipamiento (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  bus_id uuid NOT NULL,
+  equipamiento_id uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT bus_equipamiento_pkey PRIMARY KEY (id),
+  CONSTRAINT bus_equipamiento_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT bus_equipamiento_equipamiento_id_fkey FOREIGN KEY (equipamiento_id) REFERENCES transporte.equipamientos(id),
+  CONSTRAINT bus_equipamiento_cooperativa_id_bus_id_fkey FOREIGN KEY (bus_id) REFERENCES transporte.buses(id),
+  CONSTRAINT bus_equipamiento_cooperativa_id_bus_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.buses(cooperativa_id)
+);
+CREATE TABLE transporte.bus_fotos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  bus_id uuid NOT NULL,
+  archivo_id uuid NOT NULL,
+  orden integer NOT NULL DEFAULT 1,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT bus_fotos_pkey PRIMARY KEY (id),
+  CONSTRAINT bus_fotos_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT bus_fotos_archivo_id_fkey FOREIGN KEY (archivo_id) REFERENCES transporte.archivos(id),
+  CONSTRAINT bus_fotos_cooperativa_id_bus_id_fkey FOREIGN KEY (bus_id) REFERENCES transporte.buses(id),
+  CONSTRAINT bus_fotos_cooperativa_id_bus_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.buses(cooperativa_id)
+);
+CREATE TABLE transporte.clases_asiento (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  codigo text NOT NULL UNIQUE,
+  nombre text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT clases_asiento_pkey PRIMARY KEY (id)
+);
+CREATE TABLE transporte.planos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  bus_id uuid NOT NULL,
+  numero_version integer NOT NULL CHECK (numero_version > 0),
+  nombre character varying NOT NULL,
+  pisos integer NOT NULL CHECK (pisos >= 1 AND pisos <= 3),
+  publicado boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT planos_pkey PRIMARY KEY (id),
+  CONSTRAINT planos_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT planos_cooperativa_id_bus_id_fkey FOREIGN KEY (bus_id) REFERENCES transporte.buses(id),
+  CONSTRAINT planos_cooperativa_id_bus_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.buses(cooperativa_id)
+);
+CREATE TABLE transporte.plano_celdas (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  plano_id uuid NOT NULL,
+  piso integer NOT NULL CHECK (piso >= 1 AND piso <= 3),
+  fila integer NOT NULL CHECK (fila > 0),
+  columna integer NOT NULL CHECK (columna >= 1 AND columna <= 12),
+  tipo text NOT NULL CHECK (tipo = ANY (ARRAY['ASIENTO'::text, 'PASILLO'::text, 'BLOQUE'::text])),
+  codigo character varying,
+  clase_id uuid,
+  activa boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT plano_celdas_pkey PRIMARY KEY (id),
+  CONSTRAINT plano_celdas_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT plano_celdas_clase_id_fkey FOREIGN KEY (clase_id) REFERENCES transporte.clases_asiento(id),
+  CONSTRAINT plano_celdas_cooperativa_id_plano_id_fkey FOREIGN KEY (plano_id) REFERENCES transporte.planos(id),
+  CONSTRAINT plano_celdas_cooperativa_id_plano_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.planos(cooperativa_id)
+);
+CREATE TABLE transporte.indisponibilidades_bus (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  bus_id uuid NOT NULL,
+  desde timestamp with time zone NOT NULL,
+  hasta timestamp with time zone NOT NULL,
+  motivo text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT indisponibilidades_bus_pkey PRIMARY KEY (id),
+  CONSTRAINT indisponibilidades_bus_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT indisponibilidades_bus_cooperativa_id_bus_id_fkey FOREIGN KEY (bus_id) REFERENCES transporte.buses(id),
+  CONSTRAINT indisponibilidades_bus_cooperativa_id_bus_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.buses(cooperativa_id)
+);
+CREATE TABLE transporte.viajes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  frecuencia_id uuid NOT NULL,
+  bus_id uuid NOT NULL,
+  plano_id uuid NOT NULL,
+  conductor_id uuid,
+  salida timestamp with time zone NOT NULL,
+  llegada timestamp with time zone NOT NULL,
+  liberacion_bus timestamp with time zone NOT NULL,
+  estado text NOT NULL DEFAULT 'BORRADOR'::text CHECK (estado = ANY (ARRAY['BORRADOR'::text, 'PUBLICADO'::text, 'EN_RUTA'::text, 'FINALIZADO'::text, 'CANCELADO'::text])),
+  version integer NOT NULL DEFAULT 1,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT viajes_pkey PRIMARY KEY (id),
+  CONSTRAINT viajes_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT viajes_conductor_id_fkey FOREIGN KEY (conductor_id) REFERENCES transporte.usuarios(id),
+  CONSTRAINT viajes_cooperativa_id_frecuencia_id_fkey FOREIGN KEY (frecuencia_id) REFERENCES transporte.frecuencias(id),
+  CONSTRAINT viajes_cooperativa_id_frecuencia_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.frecuencias(cooperativa_id),
+  CONSTRAINT viajes_cooperativa_id_bus_id_plano_id_fkey FOREIGN KEY (plano_id) REFERENCES transporte.planos(id),
+  CONSTRAINT viajes_cooperativa_id_bus_id_plano_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.planos(cooperativa_id),
+  CONSTRAINT viajes_cooperativa_id_bus_id_plano_id_fkey FOREIGN KEY (bus_id) REFERENCES transporte.planos(bus_id)
+);
+CREATE TABLE transporte.bancos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  codigo text NOT NULL UNIQUE,
+  nombre character varying NOT NULL,
+  activo boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT bancos_pkey PRIMARY KEY (id)
+);
+CREATE TABLE transporte.cuentas_bancarias (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  banco_id uuid NOT NULL,
+  tipo text NOT NULL CHECK (tipo = ANY (ARRAY['CORRIENTE'::text, 'AHORROS'::text])),
+  numero character varying NOT NULL CHECK (length(TRIM(BOTH FROM numero)) > 0),
+  titular character varying NOT NULL,
+  documento_titular character varying NOT NULL,
+  alias character varying,
+  qr_archivo_id uuid,
+  activa boolean NOT NULL DEFAULT false,
+  version integer NOT NULL DEFAULT 1,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT cuentas_bancarias_pkey PRIMARY KEY (id),
+  CONSTRAINT cuentas_bancarias_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT cuentas_bancarias_banco_id_fkey FOREIGN KEY (banco_id) REFERENCES transporte.bancos(id),
+  CONSTRAINT cuentas_bancarias_qr_archivo_id_fkey FOREIGN KEY (qr_archivo_id) REFERENCES transporte.archivos(id)
+);
+CREATE TABLE transporte.metodos_pago (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  codigo text NOT NULL UNIQUE,
+  nombre text NOT NULL,
+  tipo text NOT NULL CHECK (tipo = ANY (ARRAY['MANUAL'::text, 'EFECTIVO'::text, 'PASARELA'::text])),
+  adaptador_disponible boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT metodos_pago_pkey PRIMARY KEY (id)
+);
+CREATE TABLE transporte.cooperativa_metodos_pago (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  metodo_id uuid NOT NULL,
+  habilitado boolean NOT NULL DEFAULT false,
+  conexion_verificada boolean NOT NULL DEFAULT false,
+  instrucciones text,
+  secreto_ref text,
+  plazo_oficina_minutos integer CHECK (plazo_oficina_minutos > 0),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT cooperativa_metodos_pago_pkey PRIMARY KEY (id),
+  CONSTRAINT cooperativa_metodos_pago_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT cooperativa_metodos_pago_metodo_id_fkey FOREIGN KEY (metodo_id) REFERENCES transporte.metodos_pago(id)
+);
+CREATE TABLE transporte.politica_comprobantes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL UNIQUE,
+  max_bytes bigint NOT NULL DEFAULT 5242880 CHECK (max_bytes >= 1024 AND max_bytes <= 52428800),
+  mimes ARRAY NOT NULL DEFAULT ARRAY['image/jpeg'::text, 'image/png'::text, 'application/pdf'::text],
+  referencia_obligatoria boolean NOT NULL DEFAULT false,
+  prorroga_revision_minutos integer NOT NULL DEFAULT 0 CHECK (prorroga_revision_minutos = 0),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT politica_comprobantes_pkey PRIMARY KEY (id),
+  CONSTRAINT politica_comprobantes_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id)
+);
+CREATE TABLE transporte.impuestos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  codigo text NOT NULL UNIQUE,
+  nombre text NOT NULL,
+  puntos_base integer NOT NULL CHECK (puntos_base >= 0 AND puntos_base <= 10000),
+  concepto text NOT NULL CHECK (concepto = ANY (ARRAY['TRANSPORTE_TERRESTRE'::text, 'SERVICIO_ADICIONAL'::text])),
+  activo boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT impuestos_pkey PRIMARY KEY (id)
+);
+CREATE TABLE transporte.beneficios (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  codigo text NOT NULL CHECK (codigo = ANY (ARRAY['NINO'::text, 'TERCERA_EDAD'::text, 'DISCAPACIDAD'::text])),
+  nombre text NOT NULL,
+  descuento_bp integer CHECK (descuento_bp >= 0 AND descuento_bp <= 10000),
+  edad_min integer CHECK (edad_min >= 0),
+  edad_max_exclusiva integer CHECK (edad_max_exclusiva > 0),
+  condiciones text,
+  activo boolean NOT NULL DEFAULT false,
+  vigencia daterange NOT NULL DEFAULT daterange(CURRENT_DATE, NULL::date, '[)'::text),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT beneficios_pkey PRIMARY KEY (id),
+  CONSTRAINT beneficios_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id)
+);
+CREATE TABLE transporte.tarifas (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  frecuencia_id uuid NOT NULL,
+  grupo_id uuid NOT NULL,
+  clase_id uuid NOT NULL,
+  origen_orden integer NOT NULL,
+  destino_orden integer NOT NULL,
+  precio_centavos bigint NOT NULL CHECK (precio_centavos >= 0 AND precio_centavos <= '1000000000000'::bigint),
+  servicio_centavos bigint NOT NULL DEFAULT 0 CHECK (servicio_centavos >= 0 AND servicio_centavos <= '1000000000000'::bigint),
+  impuesto_id uuid NOT NULL,
+  impuesto_servicio_id uuid,
+  vigencia daterange NOT NULL,
+  activa boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT tarifas_pkey PRIMARY KEY (id),
+  CONSTRAINT tarifas_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT tarifas_clase_id_fkey FOREIGN KEY (clase_id) REFERENCES transporte.clases_asiento(id),
+  CONSTRAINT tarifas_impuesto_id_fkey FOREIGN KEY (impuesto_id) REFERENCES transporte.impuestos(id),
+  CONSTRAINT tarifas_impuesto_servicio_id_fkey FOREIGN KEY (impuesto_servicio_id) REFERENCES transporte.impuestos(id),
+  CONSTRAINT tarifas_cooperativa_id_frecuencia_id_fkey FOREIGN KEY (frecuencia_id) REFERENCES transporte.frecuencias(id),
+  CONSTRAINT tarifas_cooperativa_id_frecuencia_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.frecuencias(cooperativa_id),
+  CONSTRAINT tarifas_cooperativa_id_grupo_id_fkey FOREIGN KEY (grupo_id) REFERENCES transporte.grupos_bus(id),
+  CONSTRAINT tarifas_cooperativa_id_grupo_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.grupos_bus(cooperativa_id)
+);
+CREATE TABLE transporte.politicas_reembolso (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  numero_version integer NOT NULL CHECK (numero_version > 0),
+  estado text NOT NULL DEFAULT 'BORRADOR'::text CHECK (estado = ANY (ARRAY['BORRADOR'::text, 'PUBLICADA'::text, 'RETIRADA'::text])),
+  condiciones text,
+  plazo_abono_dias integer CHECK (plazo_abono_dias > 0),
+  permite_parcial boolean NOT NULL DEFAULT false CHECK (NOT permite_parcial),
+  publicada_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT politicas_reembolso_pkey PRIMARY KEY (id),
+  CONSTRAINT politicas_reembolso_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id)
+);
+CREATE TABLE transporte.reglas_reembolso (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  politica_id uuid NOT NULL,
+  minutos_desde integer NOT NULL CHECK (minutos_desde >= 0),
+  minutos_hasta integer,
+  porcentaje_bp integer NOT NULL CHECK (porcentaje_bp >= 0 AND porcentaje_bp <= 10000),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT reglas_reembolso_pkey PRIMARY KEY (id),
+  CONSTRAINT reglas_reembolso_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT reglas_reembolso_cooperativa_id_politica_id_fkey FOREIGN KEY (politica_id) REFERENCES transporte.politicas_reembolso(id),
+  CONSTRAINT reglas_reembolso_cooperativa_id_politica_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.politicas_reembolso(cooperativa_id)
+);
+CREATE TABLE transporte.reservas (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  cliente_id uuid NOT NULL,
+  viaje_id uuid NOT NULL,
+  oficina_id uuid,
+  origen_orden integer NOT NULL,
+  destino_orden integer NOT NULL,
+  cantidad integer NOT NULL CHECK (cantidad >= 1 AND cantidad <= 50),
+  estado text NOT NULL DEFAULT 'PENDIENTE'::text CHECK (estado = ANY (ARRAY['PENDIENTE'::text, 'CONFIRMADA'::text, 'VENCIDA'::text, 'CANCELADA'::text])),
+  expires_at timestamp with time zone NOT NULL,
+  contacto_email character varying,
+  contacto_telefono character varying,
+  cotizacion_version integer NOT NULL DEFAULT 0,
+  aceptada_version integer,
+  total_centavos bigint NOT NULL DEFAULT 0 CHECK (total_centavos >= 0),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT reservas_pkey PRIMARY KEY (id),
+  CONSTRAINT reservas_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT reservas_cliente_id_fkey FOREIGN KEY (cliente_id) REFERENCES transporte.usuarios(id),
+  CONSTRAINT reservas_cooperativa_id_viaje_id_fkey FOREIGN KEY (viaje_id) REFERENCES transporte.viajes(id),
+  CONSTRAINT reservas_cooperativa_id_viaje_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.viajes(cooperativa_id),
+  CONSTRAINT reservas_cooperativa_id_oficina_id_fkey FOREIGN KEY (oficina_id) REFERENCES transporte.oficinas(id),
+  CONSTRAINT reservas_cooperativa_id_oficina_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.oficinas(cooperativa_id)
+);
+CREATE TABLE transporte.reserva_asientos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  reserva_id uuid NOT NULL,
+  viaje_id uuid NOT NULL,
+  asiento_id uuid NOT NULL,
+  origen_orden integer NOT NULL,
+  destino_orden integer NOT NULL,
+  estado text NOT NULL DEFAULT 'RETENIDO'::text CHECK (estado = ANY (ARRAY['RETENIDO'::text, 'CONFIRMADO'::text, 'LIBERADO'::text])),
+  expires_at timestamp with time zone NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT reserva_asientos_pkey PRIMARY KEY (id),
+  CONSTRAINT reserva_asientos_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT reserva_asientos_cooperativa_id_reserva_id_viaje_id_fkey FOREIGN KEY (reserva_id) REFERENCES transporte.reservas(id),
+  CONSTRAINT reserva_asientos_cooperativa_id_reserva_id_viaje_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.reservas(cooperativa_id),
+  CONSTRAINT reserva_asientos_cooperativa_id_reserva_id_viaje_id_fkey FOREIGN KEY (viaje_id) REFERENCES transporte.reservas(viaje_id),
+  CONSTRAINT reserva_asientos_cooperativa_id_asiento_id_fkey FOREIGN KEY (asiento_id) REFERENCES transporte.plano_celdas(id),
+  CONSTRAINT reserva_asientos_cooperativa_id_asiento_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.plano_celdas(cooperativa_id)
+);
+CREATE TABLE transporte.pasajeros (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  reserva_asiento_id uuid NOT NULL UNIQUE,
+  nombres character varying NOT NULL,
+  apellidos character varying NOT NULL,
+  tipo_documento text NOT NULL CHECK (tipo_documento = ANY (ARRAY['CEDULA'::text, 'PASAPORTE'::text, 'OTRO'::text])),
+  documento character varying NOT NULL,
+  nacimiento date,
+  beneficio_codigo text CHECK (beneficio_codigo = ANY (ARRAY['NINO'::text, 'TERCERA_EDAD'::text, 'DISCAPACIDAD'::text])),
+  respaldo_archivo_id uuid,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT pasajeros_pkey PRIMARY KEY (id),
+  CONSTRAINT pasajeros_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT pasajeros_respaldo_archivo_id_fkey FOREIGN KEY (respaldo_archivo_id) REFERENCES transporte.archivos(id),
+  CONSTRAINT pasajeros_cooperativa_id_reserva_asiento_id_fkey FOREIGN KEY (reserva_asiento_id) REFERENCES transporte.reserva_asientos(id),
+  CONSTRAINT pasajeros_cooperativa_id_reserva_asiento_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.reserva_asientos(cooperativa_id)
+);
+CREATE TABLE transporte.cotizaciones (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  reserva_id uuid NOT NULL,
+  version integer NOT NULL,
+  moneda character NOT NULL DEFAULT 'USD'::bpchar CHECK (moneda = 'USD'::bpchar),
+  base_centavos bigint NOT NULL,
+  descuento_centavos bigint NOT NULL,
+  servicio_centavos bigint NOT NULL,
+  subtotal_neto_centavos bigint NOT NULL,
+  iva_centavos bigint NOT NULL,
+  total_centavos bigint NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT cotizaciones_pkey PRIMARY KEY (id),
+  CONSTRAINT cotizaciones_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT cotizaciones_cooperativa_id_reserva_id_fkey FOREIGN KEY (reserva_id) REFERENCES transporte.reservas(id),
+  CONSTRAINT cotizaciones_cooperativa_id_reserva_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.reservas(cooperativa_id)
+);
+CREATE TABLE transporte.cotizacion_lineas (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  cotizacion_id uuid NOT NULL,
+  reserva_asiento_id uuid NOT NULL,
+  tarifa_id uuid NOT NULL,
+  beneficio_id uuid,
+  base_centavos bigint NOT NULL,
+  descuento_centavos bigint NOT NULL,
+  servicio_centavos bigint NOT NULL,
+  impuesto_bp integer NOT NULL,
+  impuesto_servicio_bp integer NOT NULL,
+  iva_centavos bigint NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT cotizacion_lineas_pkey PRIMARY KEY (id),
+  CONSTRAINT cotizacion_lineas_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT cotizacion_lineas_cooperativa_id_cotizacion_id_fkey FOREIGN KEY (cotizacion_id) REFERENCES transporte.cotizaciones(id),
+  CONSTRAINT cotizacion_lineas_cooperativa_id_cotizacion_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cotizaciones(cooperativa_id),
+  CONSTRAINT cotizacion_lineas_cooperativa_id_reserva_asiento_id_fkey FOREIGN KEY (reserva_asiento_id) REFERENCES transporte.reserva_asientos(id),
+  CONSTRAINT cotizacion_lineas_cooperativa_id_reserva_asiento_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.reserva_asientos(cooperativa_id),
+  CONSTRAINT cotizacion_lineas_cooperativa_id_tarifa_id_fkey FOREIGN KEY (tarifa_id) REFERENCES transporte.tarifas(id),
+  CONSTRAINT cotizacion_lineas_cooperativa_id_tarifa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.tarifas(cooperativa_id),
+  CONSTRAINT cotizacion_lineas_cooperativa_id_beneficio_id_fkey FOREIGN KEY (beneficio_id) REFERENCES transporte.beneficios(id),
+  CONSTRAINT cotizacion_lineas_cooperativa_id_beneficio_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.beneficios(cooperativa_id)
+);
+CREATE TABLE transporte.intentos_pago (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  reserva_id uuid NOT NULL,
+  actor_id uuid NOT NULL,
+  metodo_id uuid NOT NULL,
+  cuenta_id uuid,
+  cuenta_snapshot jsonb,
+  clave_intento character varying NOT NULL,
+  estado text NOT NULL DEFAULT 'PENDIENTE'::text CHECK (estado = ANY (ARRAY['PENDIENTE'::text, 'EN_REVISION'::text, 'APROBADO'::text, 'RECHAZADO'::text, 'ANULADO'::text])),
+  total_centavos bigint NOT NULL CHECK (total_centavos >= 0),
+  cotizacion_version integer NOT NULL,
+  proveedor_orden character varying,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT intentos_pago_pkey PRIMARY KEY (id),
+  CONSTRAINT intentos_pago_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT intentos_pago_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES transporte.usuarios(id),
+  CONSTRAINT intentos_pago_metodo_id_fkey FOREIGN KEY (metodo_id) REFERENCES transporte.metodos_pago(id),
+  CONSTRAINT intentos_pago_cooperativa_id_reserva_id_fkey FOREIGN KEY (reserva_id) REFERENCES transporte.reservas(id),
+  CONSTRAINT intentos_pago_cooperativa_id_reserva_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.reservas(cooperativa_id),
+  CONSTRAINT intentos_pago_cooperativa_id_cuenta_id_fkey FOREIGN KEY (cuenta_id) REFERENCES transporte.cuentas_bancarias(id),
+  CONSTRAINT intentos_pago_cooperativa_id_cuenta_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cuentas_bancarias(cooperativa_id)
+);
+CREATE TABLE transporte.comprobantes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  intento_id uuid NOT NULL UNIQUE,
+  archivo_id uuid NOT NULL UNIQUE,
+  referencia character varying,
+  estado text NOT NULL DEFAULT 'EN_REVISION'::text CHECK (estado = ANY (ARRAY['EN_REVISION'::text, 'APROBADO'::text, 'RECHAZADO'::text])),
+  motivo character varying,
+  revisado_por uuid,
+  revisado_at timestamp with time zone,
+  version integer NOT NULL DEFAULT 1,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT comprobantes_pkey PRIMARY KEY (id),
+  CONSTRAINT comprobantes_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT comprobantes_archivo_id_fkey FOREIGN KEY (archivo_id) REFERENCES transporte.archivos(id),
+  CONSTRAINT comprobantes_revisado_por_fkey FOREIGN KEY (revisado_por) REFERENCES transporte.usuarios(id),
+  CONSTRAINT comprobantes_cooperativa_id_intento_id_fkey FOREIGN KEY (intento_id) REFERENCES transporte.intentos_pago(id),
+  CONSTRAINT comprobantes_cooperativa_id_intento_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.intentos_pago(cooperativa_id)
+);
+CREATE TABLE transporte.pagos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  reserva_id uuid NOT NULL UNIQUE,
+  intento_id uuid NOT NULL UNIQUE,
+  monto_centavos bigint NOT NULL CHECK (monto_centavos >= 0),
+  recibido_centavos bigint,
+  cambio_centavos bigint,
+  confirmado_por uuid,
+  confirmado_at timestamp with time zone NOT NULL DEFAULT now(),
+  referencia_externa text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT pagos_pkey PRIMARY KEY (id),
+  CONSTRAINT pagos_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT pagos_confirmado_por_fkey FOREIGN KEY (confirmado_por) REFERENCES transporte.usuarios(id),
+  CONSTRAINT pagos_cooperativa_id_reserva_id_fkey FOREIGN KEY (reserva_id) REFERENCES transporte.reservas(id),
+  CONSTRAINT pagos_cooperativa_id_reserva_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.reservas(cooperativa_id),
+  CONSTRAINT pagos_cooperativa_id_intento_id_fkey FOREIGN KEY (intento_id) REFERENCES transporte.intentos_pago(id),
+  CONSTRAINT pagos_cooperativa_id_intento_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.intentos_pago(cooperativa_id)
+);
+CREATE TABLE transporte.compras (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  reserva_id uuid NOT NULL UNIQUE,
+  pago_id uuid NOT NULL UNIQUE,
+  codigo uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+  politica_reembolso_id uuid,
+  estado text NOT NULL DEFAULT 'CONFIRMADA'::text CHECK (estado = ANY (ARRAY['CONFIRMADA'::text, 'CANCELADA'::text, 'REEMBOLSADA'::text])),
+  viaje_snapshot jsonb NOT NULL,
+  total_pagado_centavos bigint NOT NULL CHECK (total_pagado_centavos >= 0),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT compras_pkey PRIMARY KEY (id),
+  CONSTRAINT compras_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT compras_cooperativa_id_reserva_id_fkey FOREIGN KEY (reserva_id) REFERENCES transporte.reservas(id),
+  CONSTRAINT compras_cooperativa_id_reserva_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.reservas(cooperativa_id),
+  CONSTRAINT compras_cooperativa_id_pago_id_fkey FOREIGN KEY (pago_id) REFERENCES transporte.pagos(id),
+  CONSTRAINT compras_cooperativa_id_pago_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.pagos(cooperativa_id),
+  CONSTRAINT compras_cooperativa_id_politica_reembolso_id_fkey FOREIGN KEY (politica_reembolso_id) REFERENCES transporte.politicas_reembolso(id),
+  CONSTRAINT compras_cooperativa_id_politica_reembolso_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.politicas_reembolso(cooperativa_id)
+);
+CREATE TABLE transporte.boletos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  compra_id uuid NOT NULL UNIQUE,
+  qr_id uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+  estado text NOT NULL DEFAULT 'PENDIENTE_EMISION'::text CHECK (estado = ANY (ARRAY['PENDIENTE_EMISION'::text, 'LISTO'::text, 'ERROR'::text, 'ANULADO'::text])),
+  archivo_id uuid,
+  emitido_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT boletos_pkey PRIMARY KEY (id),
+  CONSTRAINT boletos_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT boletos_archivo_id_fkey FOREIGN KEY (archivo_id) REFERENCES transporte.archivos(id),
+  CONSTRAINT boletos_cooperativa_id_compra_id_fkey FOREIGN KEY (compra_id) REFERENCES transporte.compras(id),
+  CONSTRAINT boletos_cooperativa_id_compra_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.compras(cooperativa_id)
+);
+CREATE TABLE transporte.notificaciones (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  usuario_id uuid,
+  cooperativa_id uuid,
+  tipo text NOT NULL,
+  canal text NOT NULL CHECK (canal = ANY (ARRAY['APP'::text, 'EMAIL'::text, 'WHATSAPP'::text])),
+  evento_clave text NOT NULL,
+  payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+  estado text NOT NULL DEFAULT 'PENDIENTE'::text CHECK (estado = ANY (ARRAY['PENDIENTE'::text, 'EN_PROCESO'::text, 'ENVIADA'::text, 'FALLIDA'::text])),
+  intentos integer NOT NULL DEFAULT 0,
+  disponible_at timestamp with time zone NOT NULL DEFAULT now(),
+  leida_at timestamp with time zone,
+  proveedor_ref text,
+  error_codigo text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT notificaciones_pkey PRIMARY KEY (id),
+  CONSTRAINT notificaciones_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES transporte.usuarios(id),
+  CONSTRAINT notificaciones_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id)
+);
+CREATE TABLE transporte.solicitudes_reembolso (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  compra_id uuid NOT NULL,
+  solicitado_por uuid NOT NULL,
+  politica_id uuid NOT NULL,
+  regla_id uuid NOT NULL,
+  porcentaje_bp integer NOT NULL,
+  monto_centavos bigint NOT NULL CHECK (monto_centavos >= 0),
+  motivo character varying NOT NULL,
+  estado text NOT NULL DEFAULT 'SOLICITADO'::text CHECK (estado = ANY (ARRAY['SOLICITADO'::text, 'APROBADO'::text, 'RECHAZADO'::text, 'EJECUTADO'::text])),
+  decision_motivo text,
+  decidido_por uuid,
+  decidido_at timestamp with time zone,
+  clave_intento character varying NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT solicitudes_reembolso_pkey PRIMARY KEY (id),
+  CONSTRAINT solicitudes_reembolso_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT solicitudes_reembolso_solicitado_por_fkey FOREIGN KEY (solicitado_por) REFERENCES transporte.usuarios(id),
+  CONSTRAINT solicitudes_reembolso_decidido_por_fkey FOREIGN KEY (decidido_por) REFERENCES transporte.usuarios(id),
+  CONSTRAINT solicitudes_reembolso_cooperativa_id_compra_id_fkey FOREIGN KEY (compra_id) REFERENCES transporte.compras(id),
+  CONSTRAINT solicitudes_reembolso_cooperativa_id_compra_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.compras(cooperativa_id),
+  CONSTRAINT solicitudes_reembolso_cooperativa_id_politica_id_fkey FOREIGN KEY (politica_id) REFERENCES transporte.politicas_reembolso(id),
+  CONSTRAINT solicitudes_reembolso_cooperativa_id_politica_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.politicas_reembolso(cooperativa_id),
+  CONSTRAINT solicitudes_reembolso_cooperativa_id_regla_id_fkey FOREIGN KEY (regla_id) REFERENCES transporte.reglas_reembolso(id),
+  CONSTRAINT solicitudes_reembolso_cooperativa_id_regla_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.reglas_reembolso(cooperativa_id)
+);
+CREATE TABLE transporte.reembolsos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  solicitud_id uuid NOT NULL UNIQUE,
+  pago_id uuid NOT NULL,
+  monto_centavos bigint NOT NULL CHECK (monto_centavos >= 0),
+  ejecutado_por uuid NOT NULL,
+  referencia_externa character varying NOT NULL CHECK (length(TRIM(BOTH FROM referencia_externa)) > 0),
+  evidencia_archivo_id uuid,
+  clave_intento character varying NOT NULL UNIQUE,
+  ejecutado_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT reembolsos_pkey PRIMARY KEY (id),
+  CONSTRAINT reembolsos_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT reembolsos_ejecutado_por_fkey FOREIGN KEY (ejecutado_por) REFERENCES transporte.usuarios(id),
+  CONSTRAINT reembolsos_evidencia_archivo_id_fkey FOREIGN KEY (evidencia_archivo_id) REFERENCES transporte.archivos(id),
+  CONSTRAINT reembolsos_cooperativa_id_solicitud_id_fkey FOREIGN KEY (solicitud_id) REFERENCES transporte.solicitudes_reembolso(id),
+  CONSTRAINT reembolsos_cooperativa_id_solicitud_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.solicitudes_reembolso(cooperativa_id),
+  CONSTRAINT reembolsos_cooperativa_id_pago_id_fkey FOREIGN KEY (pago_id) REFERENCES transporte.pagos(id),
+  CONSTRAINT reembolsos_cooperativa_id_pago_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.pagos(cooperativa_id)
+);
+CREATE TABLE transporte.abordajes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cooperativa_id uuid NOT NULL,
+  compra_id uuid NOT NULL,
+  reserva_asiento_id uuid NOT NULL UNIQUE,
+  operador_id uuid NOT NULL,
+  escaneado_at timestamp with time zone NOT NULL DEFAULT now(),
+  clave_intento character varying NOT NULL UNIQUE,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT abordajes_pkey PRIMARY KEY (id),
+  CONSTRAINT abordajes_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT abordajes_operador_id_fkey FOREIGN KEY (operador_id) REFERENCES transporte.usuarios(id),
+  CONSTRAINT abordajes_cooperativa_id_compra_id_fkey FOREIGN KEY (compra_id) REFERENCES transporte.compras(id),
+  CONSTRAINT abordajes_cooperativa_id_compra_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.compras(cooperativa_id),
+  CONSTRAINT abordajes_cooperativa_id_reserva_asiento_id_fkey FOREIGN KEY (reserva_asiento_id) REFERENCES transporte.reserva_asientos(id),
+  CONSTRAINT abordajes_cooperativa_id_reserva_asiento_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.reserva_asientos(cooperativa_id)
+);
+CREATE TABLE transporte.auditoria (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  actor_id uuid,
+  cooperativa_id uuid,
+  entidad text NOT NULL,
+  entidad_id uuid,
+  accion text NOT NULL,
+  request_id text,
+  datos jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT auditoria_pkey PRIMARY KEY (id),
+  CONSTRAINT auditoria_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES transporte.usuarios(id),
+  CONSTRAINT auditoria_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id)
+);
+CREATE TABLE transporte.contactos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  nombre character varying NOT NULL,
+  email character varying NOT NULL,
+  asunto character varying NOT NULL,
+  mensaje character varying NOT NULL,
+  consentimiento_version character varying NOT NULL,
+  estado text NOT NULL DEFAULT 'PENDIENTE'::text CHECK (estado = ANY (ARRAY['PENDIENTE'::text, 'EN_ATENCION'::text, 'RESUELTO'::text])),
+  cooperativa_id uuid,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT contactos_pkey PRIMARY KEY (id),
+  CONSTRAINT contactos_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id)
+);
+CREATE TABLE transporte.exportaciones (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  solicitado_por uuid NOT NULL,
+  cooperativa_id uuid,
+  tipo text NOT NULL,
+  filtros jsonb NOT NULL DEFAULT '{}'::jsonb,
+  estado text NOT NULL DEFAULT 'PENDIENTE'::text,
+  archivo_id uuid,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT exportaciones_pkey PRIMARY KEY (id),
+  CONSTRAINT exportaciones_solicitado_por_fkey FOREIGN KEY (solicitado_por) REFERENCES transporte.usuarios(id),
+  CONSTRAINT exportaciones_cooperativa_id_fkey FOREIGN KEY (cooperativa_id) REFERENCES transporte.cooperativas(id),
+  CONSTRAINT exportaciones_archivo_id_fkey FOREIGN KEY (archivo_id) REFERENCES transporte.archivos(id)
+);
+CREATE TABLE transporte._prisma_migrations (
+  id character varying NOT NULL,
+  checksum character varying NOT NULL,
+  finished_at timestamp with time zone,
+  migration_name character varying NOT NULL,
+  logs text,
+  rolled_back_at timestamp with time zone,
+  started_at timestamp with time zone NOT NULL DEFAULT now(),
+  applied_steps_count integer NOT NULL DEFAULT 0,
+  CONSTRAINT _prisma_migrations_pkey PRIMARY KEY (id)
+);

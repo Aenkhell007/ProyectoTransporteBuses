@@ -8,7 +8,7 @@ export function validarBus(b: any) {
   exigir(b && typeof b === 'object', 'Datos del bus inválidos.');
   for (const k of ['unidad', 'chasis', 'carroceria', 'grupoId']) exigir(typeof b[k] === 'string' && b[k].trim().length > 0 && b[k].length <= 100, `Revisa ${k}.`);
   exigir(b.unidad.length <= 30, 'La unidad admite hasta 30 caracteres.');
-  exigir(/^[A-Z]{3}-\d{4}$/.test(b.placa), 'La placa debe tener formato ABC-1234.');
+  exigir(/^[A-Z]{3}-\d{4}$/.test(b.placa), 'La placa debe tener exactamente 3 letras y 4 dígitos (ej. ABC-1234).');
   exigir(typeof b.activo === 'boolean' && [1, 2].includes(b.pisos) && Number.isInteger(b.filas) && b.filas > 0 && b.filas <= 30, 'Revisa pisos y filas.');
   exigir(!b.correo || (typeof b.correo === 'string' && b.correo.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.correo)), 'Correo inválido.');
   exigir(typeof b.propietario === 'string' && b.propietario.length <= 200, 'Propietario inválido.');
@@ -48,6 +48,14 @@ export function validarIdentidad(d: any) {
   exigir(1.05 / (luminancia + 0.05) >= 4.5, 'El texto sobre blanco necesita contraste mínimo 4.5:1.');
   for (const k of ['telefono', 'whatsapp']) exigir(typeof d[k] === 'string' && (!d[k] || /^\+[1-9]\d{7,14}$/.test(d[k])), 'Teléfono inválido.');
   for (const k of ['lema', 'direccion', 'facebook', 'instagram']) exigir(typeof d[k] === 'string' && d[k].length <= (k === 'lema' ? 160 : 2000), `Revisa ${k}.`);
+  if (d.ambitoOperacion !== undefined) {
+    exigir(['INTERPROVINCIAL', 'URBANA', 'RURAL'].includes(d.ambitoOperacion), 'Selecciona un ámbito de operación válido.');
+    if (d.ambitoOperacion !== 'INTERPROVINCIAL') {
+      exigir(typeof d.provincia === 'string' && d.provincia.trim().length > 0 && d.provincia.trim().length <= 100, 'Selecciona la provincia de operación.');
+    } else if (d.provincia !== undefined && d.provincia !== null) {
+      exigir(typeof d.provincia === 'string' && d.provincia.trim().length <= 100, 'Provincia inválida.');
+    }
+  }
   for (const k of ['facebook', 'instagram']) if (d[k]) {
     let u: URL; try { u = new URL(d[k]); } catch { throw new ErrorEditor(422, 'Dirección de red social inválida.'); }
     exigir(u.protocol === 'https:' && !u.username && !u.password && [k + '.com', 'www.' + k + '.com'].includes(u.hostname), 'Red social inválida.');

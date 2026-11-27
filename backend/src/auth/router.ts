@@ -1,3 +1,4 @@
+import { consultarLote } from '../lecturas';
 import { Router } from "express";
 import type { Request, Response, NextFunction, CookieOptions } from "express";
 import { randomBytes, randomUUID } from "node:crypto";
@@ -10,14 +11,19 @@ import { hashPassword, verifyPassword, HASH_SIN_USUARIO } from "./password";
 import { correoConfigurado, enviarCorreo, enlaceRecuperacion } from "./brevo";
 import { prepararActivacion, enviarActivacion, procesarBienvenidas, registrarErrorCorreo } from "./activacion";
 import { correoRecuperacion } from "./correos";
+import { origenPermitido } from "../origen";
 
 export const authRouter = Router();
 const COOKIE = "transporte_sesion";
 
 const opcionesCookie: CookieOptions = {
-  httpOnly: true, sameSite: "strict", secure: process.env.NODE_ENV === "production", path: "/api",
+  httpOnly: true,
+  sameSite: "strict",
+  secure:
+    process.env.COOKIE_SECURE === "true" ||
+    (process.env.COOKIE_SECURE !== "false" && process.env.NODE_ENV === "production"),
+  path: "/api",
 };
-const origenes = new Set([process.env.FRONTEND_URL ?? "http://127.0.0.1:5173","http://127.0.0.1:5173", "http://localhost:5173", "http://127.0.0.1:3000"]);
 const intentos = new Map<string, { cantidad: number; vence: number }>();
 const limpieza = setInterval(() => {
   for (const [clave, intento] of intentos) if (intento.vence <= Date.now()) intentos.delete(clave);
@@ -27,7 +33,7 @@ limpieza.unref();
 authRouter.use((req: Request, res: Response, next: NextFunction) => {
   res.setHeader("Cache-Control", "no-store");
   if (req.method === "GET") { next(); return; }
-  if ((req.headers.origin && !origenes.has(req.headers.origin)) || req.headers["sec-fetch-site"] === "cross-site") {
+  if ((req.headers.origin && !origenPermitido(req.headers.origin)) || req.headers["sec-fetch-site"] === "cross-site") {
     res.status(403).json({ error: "Origen de solicitud no permitido." }); return;
   }
   if (!req.is("application/json")) { res.status(415).json({ error: "Envía los datos como JSON." }); return; }
@@ -64,18 +70,47 @@ function tokenPeticion(req: Request): string | null {
 }
 
 async function perfil(cliente: PoolClient) {
-  const usuario = await cliente.query(
-    "SELECT id, nombres, apellidos, email, email_verificado_at FROM transporte.usuarios WHERE id = transporte.actor()",
-  );
-  const roles = await cliente.query(`
+  const loteLectura = await consultarLote(cliente, [
+    { sql: "SELECT id, nombres, apellidos, email, email_verificado_at FROM transporte.usuarios WHERE id = transporte.actor()", valores: [] },
+    { sql: `
     SELECT r.codigo FROM transporte.usuario_roles_globales ur JOIN transporte.roles r ON r.id=ur.rol_id WHERE ur.usuario_id=transporte.actor()
     UNION SELECT r.codigo FROM transporte.membresias m JOIN transporte.roles r ON r.id=m.rol_id WHERE m.usuario_id=transporte.actor() AND m.activa
-  `);
-  const permisos = await cliente.query(`SELECT p.codigo FROM transporte.permisos p
+  `, valores: [] },
+    { sql: `SELECT p.codigo FROM transporte.permisos p
     WHERE transporte.puede(p.codigo) OR EXISTS (
       SELECT 1 FROM transporte.cooperativas c WHERE c.activa AND transporte.puede(p.codigo,c.id)
-    ) ORDER BY p.codigo`);
-  return { ...usuario.rows[0], roles: roles.rows.length ? roles.rows.map((r) => r.codigo as string) : ["CLIENTE"], permisos: permisos.rows.map(r=>r.codigo as string) };
+    ) ORDER BY p.codigo`, valores: [] },
+    { sql: `SELECT c.id, c.nombre, c.ambito_operacion, c.provincia, k.lema, k.color_primario, k.color_secundario, k.color_texto, k.logo_archivo_id,
+      EXISTS (
+        SELECT 1 FROM transporte.membresias m
+        WHERE m.usuario_id = transporte.actor() AND m.activa AND m.cooperativa_id = c.id
+      ) AS es_membresia
+    FROM transporte.cooperativas c
+    LEFT JOIN transporte.config_cooperativa k ON k.cooperativa_id = c.id
+    WHERE c.activa AND (
+      EXISTS (
+        SELECT 1 FROM transporte.membresias m WHERE m.usuario_id = transporte.actor() AND m.activa AND m.cooperativa_id = c.id
+      )
+      OR transporte.puede('cooperativas.admin')
+    )
+    ORDER BY es_membresia DESC, c.nombre`, valores: [] }
+  ]);
+
+  const usuario = loteLectura[0];
+  const roles = loteLectura[1];
+  const permisos = loteLectura[2];
+  const filasCooperativas = loteLectura[3] as Array<Record<string, unknown> & { es_membresia?: boolean }>;
+  const cooperativasMembresia = filasCooperativas
+    .filter((c) => c.es_membresia)
+    .map(({ es_membresia: _ignorar, ...c }) => c);
+  const cooperativas = filasCooperativas.map(({ es_membresia: _ignorar, ...c }) => c);
+  return {
+    ...usuario[0],
+    roles: roles.length ? roles.map((r) => r.codigo as string) : ["CLIENTE"],
+    permisos: permisos.map(r=>r.codigo as string),
+    cooperativa: cooperativasMembresia[0] ?? null,
+    cooperativas,
+  };
 }
 
 authRouter.post("/register", async (req, res) => {
@@ -145,7 +180,9 @@ authRouter.post("/login", async (req, res) => {
     let usuario;
     try {
       await cliente.query("BEGIN");
-      await cliente.query("SELECT transporte.emitir_sesion_autenticada($1::uuid,$2::text,$3::timestamptz)", [credencial.usuario_id, hashToken(token), new Date(Date.now() + duracion)]);
+      const ip = typeof req.ip === "string" && /^[0-9a-fA-F:.]{2,45}$/.test(req.ip) ? req.ip.replace(/^::ffff:/, "") : null;
+      const agente = String(req.get("user-agent") ?? "").slice(0, 300) || null;
+      await cliente.query("SELECT transporte.emitir_sesion_autenticada($1::uuid,$2::text,$3::timestamptz,$4::inet,$5::text)", [credencial.usuario_id, hashToken(token), new Date(Date.now() + duracion), ip, agente]);
       await cliente.query("SELECT transporte.abrir_contexto($1::text,$2::text)", [hashToken(token), randomUUID()]);
       usuario = await perfil(cliente);
       await cliente.query("COMMIT");
@@ -185,21 +222,27 @@ authRouter.post("/password/forgot", async (req, res) => {
     if (!correoConfigurado()) {res.status(503).json({error:"El servicio de correo todavía no está configurado."}); return;}
     const token = randomBytes(32).toString("base64url");
     const enlace = enlaceRecuperacion(token);
+    let enviar = false;
     const cliente = await pool.connect();
     try {
       await cliente.query("BEGIN");
       const credencial = await cliente.query("SELECT * FROM transporte.credencial_login($1)", [email]);
       await cliente.query("SELECT transporte.solicitar_recuperacion($1,$2)", [email, hashToken(token)]);
-      if (credencial.rows[0]?.activo) {
-        const contenido = correoRecuperacion(enlace);
-        await enviarCorreo(email,contenido.subject,contenido.textContent,{htmlContent:contenido.htmlContent});
-      }
+      enviar = Boolean(credencial.rows[0]?.activo);
       await cliente.query("COMMIT");
-    } catch (error) {
+    } catch {
       await cliente.query("ROLLBACK").catch(() => {});
       // Respuesta pública uniforme: no revela si existe una dirección o falló su envío.
       console.error("No se pudo completar la solicitud de recuperación.");
     } finally {cliente.release();}
+    if (enviar) {
+      try {
+        const contenido = correoRecuperacion(enlace);
+        await enviarCorreo(email,contenido.subject,contenido.textContent,{htmlContent:contenido.htmlContent});
+      } catch {
+        console.error("No se pudo enviar el correo de recuperación.");
+      }
+    }
     const restante = 600 - (Date.now() - inicio);
     if (restante > 0) await new Promise(resolve => setTimeout(resolve, restante));
     res.json({mensaje:"Si existe una cuenta activa con ese correo, recibirás un enlace para recuperar el acceso."});

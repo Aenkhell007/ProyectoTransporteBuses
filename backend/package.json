@@ -1,13 +1,19 @@
 {
   "name": "backend",
+  "private": true,
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "API del sistema de transporte de pasajeros Gran Continental",
+  "main": "dist/backend/src/server.js",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
-    "test": "tsx --test src/auth/auth.test.ts src/auth/activacion.test.ts src/sesion.test.ts src/compra/compra.test.ts src/pagos/pagos.test.ts src/pagos/payphone.test.ts src/pagos/googleWallet.test.ts src/flota/editor.test.ts src/pagos/configuracion.test.ts src/identidad/identidad.test.ts src/operacion/operacion.test.ts src/pagos/entregaBoletos.test.ts src/abordaje/abordaje.test.ts",
+    "test": "tsx --test src/auth/auth.test.ts src/auth/activacion.test.ts src/sesion.test.ts src/compra/compra.test.ts src/pagos/pagos.test.ts src/pagos/payphone.test.ts src/pagos/googleWallet.test.ts src/flota/editor.test.ts src/pagos/configuracion.test.ts src/identidad/identidad.test.ts src/operacion/operacion.test.ts src/pagos/entregaBoletos.test.ts src/abordaje/abordaje.test.ts src/lecturas.test.ts src/origen.test.ts",
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
+    "build": "tsc -p tsconfig.build.json",
     "check:api": "tsc -p tsconfig.api.json",
+    "seed:ecuador": "tsx src/catalogos/seedEcuador.ts",
     "test:auth": "tsx --test src/auth/auth.test.ts src/auth/activacion.test.ts src/sesion.test.ts",
     "test:activacion:db": "tsx --test src/auth/activacion.db.test.ts",
     "test:pagos": "tsx --test src/pagos/pagos.test.ts",
