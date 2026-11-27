@@ -1,4 +1,4 @@
-import {http} from '../../services/http';
+import { http, lecturaCompartida } from '../../services/http';
 export type Parada={terminalId:string;minutos:number;orden:number;ciudad:string;terminal:string};
 export type Frecuencia={id:string;codigo:string;hora:string;resolucion:string;tipo:'DIRECTO'|'CON_PARADAS';activa:boolean;version:number;ruta_id:string;ruta:string;paradas:Parada[];grupos:string[];usada:boolean};
 export type Bus={id:string;unidad:string;placa:string;grupo_id:string;activo:boolean;plano_id:string|null};
@@ -11,5 +11,5 @@ export type ContextoOperacion={cooperativa:{id:string;nombre:string;ambito_opera
 export const hoy=()=>new Date().toLocaleDateString('en-CA',{timeZone:'America/Guayaquil'});
 export const sumarDias=(fecha:string,n:number)=>new Date(Date.parse(fecha+'T12:00:00Z')+n*86400000).toISOString().slice(0,10);
 export function urlOperacion(ruta:string,cooperativaId:string){return '/operacion/'+ruta+'?cooperativaId='+encodeURIComponent(cooperativaId);}
-export const consultar=(coop:string,desde:string,hasta:string)=>http<ContextoOperacion>(urlOperacion('contexto',coop)+'&desde='+desde+'&hasta='+hasta);
+export const consultar=(coop:string,desde:string,hasta:string)=>lecturaCompartida<ContextoOperacion>(urlOperacion('contexto',coop)+'&desde='+desde+'&hasta='+hasta);
 export function guardarOperacion<T={mensaje:string}>(ruta:string,coop:string,body:unknown,method='PUT'){return http<T>(urlOperacion(ruta,coop),{method,body:JSON.stringify(body)});}

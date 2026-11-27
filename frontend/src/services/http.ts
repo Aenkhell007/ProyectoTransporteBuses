@@ -1,3 +1,4 @@
+import { compartirLectura, descartarLecturasPendientes } from './lecturasPendientes';
 import {avisarSesionVencida} from '../features/auth/sesionVencida';
 // La URL de la API sale de VITE_API_URL. En el frontend nunca van credenciales de
 // base de datos: solo la dirección de la API.
@@ -24,7 +25,7 @@ const MENSAJES: Record<number, string> = {
   409: 'Hay un conflicto con datos existentes (por ejemplo, un valor duplicado).',
 };
 
-export async function http<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
+async function solicitar<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
     const headers = new Headers(opciones.headers);
   if (opciones.body && !(opciones.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
@@ -50,6 +51,22 @@ export async function http<T>(ruta: string, opciones: RequestInit = {}): Promise
   return (await respuesta.json()) as T;
 }
 
+export function lecturaCompartida<T>(ruta: string): Promise<T> {
+  const clave = ruta.replace(/^\/+/, '');
+  return compartirLectura(clave, () => solicitar<T>(ruta));
+}
+
+export async function http<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
+  const metodo = (opciones.method ?? 'GET').toUpperCase();
+  if (metodo === 'GET' || metodo === 'HEAD') return solicitar<T>(ruta, opciones);
+
+  descartarLecturasPendientes();
+  try {
+    return await solicitar<T>(ruta, opciones);
+  } finally {
+    descartarLecturasPendientes();
+  }
+}
 export interface Lista<T> {
   data: T[];
 }
