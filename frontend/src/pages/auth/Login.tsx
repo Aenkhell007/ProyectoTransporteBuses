@@ -28,30 +28,30 @@ export default function Login() {
   return (
     <PresentacionAuth>
       <header className="text-center">
-        <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl xl:text-[42px]">Iniciar sesión</h1>
-        <p className="mt-3 text-base text-blue-700 sm:text-lg">Accede a tu cuenta para gestionar tus viajes.</p>
+        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Iniciar sesión</h1>
+        <p className="mt-1.5 text-sm text-blue-700 sm:text-base">Accede a tu cuenta para gestionar tus viajes.</p>
       </header>
-      <form onSubmit={enviar} className="mt-8 space-y-6">
+      <form onSubmit={enviar} className="mt-5 space-y-4">
         <div>
-          <label htmlFor="login-email" className="mb-2 block font-semibold">Correo electrónico</label>
-          <div className="relative"><span className="pointer-events-none absolute left-4 top-4 text-indigo-400"><Icono nombre="correo" className="h-6 w-6" /></span>
+          <label htmlFor="login-email" className="mb-1.5 block text-sm font-semibold">Correo electrónico</label>
+          <div className="relative"><span className="pointer-events-none absolute left-3.5 top-3 text-indigo-400"><Icono nombre="correo" className="h-5 w-5" /></span>
             <input id="login-email" name="email" required type="email" autoComplete="username" maxLength={254} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nombre@correo.com" className={campoAuth} />
           </div>
         </div>
         <div>
-          <label htmlFor="login-password" className="mb-2 block font-semibold">Contraseña</label>
-          <div className="relative"><span className="pointer-events-none absolute left-4 top-4 text-indigo-400"><IconoClave /></span>
-            <input id="login-password" name="password" required type={visible ? "text" : "password"} autoComplete="current-password" maxLength={128} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••••" className={`${campoAuth} pr-14`} />
-            <button type="button" aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"} aria-pressed={visible} onClick={() => setVisible(!visible)} className="absolute right-1 top-1 flex h-12 w-12 items-center justify-center rounded-md text-indigo-500 hover:bg-indigo-50 focus-visible:outline-2 focus-visible:outline-blue-700"><IconoClave ojo visible={visible} /></button>
+          <label htmlFor="login-password" className="mb-1.5 block text-sm font-semibold">Contraseña</label>
+          <div className="relative"><span className="pointer-events-none absolute left-3.5 top-3 text-indigo-400"><IconoClave /></span>
+            <input id="login-password" name="password" required type={visible ? "text" : "password"} autoComplete="current-password" maxLength={128} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••••" className={`${campoAuth} pr-12`} />
+            <button type="button" aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"} aria-pressed={visible} onClick={() => setVisible(!visible)} className="absolute right-0.5 top-0.5 flex h-10 w-10 items-center justify-center rounded-md text-indigo-500 hover:bg-indigo-50 focus-visible:outline-2 focus-visible:outline-blue-700"><IconoClave ojo visible={visible} /></button>
           </div>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-3"><label className="flex items-center gap-2"><input type="checkbox" checked={recordar} onChange={e=>setRecordar(e.target.checked)} className="size-5 accent-red-600"/>Recordarme</label><Link to="/recuperar-contrasena" className="text-blue-700 underline-offset-4 hover:underline">¿Olvidaste tu contraseña?</Link></div>
-        {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-        <button type="submit" disabled={enviando || cargando} className={botonAuth}><Icono nombre="persona" className="h-6 w-6" />{enviando ? "Iniciando sesión…" : "Iniciar sesión"}</button>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm"><label className="flex items-center gap-2"><input type="checkbox" checked={recordar} onChange={e=>setRecordar(e.target.checked)} className="size-4 accent-red-600"/>Recordarme</label><Link to="/recuperar-contrasena" className="text-blue-700 underline-offset-4 hover:underline">¿Olvidaste tu contraseña?</Link></div>
+        {error && <p role="alert" className="rounded-lg bg-red-50 p-2.5 text-sm text-red-800">{error}</p>}
+        <button type="submit" disabled={enviando || cargando} className={botonAuth}><Icono nombre="persona" className="h-5 w-5" />{enviando ? "Iniciando sesión…" : "Iniciar sesión"}</button>
       </form>
-      <Link to="/reenviar-activacion" className="mt-5 text-center text-sm text-blue-700 underline">¿No recibiste el correo para activar tu cuenta?</Link>
-      <p className="mt-7 border-t border-indigo-100 pt-7 text-center">¿Aún no tienes una cuenta? <Link to="/registrarse" className="font-semibold text-red-600 underline underline-offset-4">Regístrate</Link></p>
-      <Link to="/" className="mt-9 flex min-h-11 items-center justify-center gap-3 text-blue-700 hover:underline"><Icono nombre="flechaIzquierda" />Volver al inicio</Link>
+      <Link to="/reenviar-activacion" className="mt-3.5 text-center text-xs text-blue-700 underline sm:text-sm">¿No recibiste el correo para activar tu cuenta?</Link>
+      <p className="mt-4 border-t border-indigo-100 pt-4 text-center text-sm">¿Aún no tienes una cuenta? <Link to="/registrarse" className="font-semibold text-red-600 underline underline-offset-4">Regístrate</Link></p>
+      <Link to="/" className="mt-3 flex min-h-10 items-center justify-center gap-2 text-sm text-blue-700 hover:underline"><Icono nombre="flechaIzquierda" />Volver al inicio</Link>
     </PresentacionAuth>
   );
 }

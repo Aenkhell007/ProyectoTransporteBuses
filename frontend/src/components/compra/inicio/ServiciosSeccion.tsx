@@ -67,7 +67,34 @@ export function ServiciosSeccion({
         titulo="Elige tu forma de viajar"
         descripcion="Contamos con unidades modernas y seguras, para que llegues a tu destino con total comodidad."
       />
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="space-y-3 sm:hidden">
+        {servicios.map((s) => (
+          <button
+            key={s.clase}
+            type="button"
+            onClick={() => onElegir(s.clase, `${s.nombre} (${s.pisos})`)}
+            className="grid w-full grid-cols-[104px_minmax(0,1fr)_auto] items-center gap-3 overflow-hidden rounded-lg border border-slate-200 bg-white p-2 text-left shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+          >
+            <img
+              src={s.foto}
+              alt=""
+              loading="lazy"
+              className="h-20 w-full rounded-md object-cover"
+            />
+            <span className="min-w-0">
+              <strong className="block text-sm font-bold text-[#08035b]">
+                {s.nombre} ({s.pisos})
+              </strong>
+              <span className="mt-0.5 line-clamp-2 block text-xs leading-snug text-slate-600">
+                {s.descripcion}
+              </span>
+            </span>
+            <Icono nombre="chevronDerecha" className="mr-1 h-4 w-4 text-[#ff0018]" />
+          </button>
+        ))}
+      </div>
+
+      <div className="hidden gap-4 sm:grid lg:grid-cols-2">
         {servicios.map((s) => (
           <article
             key={s.clase}

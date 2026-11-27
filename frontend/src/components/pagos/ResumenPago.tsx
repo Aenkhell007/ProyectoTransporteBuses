@@ -9,6 +9,8 @@ const titulo="mb-3 border-b border-indigo-50 pb-3 text-lg font-bold text-[#08035
 
 export default function ResumenPago({datos}:{datos:DatosPago}) {
  const v=datos.viaje,q=datos.cotizacion;
+ const totalRecargoVip = q?.recargo_vip_centavos ?? datos.pasajeros.reduce((s, p) => s + (p.recargoVipCentavos ?? 0), 0);
+ const totalNormal = q ? (q.tarifa_normal_centavos ?? Math.max(0, q.base_centavos - totalRecargoVip)) : 0;
  return <div className="space-y-3 text-sm text-[#08035b]">
   <section className={tarjeta} aria-labelledby="resumen-viaje">
    <h2 id="resumen-viaje" className={titulo}>Resumen de tu viaje</h2>
@@ -23,12 +25,28 @@ export default function ResumenPago({datos}:{datos:DatosPago}) {
     <li className="flex gap-2"><Icono nombre="asiento" className="h-4 w-4"/><span>Asientos: {datos.pasajeros.map(p=>p.asiento).join(", ") || "Sin pasajeros registrados"}</span></li>
     <li className="flex gap-2"><Icono nombre="personas" className="h-4 w-4"/><span>{datos.reserva.cantidad} {datos.reserva.cantidad===1?'pasajero':'pasajeros'}</span></li>
    </ul>
-   <details className="rounded-md border border-indigo-100 px-3 text-blue-700"><summary className="cursor-pointer py-3">Ver detalles del viaje</summary><dl className="space-y-2 pb-3 text-xs leading-5 text-slate-600"><div><dt className="font-bold">Chasis / carrocería</dt><dd>{v.chasis} · {v.carroceria}</dd></div><div><dt className="font-bold">Duración</dt><dd>{formatearDuracion(minutosEntre(v.salida,v.llegada))}</dd></div><div><dt className="font-bold">Ubicación</dt><dd>{[...new Set(datos.pasajeros.map(p=>p.piso))].map(p=>v.pisos>1?(p===1?'Piso inferior':'Piso superior'):'Un piso').join(', ')}</dd></div></dl></details>
+   <details className="rounded-md border border-indigo-100 px-3 text-blue-700"><summary className="cursor-pointer py-3">Ver detalles del viaje</summary><dl className="space-y-2 pb-3 text-xs leading-5 text-slate-600"><div><dt className="font-bold">Duración</dt><dd>{formatearDuracion(minutosEntre(v.salida,v.llegada))}</dd></div><div><dt className="font-bold">Ubicación</dt><dd>{[...new Set(datos.pasajeros.map(p=>p.piso))].map(p=>v.pisos>1?(p===1?'Piso inferior':'Piso superior'):'Un piso').join(', ')}</dd></div></dl></details>
   </section>
   <section className={tarjeta} aria-labelledby="precios-pago"><h2 id="precios-pago" className={titulo}>Detalle de precios</h2>
    {q?<dl className="space-y-2">
-    {datos.pasajeros.map(p=><div key={p.asiento} className="flex justify-between gap-2 border-b border-indigo-50 pb-2 text-xs"><dt className="text-indigo-500">Asiento {p.asiento} ({p.categoria})</dt><dd className="font-semibold">{dinero(p.tarifaCentavos-p.descuentoCentavos)}</dd></div>)}
-    <div className="flex justify-between text-xs"><dt className="text-indigo-500">Tarifa base</dt><dd>{dinero(q.base_centavos)}</dd></div>
+    {datos.pasajeros.map(p=>{
+     const recargo = p.recargoVipCentavos ?? 0;
+     return <div key={p.asiento} className="flex justify-between gap-2 border-b border-indigo-50 pb-2 text-xs">
+      <dt className="text-indigo-500">
+       Asiento {p.asiento} ({p.categoria})
+       {recargo > 0 && <span className="ml-1 inline-block rounded bg-amber-100 px-1 text-[10px] font-bold text-amber-900">VIP +{(p.recargoVipPct ?? 0)}%</span>}
+      </dt>
+      <dd className="font-semibold">{dinero(p.tarifaCentavos-p.descuentoCentavos)}</dd>
+     </div>;
+    })}
+    {totalRecargoVip > 0 ? (
+     <>
+      <div className="flex justify-between text-xs"><dt className="text-indigo-500">Tarifa base (Normal)</dt><dd>{dinero(totalNormal)}</dd></div>
+      <div className="flex justify-between text-xs font-semibold text-amber-700"><dt>Recargo VIP</dt><dd>+ {dinero(totalRecargoVip)}</dd></div>
+     </>
+    ) : (
+     <div className="flex justify-between text-xs"><dt className="text-indigo-500">Tarifa base</dt><dd>{dinero(q.base_centavos)}</dd></div>
+    )}
     <div className="flex justify-between text-xs"><dt className="text-indigo-500">Descuentos</dt><dd className="text-green-700">{q.descuento_centavos?'- ':''}{dinero(q.descuento_centavos)}</dd></div>
     <div className="flex justify-between text-xs"><dt className="text-indigo-500">Tarifa de servicio</dt><dd>{dinero(q.servicio_centavos)}</dd></div>
     <div className="flex justify-between text-xs"><dt className="text-indigo-500">IVA</dt><dd>{dinero(q.iva_centavos)}</dd></div>

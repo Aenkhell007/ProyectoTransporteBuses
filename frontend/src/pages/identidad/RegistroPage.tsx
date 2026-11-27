@@ -97,7 +97,7 @@ export default function RegistroPage() {
             </div>
             <Campo {...campo} nombre="cedula" titulo="Cédula" valor={formData.cedula} icono="cedula" placeholder="Ingresa tu número de cédula" maximo={10}/>
             <Campo {...campo} nombre="email" titulo="Correo electrónico" valor={formData.email} icono="correo" placeholder="nombre@correo.com" tipo="email" autoComplete="email" maximo={254}/>
-            <Campo {...campo} nombre="telefono" titulo="Teléfono / WhatsApp" valor={formData.telefono} icono="telefono" placeholder="99 123 4567" tipo="tel" autoComplete="tel-national" maximo={20} ayuda="Ingresa tu celular sin el cero inicial."/>
+            <Campo {...campo} nombre="telefono" titulo="Teléfono / WhatsApp" valor={formData.telefono} icono="telefono" placeholder="99 123 4567" tipo="tel" autoComplete="tel-national" maximo={20} ayuda="Recibe tus boletos y avisos del viaje en este número (sin el cero inicial)."/>
             <div className="registro-par registro-claves">
               <Campo {...campo} nombre="password" titulo="Contraseña" valor={formData.password} icono="clave" placeholder="••••••••••" tipo="password" autoComplete="new-password" maximo={128} ayuda="Usa al menos 8 caracteres."/>
               <Campo {...campo} nombre="confirmPassword" titulo="Confirmar contraseña" valor={formData.confirmPassword} icono="clave" placeholder="••••••••••" tipo="password" autoComplete="new-password" maximo={128}/>

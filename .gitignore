@@ -19,6 +19,8 @@
 # Certificado TLS de Supabase (backend/conexion-bd/certs/supabase-ca.crt)
 # y cualquier clave o certificado suelto.
 certs/
+backend/secrets/*.json
+google-wallet*.json
 *.pem
 *.key
 *.crt

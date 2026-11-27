@@ -8,6 +8,7 @@ import type {
 } from "../../features/compra/busqueda";
 import { Icono } from "./Icono";
 import type { NombreIcono } from "./Icono";
+import { ComboBusqueda } from "../ui/ComboBusqueda";
 
 export type EstadoCarga = "cargando" | "listo" | "error";
 
@@ -53,11 +54,11 @@ export function TripSearch({
   const cambiar = (campo: keyof FormularioBusqueda, valor: string) =>
     onCambiar({ ...valores, [campo]: valor });
 
-  const opcionesCiudad = ciudades.map((c) => (
-    <option key={c.id} value={c.id}>
-      {c.nombre} ({c.provincia})
-    </option>
-  ));
+  const opcionesCombo = ciudades.map((c) => ({
+    valor: c.id,
+    etiqueta: `${c.nombre} (${c.provincia})`,
+    subtitulo: c.provincia,
+  }));
 
   return (
     <form
@@ -77,21 +78,19 @@ export function TripSearch({
           etiqueta="Origen"
           icono="ubicacion"
           error={errores.origen}
+          sinFlecha
         >
-          <select
+          <ComboBusqueda
             id={`${id}-origen`}
             value={valores.origen}
             disabled={sinCiudades}
-            aria-invalid={!!errores.origen}
-            aria-describedby={errores.origen ? `${id}-origen-error` : undefined}
-            onChange={(e) => cambiar("origen", e.target.value)}
-            className={`${control} ${errores.origen ? "border-red-500" : "border-slate-300"}`}
-          >
-            <option value="">
-              {sinCiudades ? textoCiudad : "Ciudad de origen"}
-            </option>
-            {opcionesCiudad}
-          </select>
+            ariaInvalid={!!errores.origen}
+            ariaDescribedBy={errores.origen ? `${id}-origen-error` : undefined}
+            onChange={(v) => cambiar("origen", v)}
+            opciones={opcionesCombo}
+            placeholder={sinCiudades ? textoCiudad : "Provincia o cantón de origen"}
+            className={`${control} pr-3 ${errores.origen ? "border-red-500" : "border-slate-300"}`}
+          />
         </Campo>
 
         <div className="flex justify-center lg:pt-7">
@@ -125,23 +124,21 @@ export function TripSearch({
           etiqueta="Destino"
           icono="ubicacion"
           error={errores.destino}
+          sinFlecha
         >
-          <select
+          <ComboBusqueda
             id={`${id}-destino`}
             value={valores.destino}
             disabled={sinCiudades}
-            aria-invalid={!!errores.destino}
-            aria-describedby={
+            ariaInvalid={!!errores.destino}
+            ariaDescribedBy={
               errores.destino ? `${id}-destino-error` : undefined
             }
-            onChange={(e) => cambiar("destino", e.target.value)}
-            className={`${control} ${errores.destino ? "border-red-500" : "border-slate-300"}`}
-          >
-            <option value="">
-              {sinCiudades ? textoCiudad : "Ciudad de destino"}
-            </option>
-            {opcionesCiudad}
-          </select>
+            onChange={(v) => cambiar("destino", v)}
+            opciones={opcionesCombo}
+            placeholder={sinCiudades ? textoCiudad : "Provincia o cantón de destino"}
+            className={`${control} pr-3 ${errores.destino ? "border-red-500" : "border-slate-300"}`}
+          />
         </Campo>
 
         <Campo

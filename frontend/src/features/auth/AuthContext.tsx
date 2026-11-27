@@ -1,18 +1,29 @@
-import { descartarLecturasPendientes } from '../../services/lecturasPendientes';
 import { startTransition, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import type { ReactNode } from "react";
 import { authApi, ErrorAuth } from "../../services/authApi";
 import type { UsuarioSesion } from "../../services/authApi";
+import { invalidarLecturasHttp } from '../../services/http';
 import {Contexto} from "./contextoSesion";
 export {useAuth} from "./contextoSesion";
+
+function limpiarBorradoresSesion() {
+  try {
+    for (let i = sessionStorage.length - 1; i >= 0; i--) {
+      const clave = sessionStorage.key(i);
+      if (clave?.startsWith("gc.compra.borrador.")) sessionStorage.removeItem(clave);
+    }
+  } catch {
+    // Ignorar si sessionStorage no está disponible.
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [usuario, setUsuario] = useState<UsuarioSesion | null>(null);
   const [cargando, setCargando] = useState(true);
   const [errorSesion, setErrorSesion] = useState("");
-  useEffect(()=>{const invalidar=()=>{descartarLecturasPendientes();setUsuario(null);setErrorSesion('La sesión venció. Inicia sesión nuevamente.');};window.addEventListener('transporte:sesion-vencida',invalidar);return()=>window.removeEventListener('transporte:sesion-vencida',invalidar);},[]);
+  useEffect(()=>{const invalidar=()=>{invalidarLecturasHttp();setUsuario(null);setErrorSesion('La sesión venció. Inicia sesión nuevamente.');};window.addEventListener('transporte:sesion-vencida',invalidar);return()=>window.removeEventListener('transporte:sesion-vencida',invalidar);},[]);
   useEffect(() => {
     let activo = true;
     authApi.me().then(({ usuario }) => { if (activo) setUsuario(usuario); })
@@ -21,14 +32,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { activo = false; };
   }, []);
   async function login(email: string, password: string, recordar = false) {
+    invalidarLecturasHttp();
     const datos = await authApi.login(email, password, recordar);
-    descartarLecturasPendientes();
+    invalidarLecturasHttp();
     setUsuario(datos.usuario); setErrorSesion("");
   }
-  async function refrescar() { try{const datos = await authApi.me(); setUsuario(datos.usuario);}catch(e){if(e instanceof ErrorAuth&&e.status===401){descartarLecturasPendientes();setUsuario(null);}throw e;} }
+  async function refrescar() { try{const datos = await authApi.me(); setUsuario(datos.usuario);}catch(e){if(e instanceof ErrorAuth&&e.status===401){invalidarLecturasHttp();setUsuario(null);}throw e;} }
   async function logout() {
     await authApi.logout();
-    descartarLecturasPendientes();
+    invalidarLecturasHttp();
+    limpiarBorradoresSesion();
     startTransition(() => {
       navigate("/", { replace: true });
       setUsuario(null);

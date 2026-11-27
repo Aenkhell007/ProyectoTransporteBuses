@@ -1,7 +1,7 @@
 // GET /viajes (buscar_viajes) y GET /viajes/:id. Ver docs/api/compra-endpoints.md.
 
-/** Códigos de clases_asiento. EJECUTIVO se muestra como VIP en la vista 2. */
-export type ClaseAsientoCodigo = "NORMAL" | "EJECUTIVO";
+/** Códigos de clases_asiento. Tanto VIP como EJECUTIVO se muestran como VIP. */
+export type ClaseAsientoCodigo = "NORMAL" | "VIP" | "EJECUTIVO";
 export type TipoViaje = "DIRECTO" | "CON_PARADAS";
 
 export type ServicioBus =
@@ -12,7 +12,8 @@ export type ServicioBus =
   | "BANO"
   | "PANTALLAS"
   | "ENCHUFES"
-  | "PORTAEQUIPAJE";
+  | "PORTAEQUIPAJE"
+  | "COMIDA";
 
 export interface BusViaje {
   id: string;
@@ -48,6 +49,8 @@ export interface ViajeResultado {
   bus: BusViaje;
   /** Asientos libres en el tramo, no número de resultados. */
   plazas_disponibles: number;
+  disponibles_normal?: number;
+  disponibles_vip?: number;
   /** Precio mínimo por pasajero en el tramo. No es una cotización. */
   tarifa_desde_centavos: number;
 }
@@ -62,6 +65,7 @@ export interface DetalleViaje {
   paradas: (ParadaViaje & { hora: string })[];
   plazas_disponibles: number;
   tarifa_desde_centavos: number;
+  tarifas_clase?: Partial<Record<ClaseAsientoCodigo, number>>;
 }
 
 export interface Cooperativa {

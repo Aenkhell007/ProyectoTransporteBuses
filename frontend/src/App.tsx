@@ -98,9 +98,10 @@ function RutasAplicacion() {
         <Route path="frecuencias" element={<FrecuenciasGestion />} />
         <Route path="frecuencias/grupos" element={<CompatibilidadesConectadas />} />
         <Route path="grupos" element={<GruposGestionConectada />} />
+        <Route path="mi-cuenta" element={<MiCuenta />} />
         <Route path="*" element={<p className="py-6">Esta sección está pendiente de integración por su responsable.</p>} />
       </Route>
-      <Route path="/oficina" element={<AdminLayout variant="oficina" panelFijo />}><Route index element={<OficinaResumenPage />}/><Route path="ventas" element={<VentaOficinaReal />}/><Route path="reservas" element={<OficinaReservasPage />}/><Route path="comprobantes" element={<OficinaComprobantesReal />}/><Route path="comprobantes/ejemplo" element={<Navigate to="/oficina/comprobantes" replace />} /><Route path="comprobantes/:id" element={<RevisionComprobanteReal />}/><Route path="reembolsos" element={<ReembolsosReal />}/><Route path="*" element={<p>Sección pendiente de integración.</p>}/></Route>
+      <Route path="/oficina" element={<AdminLayout variant="oficina" panelFijo />}><Route index element={<OficinaResumenPage />}/><Route path="ventas" element={<VentaOficinaReal />}/><Route path="reservas" element={<OficinaReservasPage />}/><Route path="comprobantes" element={<OficinaComprobantesReal />}/><Route path="comprobantes/ejemplo" element={<Navigate to="/oficina/comprobantes" replace />} /><Route path="comprobantes/:id" element={<RevisionComprobanteReal />}/><Route path="reembolsos" element={<ReembolsosReal />}/><Route path="mi-cuenta" element={<MiCuenta />}/><Route path="*" element={<p>Sección pendiente de integración.</p>}/></Route>
       <Route path="/panel" element={<AdminLayout panelFijo />}>
         <Route index element={<AdminResumenPage />} />
         <Route path="cooperativas" element={<CooperativasAdmin />} />
@@ -109,6 +110,7 @@ function RutasAplicacion() {
         <Route path="usuarios/nuevo" element={<AltasPage />} />
         <Route path="accesos" element={<AccesosPage />} />
         <Route path="reportes" element={<ReportesAuditoria />} />
+        <Route path="mi-cuenta" element={<MiCuenta />} />
         <Route path="configuracion" element={<><nav className="px-4 pt-4"><Link className="inline-flex rounded-md border border-blue-200 px-4 py-2 text-blue-900" to="/panel/configuracion/pagos">Pagos y cuentas bancarias →</Link></nav><GlobalConectada /></>} />
         <Route path="configuracion/global" element={<GlobalConectada />} />
         <Route path="configuracion/pagos" element={<ConfiguracionPagosPage />} />

@@ -59,7 +59,8 @@ export function MisViajesPage() {
     if (busqueda.trim() === filtros.q) return;
     const t = setTimeout(() => cambiar({ ...filtros, q: busqueda }), 400);
     return () => clearTimeout(t);
-  });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busqueda, filtros.q]);
 
   const cursor = cursores[pagina] ?? null;
   useEffect(() => {
@@ -159,7 +160,7 @@ export function MisViajesPage() {
               />
             </div>
             {historial && (
-              <>
+              <div className="grid grid-cols-2 gap-3 md:contents">
                 <div>
                   <label
                     htmlFor="mv-desde"
@@ -204,7 +205,7 @@ export function MisViajesPage() {
                     title="Hasta"
                   />
                 </div>
-              </>
+              </div>
             )}
             <div>
               <label htmlFor="mv-estado" className="sr-only">
@@ -326,16 +327,19 @@ export function MisViajesPage() {
               aria-label="Páginas de Mis viajes"
               className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3"
             >
-              <p role="status" className="text-sm text-slate-600">
-                Mostrando <strong>{lista.viajes.length}</strong>{" "}
-                {historial
-                  ? lista.viajes.length === 1
-                    ? "compra"
-                    : "compras"
-                  : lista.viajes.length === 1
-                    ? "reserva"
-                    : "reservas"}{" "}
-                · Página {pagina + 1}
+              <p role="status" className="flex items-center gap-2 text-sm text-slate-600">
+                <Icono nombre="info" className="h-4 w-4 text-blue-600" />
+                <span>
+                  Mostrando <strong>{lista.viajes.length}</strong>{" "}
+                  {historial
+                    ? lista.viajes.length === 1
+                      ? "compra"
+                      : "compras"
+                    : lista.viajes.length === 1
+                      ? "reserva"
+                      : "reservas"}{" "}
+                  · Página {pagina + 1}
+                </span>
               </p>
               <div className="flex items-center gap-2">
                 <button

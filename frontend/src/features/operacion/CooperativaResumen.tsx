@@ -1,4 +1,309 @@
-import {Link} from 'react-router';
-import {useOperacion,Titulo,Caja,Campo,Estado,Kpis,SelectorAmbito,Mensajes,Aviso,Icono,campo,boton,primario} from './ui';
-export default function CooperativaResumen(){const a=useOperacion(0),d=a.datos;const asignados=new Set(d?.viajes.filter(v=>v.estado!=='CANCELADO').map(v=>v.bus_id));const dias=new Date(a.desde+'T12:00Z').getUTCDay()||7;const parados=d?.buses.filter(b=>!asignados.has(b.id)&&(!b.activo||d.grupos.find(g=>g.id===b.grupo_id)?.descanso.includes(dias)||d.indisponibilidades.some(i=>i.bus_id===b.id))).length??0;
- return <section className="space-y-3 py-4 text-blue-900"><Titulo titulo="Panel de la cooperativa" descripcion={'Organiza los buses y las salidas'+(d?' de '+d.cooperativa.nombre:'.')}><Campo nombre="Fecha"><input type="date" className={campo} value={a.desde} onChange={e=>{a.setDesde(e.target.value);a.setHasta(e.target.value);}}/></Campo><SelectorAmbito a={a}/></Titulo><Mensajes a={a}/>{d&&<><Kpis items={[{nombre:'Buses registrados',valor:d.buses.length,icono:'bus'},{nombre:'Frecuencias activas',valor:d.frecuencias.filter(f=>f.activa).length,icono:'calendario',color:'bg-green-50 text-green-700'},{nombre:'Salidas programadas',valor:d.viajes.filter(v=>v.estado==='PUBLICADO').length,icono:'ruta',color:'bg-violet-50 text-violet-700'},{nombre:'Buses en parada',valor:parados,icono:'bus',color:'bg-amber-50 text-orange-600'}]}/><div className="grid items-center gap-3 lg:grid-cols-[1fr_auto]"><Aviso tipo={d.viajes.some(v=>v.estado==='BORRADOR')?'alerta':'info'}><strong>{d.viajes.filter(v=>v.estado==='BORRADOR').length} salidas en borrador.</strong><p>Revisa las asignaciones antes de publicarlas para la venta.</p></Aviso><Link to={"/cooperativa/hoja-ruta?cooperativaId="+(a.datos?.cooperativa.id??'')} className={primario}><Icono nombre="calendario"/>Planificar hoja de ruta</Link></div><div className="grid gap-4 lg:grid-cols-[3fr_2fr]"><Caja titulo="Salidas programadas" icono="calendario" accion={<Link className="text-sm underline" to={"/cooperativa/hoja-ruta?cooperativaId="+(a.datos?.cooperativa.id??'')}>Ver todas</Link>}><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-blue-50"><tr>{['Fecha','Hora','Ruta','Unidad','Estado'].map(x=><th key={x} className="p-2">{x}</th>)}</tr></thead><tbody>{d.viajes.filter(v=>v.estado!=='CANCELADO').map(v=><tr key={v.id} className="border-b border-blue-50"><td className="p-2">{v.fecha}</td><td className="p-2 font-bold">{v.hora}</td><td className="p-2">{d.frecuencias.find(f=>f.id===v.frecuencia_id)?.ruta}</td><td className="p-2">{d.buses.find(b=>b.id===v.bus_id)?.unidad}</td><td className="p-2"><Estado valor={v.estado}/></td></tr>)}</tbody></table></div>{!d.viajes.length&&<p className="p-4 text-sm">No hay salidas en el intervalo seleccionado. Planifica la primera.</p>}</Caja><Caja titulo="Disponibilidad de la flota" icono="bus">{[{nombre:'Disponibles',valor:Math.max(0,d.buses.length-asignados.size-parados),color:'bg-green-600'},{nombre:'Asignados',valor:asignados.size,color:'bg-blue-600'},{nombre:'En parada',valor:parados,color:'bg-orange-500'}].map(x=><div key={x.nombre} className="my-5 grid grid-cols-[1fr_30px_1fr] items-center gap-3 text-sm"><span>{x.nombre}</span><strong>{x.valor}</strong><span className="h-3 rounded-full bg-slate-200"><span className={'block h-3 rounded-full '+x.color} style={{width:Math.min(100,x.valor/Math.max(1,d.buses.length)*100)+'%'}}/></span></div>)}<p className="border-t border-blue-100 pt-3 font-bold">Total de buses <span className="float-right">{d.buses.length}</span></p></Caja></div><div className="grid gap-4 lg:grid-cols-[2fr_1fr]"><Caja titulo="Grupos de buses" icono="personas" accion={<Link className="text-sm underline" to={"/cooperativa/frecuencias/grupos?cooperativaId="+(a.datos?.cooperativa.id??'')}>Gestionar grupos →</Link>}><div className="grid gap-3 sm:grid-cols-3">{d.grupos.map(g=><div key={g.id} className="rounded-lg border border-blue-100 p-3"><h3 className="mb-4 flex items-center gap-2 font-bold"><Icono nombre="bus" className="size-7 text-green-700"/>{g.nombre}</h3><div className="grid grid-cols-2 divide-x divide-blue-100 text-sm"><span><b className="block text-2xl">{d.buses.filter(b=>b.grupo_id===g.id).length}</b>buses</span><span className="pl-3"><b className="block text-2xl">{d.frecuencias.filter(f=>f.grupos.includes(g.id)).length}</b>frecuencias</span></div></div>)}</div>{!d.grupos.length&&<p className="text-sm">Crea un grupo y un bus desde Gestión de buses para comenzar.</p>}</Caja><Caja titulo="Accesos rápidos" icono="ruta"><div className="grid gap-3">{[['buses','bus','Gestionar buses'],['frecuencias','calendario','Frecuencias'],['configuracion/tarifas','boleto','Tarifas y descuentos']].map(([ruta,icono,n])=><Link key={ruta} to={'/cooperativa/'+ruta+'?cooperativaId='+(a.datos?.cooperativa.id??'')} className={boton}><Icono nombre={icono as 'bus'|'calendario'|'boleto'}/>{n}<span className="ml-auto">›</span></Link>)}</div></Caja></div></>}</section>}
+import { Link } from "react-router";
+import {
+  useOperacion,
+  Titulo,
+  Caja,
+  Campo,
+  Estado,
+  Kpis,
+  SelectorAmbito,
+  Mensajes,
+  Aviso,
+  Icono,
+  campo,
+  boton,
+  primario,
+} from "./ui";
+
+export default function CooperativaResumen() {
+  const a = useOperacion(0, "resumen");
+  const d = a.datos;
+  const asignados = new Set(
+    d?.viajes.filter((v) => v.estado !== "CANCELADO").map((v) => v.bus_id),
+  );
+  const dias = new Date(a.desde + "T12:00Z").getUTCDay() || 7;
+  const parados =
+    d?.buses.filter(
+      (b) =>
+        !asignados.has(b.id) &&
+        (!b.activo ||
+          d.grupos.find((g) => g.id === b.grupo_id)?.descanso.includes(dias) ||
+          d.indisponibilidades.some((i) => i.bus_id === b.id)),
+    ).length ?? 0;
+
+  const coopId = a.datos?.cooperativa.id ?? "";
+  const ambito = d?.cooperativa.ambito_operacion ?? "INTERPROVINCIAL";
+  const provincia = d?.cooperativa.provincia ?? "";
+  const esLocal = (ambito === "URBANA" || ambito === "RURAL") && Boolean(provincia);
+  const borradores = d?.viajes.filter((v) => v.estado === "BORRADOR").length ?? 0;
+  const salidasActivas =
+    d?.viajes.filter((v) => v.estado !== "CANCELADO") ?? [];
+
+  return (
+    <section className="space-y-3 py-4 text-blue-900">
+      <Titulo
+        titulo={d ? `Resumen Operativo - ${d.cooperativa.nombre}` : "Resumen Operativo"}
+        descripcion={
+          esLocal
+            ? `Operación ${ambito === "URBANA" ? "Urbana" : "Rural"} en la provincia de ${provincia}.`
+            : "Organiza los buses y las salidas" +
+              (d ? " de " + d.cooperativa.nombre : ".")
+        }
+      >
+        {esLocal && (
+          <span className="inline-flex items-center gap-1.5 self-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800">
+            <Icono nombre="ubicacion" className="size-4" />
+            {ambito === "URBANA" ? "Urbana" : "Rural"} · {provincia}
+          </span>
+        )}
+        <Campo nombre="Fecha">
+          <input
+            type="date"
+            className={campo}
+            value={a.desde}
+            onChange={(e) => {
+              a.setDesde(e.target.value);
+              a.setHasta(e.target.value);
+            }}
+          />
+        </Campo>
+        <SelectorAmbito a={a} />
+      </Titulo>
+      <Mensajes a={a} />
+      {d && (
+        <>
+          <Kpis
+            items={[
+              { nombre: "Buses registrados", valor: d.buses.length, icono: "bus" },
+              {
+                nombre: "Frecuencias activas",
+                valor: d.frecuencias.filter((f) => f.activa).length,
+                icono: "calendario",
+                color: "bg-green-50 text-green-700",
+              },
+              {
+                nombre: "Salidas programadas",
+                valor: d.viajes.filter((v) => v.estado === "PUBLICADO").length,
+                icono: "ruta",
+                color: "bg-violet-50 text-violet-700",
+              },
+              {
+                nombre: "Buses en parada",
+                valor: parados,
+                icono: "bus",
+                color: "bg-amber-50 text-orange-600",
+              },
+            ]}
+          />
+          <div className="grid items-center gap-3 lg:grid-cols-[1fr_auto]">
+            <Aviso tipo={borradores > 0 ? "alerta" : "info"}>
+              <strong>{borradores} salidas en borrador.</strong>
+              <p>
+                Revisa las asignaciones antes de publicarlas para la venta.{" "}
+                {borradores > 0 && (
+                  <Link
+                    to={"/cooperativa/hoja-ruta?cooperativaId=" + coopId}
+                    className="font-semibold underline underline-offset-2"
+                  >
+                    Completar asignación →
+                  </Link>
+                )}
+              </p>
+            </Aviso>
+            <Link
+              to={"/cooperativa/hoja-ruta?cooperativaId=" + coopId}
+              className={primario}
+            >
+              <Icono nombre="calendario" />
+              Planificar hoja de ruta
+            </Link>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-[3fr_2fr]">
+            <Caja
+              titulo="Salidas programadas"
+              icono="calendario"
+              accion={
+                <Link
+                  className="text-sm underline"
+                  to={"/cooperativa/hoja-ruta?cooperativaId=" + coopId}
+                >
+                  Ver todas
+                </Link>
+              }
+            >
+              <div className="hidden overflow-x-auto sm:block">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-blue-50">
+                    <tr>
+                      {["Fecha", "Hora", "Ruta", "Unidad", "Estado"].map((x) => (
+                        <th key={x} className="p-2">
+                          {x}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {salidasActivas.map((v) => (
+                      <tr key={v.id} className="border-b border-blue-50">
+                        <td className="p-2">{v.fecha}</td>
+                        <td className="p-2 font-bold">{v.hora}</td>
+                        <td className="p-2">
+                          {d.frecuencias.find((f) => f.id === v.frecuencia_id)?.ruta}
+                        </td>
+                        <td className="p-2">
+                          {d.buses.find((b) => b.id === v.bus_id)?.unidad}
+                        </td>
+                        <td className="p-2">
+                          <Estado valor={v.estado} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="space-y-2 sm:hidden">
+                {salidasActivas.map((v) => (
+                  <article
+                    key={v.id}
+                    className="rounded-lg border border-blue-100 p-3 text-sm"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <strong>
+                        {d.frecuencias.find((f) => f.id === v.frecuencia_id)?.ruta}
+                      </strong>
+                      <Estado valor={v.estado} />
+                    </div>
+                    <p className="mt-1 text-xs text-blue-800">
+                      {v.fecha} · <strong>{v.hora}</strong> · Unidad{" "}
+                      {d.buses.find((b) => b.id === v.bus_id)?.unidad}
+                    </p>
+                  </article>
+                ))}
+              </div>
+              {!d.viajes.length && (
+                <p className="p-4 text-sm">
+                  No hay salidas en el intervalo seleccionado. Planifica la
+                  primera.
+                </p>
+              )}
+            </Caja>
+            <Caja titulo="Disponibilidad de la flota" icono="bus">
+              {[
+                {
+                  nombre: "Disponibles",
+                  valor: Math.max(0, d.buses.length - asignados.size - parados),
+                  color: "bg-green-600",
+                },
+                {
+                  nombre: "Asignados",
+                  valor: asignados.size,
+                  color: "bg-blue-600",
+                },
+                { nombre: "En parada", valor: parados, color: "bg-orange-500" },
+              ].map((x) => (
+                <div
+                  key={x.nombre}
+                  className="my-5 grid grid-cols-[1fr_30px_1fr] items-center gap-3 text-sm"
+                >
+                  <span>{x.nombre}</span>
+                  <strong>{x.valor}</strong>
+                  <span className="h-3 rounded-full bg-slate-200">
+                    <span
+                      className={"block h-3 rounded-full " + x.color}
+                      style={{
+                        width:
+                          Math.min(
+                            100,
+                            (x.valor / Math.max(1, d.buses.length)) * 100,
+                          ) + "%",
+                      }}
+                    />
+                  </span>
+                </div>
+              ))}
+              <p className="flex items-center justify-between border-t border-blue-100 pt-3 font-bold">
+                <span>Total de buses</span>
+                <span>{d.buses.length}</span>
+              </p>
+            </Caja>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+            <Caja
+              titulo="Grupos de buses"
+              icono="personas"
+              accion={
+                <Link
+                  className="text-sm underline"
+                  to={
+                    "/cooperativa/frecuencias/grupos?cooperativaId=" + coopId
+                  }
+                >
+                  Gestionar grupos →
+                </Link>
+              }
+            >
+              <div className="grid gap-3 sm:grid-cols-3">
+                {d.grupos.map((g) => (
+                  <div
+                    key={g.id}
+                    className="rounded-lg border border-blue-100 p-3"
+                  >
+                    <h3 className="mb-4 flex items-center gap-2 font-bold">
+                      <Icono nombre="bus" className="size-7 text-green-700" />
+                      {g.nombre}
+                    </h3>
+                    <div className="grid grid-cols-2 divide-x divide-blue-100 text-sm">
+                      <span>
+                        <b className="block text-2xl">
+                          {d.buses.filter((b) => b.grupo_id === g.id).length}
+                        </b>
+                        buses
+                      </span>
+                      <span className="pl-3">
+                        <b className="block text-2xl">
+                          {
+                            d.frecuencias.filter((f) =>
+                              f.grupos.includes(g.id),
+                            ).length
+                          }
+                        </b>
+                        frecuencias
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {!d.grupos.length && (
+                <p className="text-sm">
+                  Crea un grupo y un bus desde Gestión de buses para comenzar.
+                </p>
+              )}
+            </Caja>
+            <Caja titulo="Accesos rápidos" icono="ruta">
+              <div className="grid gap-3">
+                {(
+                  [
+                    ["buses", "bus", "Gestionar buses"],
+                    ["frecuencias", "calendario", "Frecuencias"],
+                    ["configuracion", "configuracion", "Configurar cooperativa"],
+                    ["configuracion/tarifas", "boleto", "Tarifas y descuentos"],
+                  ] as const
+                ).map(([ruta, icono, n]) => (
+                  <Link
+                    key={ruta}
+                    to={"/cooperativa/" + ruta + "?cooperativaId=" + coopId}
+                    className={boton}
+                  >
+                    <Icono nombre={icono} />
+                    {n}
+                    <span className="ml-auto">›</span>
+                  </Link>
+                ))}
+              </div>
+            </Caja>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}

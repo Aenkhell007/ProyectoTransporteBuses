@@ -114,9 +114,11 @@ function NotaInternaReembolso({ id, nota, recargar }: {
   );
 }
 export function ReembolsosReal() {
+  const [nuevo, N] = useState(false);
   const c = useConsulta<{ solicitudes: Solicitud[] }>("/oficina/reembolsos");
   const compras = useConsulta<{ reservas: ReservaOficina[] }>(
     "/oficina/reservas",
+    nuevo,
   );
   const [id, seleccionar] = useState(""),
     [busqueda, B] = useState(""),
@@ -128,7 +130,6 @@ export function ReembolsosReal() {
   const [error, E] = useState(""),
     [mensaje, G] = useState(""),
     [ocupado, O] = useState(false),
-    [nuevo, N] = useState(false),
     [compra, C] = useState(""),
     [elegible, L] = useState<Elegibilidad | null>(null);
   const consultaElegibilidad = useRef(0);
@@ -270,7 +271,7 @@ export function ReembolsosReal() {
       />
       <Tarjeta>
         <div className="of-filtros-reembolsos grid grid-cols-2 items-end gap-3 xl:grid-cols-[2fr_1fr_1fr_1fr_1fr]">
-          <label>
+          <label className="col-span-2 xl:col-span-1">
             Reserva / cliente
             <span className="relative block"><Icono nombre="lupa" className="pointer-events-none absolute top-4 left-3 size-5 text-indigo-500"/>
             <input
@@ -482,15 +483,54 @@ export function ReembolsosReal() {
           {d && (
             <BloqueReembolso titulo="Historial de la solicitud">
               <div className="of-timeline">
-              <p><strong className="block text-sm text-blue-800">Solicitud de reembolso creada</strong><span className="block text-sm text-blue-700">El cliente solicitó la devolución del pasaje.</span><time className="mt-1 block text-xs text-slate-500" dateTime={d.created_at}>{fechaHora(d.created_at)}</time></p>
-              {d.decidido_at && (
                 <p>
-                  Decisión: {d.estado} · {fechaHora(d.decidido_at)}
+                  <strong className="block text-sm text-blue-800">
+                    Solicitud de reembolso creada
+                  </strong>
+                  <span className="block text-sm text-blue-700">
+                    El cliente solicitó la devolución del pasaje.
+                  </span>
+                  <time
+                    className="mt-1 block text-xs text-slate-500"
+                    dateTime={d.created_at}
+                  >
+                    {fechaHora(d.created_at)}
+                  </time>
                 </p>
-              )}
-              {d.ejecutado_at && (
-                <p>Abono registrado · {fechaHora(d.ejecutado_at)}</p>
-              )}
+                {d.decidido_at && (
+                  <p>
+                    <strong className="block text-sm text-blue-800">
+                      Decisión registrada: {etiquetaEstado(d.estado)}
+                    </strong>
+                    <span className="block text-sm text-blue-700">
+                      {d.decision_motivo || "La oficina registró la revisión de la solicitud."}
+                    </span>
+                    <time
+                      className="mt-1 block text-xs text-slate-500"
+                      dateTime={d.decidido_at}
+                    >
+                      {fechaHora(d.decidido_at)}
+                    </time>
+                  </p>
+                )}
+                {d.ejecutado_at && (
+                  <p>
+                    <strong className="block text-sm text-blue-800">
+                      Abono registrado
+                    </strong>
+                    <span className="block text-sm text-blue-700">
+                      {d.referencia_externa
+                        ? `Referencia: ${d.referencia_externa}`
+                        : "Devolución completada con respaldo."}
+                    </span>
+                    <time
+                      className="mt-1 block text-xs text-slate-500"
+                      dateTime={d.ejecutado_at}
+                    >
+                      {fechaHora(d.ejecutado_at)}
+                    </time>
+                  </p>
+                )}
               </div>
             </BloqueReembolso>
           )}
@@ -520,7 +560,7 @@ export function ReembolsosReal() {
                   </label>
                   <button
                     disabled={ocupado || c.cargando || d.politica_estado === "BORRADOR"}
-                    className={primario + " w-full"}
+                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
                     onClick={() => decidir(true)}
                   >
                     <Icono nombre="checkCirculo"/>Aprobar devolución

@@ -384,6 +384,7 @@ export function PasajerosPage() {
           </p>
 
           <form
+            id="form-pasajeros"
             noValidate
             onSubmit={(e) => {
               e.preventDefault();
@@ -470,7 +471,7 @@ export function PasajerosPage() {
               )}
             </div>
 
-            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+            <div className="flex flex-wrap justify-start gap-3">
               <Link
                 to={enlaceAsientos}
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-5 font-semibold text-slate-800 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-blue-600"
@@ -478,15 +479,6 @@ export function PasajerosPage() {
                 <Icono nombre="flechaIzquierda" className="h-4 w-4" /> Volver a
                 selección de asientos
               </Link>
-              <button
-                type="submit"
-                disabled={enviando}
-                aria-busy={enviando}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-[#ff0018] px-6 text-lg font-semibold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-wait disabled:bg-red-400"
-              >
-                {enviando ? "Procesando…" : "Continuar al resumen"}{" "}
-                <Icono nombre="flechaDerecha" />
-              </button>
             </div>
           </form>
         </div>
@@ -639,6 +631,16 @@ export function PasajerosPage() {
               <li>Podrás revisar y confirmar la información antes del pago.</li>
             </ul>
           </section>
+          <button
+            type="submit"
+            form="form-pasajeros"
+            disabled={enviando}
+            aria-busy={enviando}
+            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-[#ff0018] px-6 text-lg font-semibold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-wait disabled:bg-red-400"
+          >
+            {enviando ? "Procesando…" : "Continuar al resumen"}{" "}
+            <Icono nombre="flechaDerecha" />
+          </button>
         </aside>
       </div>
     </Marco>
