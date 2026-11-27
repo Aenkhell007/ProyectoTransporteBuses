@@ -60,3 +60,9 @@ export const cambiarAsientos = (id: string, version: number, asiento_ids: string
   apiCompra<ReservaPendiente>(`/reservas/${encodeURIComponent(id)}/asientos`, {
     method: "PUT", body: JSON.stringify({ version, asiento_ids }),
   });
+
+export const aceptarCotizacion = (id: string, version: number) =>
+  apiCompra<void>(`/reservas/${encodeURIComponent(id)}/aceptar-cotizacion`, {
+    method: "POST",
+    body: JSON.stringify({ version }),
+  });

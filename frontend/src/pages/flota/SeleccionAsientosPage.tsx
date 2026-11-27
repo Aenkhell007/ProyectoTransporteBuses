@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import SelectorAsientos from "../../components/flota/SelectorAsientos";
-import { ProgresoCompra } from "../../components/compra/ProgresoCompra";
+import BookingProgress from "../../components/pagos/BookingProgress";
 import { apiCompra } from "../../features/compra/cliente";
 import { obtenerReserva, cambiarAsientos, reservarAsientos } from "../../features/compra/reservaApi";
 import { ErrorCompra, mensajeDeError } from "../../features/compra/errores";
@@ -144,7 +144,7 @@ export default function SeleccionAsientosPage() {
   const datosRuta=viaje as (typeof viaje & {origen?:{ciudad_id:string};destino?:{ciudad_id:string}});
   const resultados=datosRuta?.origen&&datosRuta.destino?`/viajes?${new URLSearchParams({origen:datosRuta.origen.ciudad_id,destino:datosRuta.destino.ciudad_id,fecha:diaEnEcuador(viaje!.salida),cantidad:String(cantidad)})}`:"/";
   return <section className="mx-auto my-5 w-[calc(100%-24px)] max-w-[1440px] rounded-lg bg-white p-4 text-[#08035b] sm:w-[calc(100%-36px)] sm:p-5">
-    <ProgresoCompra pasoActual={3}/>
+    <BookingProgress pasoActual={3}/>
     {cargando&&<p role="status" className="p-6">Consultando disponibilidad…</p>}
     {error&&<div role="alert" className="my-4 rounded-md bg-red-50 p-4 text-red-800">{error}<button type="button" onClick={()=>setVersion(v=>v+1)} className="ml-3 underline">Volver a consultar</button></div>}
     {viaje&&<div className="mt-5 grid items-start gap-4 lg:grid-cols-[220px_minmax(0,1fr)_260px] xl:grid-cols-[250px_minmax(0,1fr)_280px]">

@@ -35,7 +35,7 @@ import {
   hoyEnEcuador,
 } from "../../features/compra/fechas";
 import { mensajeDeError } from "../../features/compra/errores";
-import { ProgresoCompra } from "../../components/compra/ProgresoCompra";
+import BookingProgress from "../../components/pagos/BookingProgress";
 import { TripCard } from "../../components/compra/TripCard";
 import { FiltrosViajesPanel } from "../../components/compra/FiltrosViajesPanel";
 import type { OpcionesFiltro } from "../../components/compra/FiltrosViajesPanel";
@@ -255,7 +255,7 @@ export function ResultadosPage() {
   return (
     <div className="mx-auto w-full max-w-[1440px] px-3 sm:w-[calc(100%-36px)] sm:px-0">
       <div className="rounded-lg bg-white p-3 sm:p-5">
-        <ProgresoCompra pasoActual={2} />
+        <BookingProgress pasoActual={2} />
 
         <div className="mt-4 grid gap-4 lg:grid-cols-[250px_1fr] xl:grid-cols-[250px_1fr_220px]">
           <aside className="space-y-4" aria-label="Tu búsqueda y filtros">

@@ -8,7 +8,6 @@ import CooperativasAdmin from './features/operacion/CooperativasAdmin';
 import UsuariosPage from './features/identidad/UsuariosPage';
 import AltasPage from './features/identidad/AltasPage';
 import AccesosPage from './features/identidad/AccesosPage';
-import { RevisionComprobanteEjemplo } from "./features/oficina/RevisionComprobanteEjemplo";
 import {VentaOficinaReal} from './features/oficina/VentaOficinaReal';
 import { ReembolsosReal } from './features/oficina/ReembolsosReal';
 import { RevisionComprobanteReal } from './features/oficina/RevisionComprobanteReal';
@@ -42,16 +41,11 @@ import SeguimientoPago from "./pages/pagos/SeguimientoPago";
 import ConfirmacionCompra from "./pages/pagos/ConfirmacionCompra";
 import SolicitarReembolso from "./pages/mis-viajes/SolicitarReembolso";
 import { ResumenCompraPage } from "./pages/compra/ResumenCompraPage";
-import GestionCooperativasPage from "./pages/administracion/GestionCooperativasPage";
 import ConfiguracionPagosPage from "./pages/configuracion/ConfiguracionPagosPage";
 
 
 
 
-import MikelV3Panel, { VistaMikel } from "./pages/mikel/MikelV3Panel";
-import BusesPage from "./pages/flota/BusesPage";
-import PlanosBusPage from "./pages/flota/PlanosBusPage";
-import ConfiguracionCooperativaPage from "./pages/configuracion/ConfiguracionCooperativaPage";
 
 // Importaciones de los submódulos de la Vista 12 y páginas oficiales de oficina
 import { OficinaResumenPage } from "./features/oficina/OficinaResumenPage";
@@ -103,7 +97,7 @@ export function App() {
         <Route path="grupos" element={<GruposGestionConectada />} />
         <Route path="*" element={<p className="py-6">Esta sección está pendiente de integración por su responsable.</p>} />
       </Route>
-      <Route path="/oficina" element={<AdminLayout variant="oficina" panelFijo />}><Route index element={<OficinaResumenPage />}/><Route path="ventas" element={<VentaOficinaReal />}/><Route path="reservas" element={<OficinaReservasPage />}/><Route path="comprobantes" element={<OficinaComprobantesReal />}/><Route path="comprobantes/ejemplo" element={<RevisionComprobanteEjemplo />} /><Route path="comprobantes/:id" element={<RevisionComprobanteReal />}/><Route path="reembolsos" element={<ReembolsosReal />}/><Route path="*" element={<p>Sección pendiente de integración.</p>}/></Route>
+      <Route path="/oficina" element={<AdminLayout variant="oficina" panelFijo />}><Route index element={<OficinaResumenPage />}/><Route path="ventas" element={<VentaOficinaReal />}/><Route path="reservas" element={<OficinaReservasPage />}/><Route path="comprobantes" element={<OficinaComprobantesReal />}/><Route path="comprobantes/ejemplo" element={<Navigate to="/oficina/comprobantes" replace />} /><Route path="comprobantes/:id" element={<RevisionComprobanteReal />}/><Route path="reembolsos" element={<ReembolsosReal />}/><Route path="*" element={<p>Sección pendiente de integración.</p>}/></Route>
       <Route path="/panel" element={<AdminLayout panelFijo />}>
         <Route index element={<AdminResumenPage />} />
         <Route path="cooperativas" element={<CooperativasAdmin />} />
@@ -145,24 +139,24 @@ export function App() {
         <Route path="/vista-previa/cooperativa" element={<CooperativaLayout />}>
           <Route index element={<section className="py-5"><h1 className="text-2xl font-bold">Resumen de la cooperativa</h1><p className="mt-3">Falta implementar esta vista. Puedes revisar Buses, Grupos habilitados y Configuración desde el menú lateral.</p></section>} />
           <Route path="buses" element={<Navigate to="/vista-previa/cooperativa/buses/ejecutivo" replace />} />
-          <Route path="buses/ejecutivo" element={<VistaMikel seccion="buses" />} />
-          <Route path="buses/normal" element={<VistaMikel seccion="bus-normal" />} />
-          <Route path="grupos" element={<section className="space-y-4 py-5"><h1 className="text-2xl font-bold">Gestión de grupos</h1><p>Falta implementar la administración del catálogo de grupos en este panel.</p><Link className="inline-block rounded-md border border-blue-200 px-4 py-3" to="/vista-previa/cooperativa/frecuencias/grupos">Ver grupos habilitados por frecuencia →</Link></section>} />
-          <Route path="configuracion" element={<VistaMikel seccion="identidad" />} />
+          <Route path="buses/ejecutivo" element={<Navigate to="/cooperativa/buses" replace />} />
+          <Route path="buses/normal" element={<Navigate to="/cooperativa/buses" replace />} />
+          <Route path="grupos" element={<Navigate to="/cooperativa/grupos" replace />} />
+          <Route path="configuracion" element={<Navigate to="/cooperativa/configuracion" replace />} />
           <Route path="configuracion/pagos" element={<ConfiguracionPagosPage panelCooperativa />} />
           <Route path="configuracion/tarifas" element={<TarifasGestion />} />
           <Route path="frecuencias" element={<Navigate to="/vista-previa/cooperativa/frecuencias/grupos" replace />} />
-          <Route path="frecuencias/grupos" element={<VistaMikel seccion="grupos" />} />
+          <Route path="frecuencias/grupos" element={<Navigate to="/cooperativa/frecuencias/grupos" replace />} />
           <Route path="hoja-ruta" element={<HojaRutaGestion />} />
           <Route path="personal" element={<p className="py-5">La vista de personal está pendiente de integración por su responsable.</p>} />
           <Route path="*" element={<p>Sección no encontrada.</p>} />
         </Route>
         <Route path="/vista-previa/panel" element={<AdminLayout panelFijo />}>
-          <Route path="configuracion/global" element={<VistaMikel seccion="global" />} />
+          <Route path="configuracion/global" element={<Navigate to="/panel/configuracion/global" replace />} />
           <Route index element={<AdminResumenPage />} />
           <Route
             path="cooperativas"
-            element={<GestionCooperativasPage />}
+            element={<Navigate to="/panel/cooperativas" replace />}
           />
           <Route
             path="usuarios"
@@ -187,7 +181,7 @@ export function App() {
           <Route index element={<OficinaResumenPage />} />
           <Route path="ventas" element={<VentaOficinaReal />} />
           <Route path="reservas" element={<OficinaReservasPage />} />
-          <Route path="comprobantes" element={<OficinaComprobantesReal />} /><Route path="comprobantes/ejemplo" element={<RevisionComprobanteEjemplo />} /><Route path="comprobantes/:id" element={<RevisionComprobanteReal />} />
+          <Route path="comprobantes" element={<OficinaComprobantesReal />} /><Route path="comprobantes/ejemplo" element={<Navigate to="/oficina/comprobantes" replace />} /><Route path="comprobantes/:id" element={<RevisionComprobanteReal />} />
           <Route path="reembolsos" element={<ReembolsosReal />} />
           <Route path="*" element={<p className="p-6 text-gray-500">Sección no encontrada.</p>} />
         </Route>
@@ -237,13 +231,13 @@ export function App() {
         <Route path="/mis-viajes/reembolso" element={<SolicitarReembolso />} />
 
         {import.meta.env.DEV && (
-          <Route path="/vista-previa/flota/buses" element={<BusesPage />} />
+          <Route path="/vista-previa/flota/buses" element={<Navigate to="/cooperativa/buses" replace />} />
         )}
         {import.meta.env.DEV && (
-          <Route path="/vista-previa/flota/planos" element={<PlanosBusPage />} />
+          <Route path="/vista-previa/flota/planos" element={<Navigate to="/cooperativa/buses" replace />} />
         )}
         {import.meta.env.DEV && (
-          <Route path="/vista-previa/configuracion/cooperativa" element={<ConfiguracionCooperativaPage />} />
+          <Route path="/vista-previa/configuracion/cooperativa" element={<Navigate to="/cooperativa/configuracion" replace />} />
         )}
         {import.meta.env.DEV && (
           <Route
@@ -252,13 +246,13 @@ export function App() {
           />
         )}
         {import.meta.env.DEV && (
-          <Route path="/vista-previa/mikel-v3" element={<MikelV3Panel />} />
+          <Route path="/vista-previa/mikel-v3" element={<Navigate to="/cooperativa" replace />} />
         )}
         {import.meta.env.DEV && (
-          <Route path="/vista-previa/mikel-v3/asientos-normal" element={<MikelV3Panel inicial="normal" />} />
+          <Route path="/vista-previa/mikel-v3/asientos-normal" element={<Navigate to="/" replace />} />
         )}
         {import.meta.env.DEV && (
-          <Route path="/vista-previa/mikel-v3/asientos-premium" element={<MikelV3Panel inicial="premium" />} />
+          <Route path="/vista-previa/mikel-v3/asientos-premium" element={<Navigate to="/" replace />} />
         )}
         {import.meta.env.DEV && (
           <><Route path="/vista-previa/mikel-v3/buses" element={<Navigate to="/vista-previa/cooperativa/buses/ejecutivo" replace />} /><Route path="/vista-previa/mikel-v3/bus-normal" element={<Navigate to="/vista-previa/cooperativa/buses/normal" replace />} /></>

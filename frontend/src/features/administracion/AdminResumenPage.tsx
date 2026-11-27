@@ -1,7 +1,6 @@
 import { escalaRegistros } from "./escalaRegistros";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { resumenDemo } from "./AdminResumenPage.demo";
 import {
   fetchAdminResumenData,
   mensajeErrorResumen,
@@ -26,7 +25,6 @@ export function AdminResumenPage() {
   const [fecha, setFecha] = useState(() =>
     new Date().toLocaleDateString("en-CA", { timeZone: "America/Guayaquil" }),
   );
-  const [demostracion, setDemostracion] = useState(false);
 
   useEffect(() => {
     const consulta = new AbortController();
@@ -42,7 +40,7 @@ export function AdminResumenPage() {
     return () => consulta.abort();
   }, [intento, fecha]);
 
-  if (!demostracion && estado.tipo === "cargando") {
+  if (estado.tipo === "cargando") {
     return (
       <p role="status" className="p-4">
         Cargando panel de administración…
@@ -50,7 +48,7 @@ export function AdminResumenPage() {
     );
   }
 
-  if (!demostracion && estado.tipo === "error") {
+  if (estado.tipo === "error") {
     return (
       <div className="space-y-3 rounded-lg border border-slate-200 p-4">
         <p role="alert">{estado.mensaje}</p>
@@ -65,26 +63,12 @@ export function AdminResumenPage() {
           >
             Reintentar
           </button>
-          {import.meta.env.DEV && (
-            <button
-              type="button"
-              className="rounded-md border border-blue-700 px-3 py-2 text-blue-900"
-              onClick={() => setDemostracion(true)}
-            >
-              Ver datos de ejemplo
-            </button>
-          )}
         </div>
       </div>
     );
   }
 
-  const datos = demostracion
-    ? resumenDemo
-    : estado.tipo === "listo"
-      ? estado.datos
-      : null;
-  if (!datos) return null;
+  const datos = estado.datos;
 
   const { kpis, cooperativas, usuariosPorRol, tendenciaUsuarios } = datos;
   const escala=escalaRegistros(tendenciaUsuarios.map(t=>t.registros));
@@ -101,7 +85,6 @@ export function AdminResumenPage() {
   const logo=(coop:CooperativaItem)=>/gran continental/i.test(coop.nombre)&&!/prueba/i.test(coop.nombre)?<img src="/images/Logo G-C.png" alt="" className="h-10 w-16 shrink-0 object-contain"/>:<Icono nombre="montana" className="h-10 w-16 text-blue-700"/>;
   return <div className="of-vista space-y-4 pb-2">
    <div className="flex justify-end"><label className="flex items-center gap-2 text-xs text-blue-900">Fecha del informe<input type="date" required value={fecha} onChange={e=>{if(e.target.value){setEstado({tipo:"cargando"});setFecha(e.target.value)}}} className="h-9 rounded-md border border-blue-200 bg-white px-2 text-sm focus-visible:outline-2 focus-visible:outline-blue-600"/></label></div>
-   {demostracion&&<div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"><p role="status">Vista previa con datos de ejemplo.</p><button className="underline" onClick={()=>setDemostracion(false)}>Volver a los datos reales</button></div>}
    <Indicadores items={[{nombre:"Cooperativas activas",valor:kpis.cooperativasActivas},{nombre:"Usuarios registrados",valor:kpis.usuariosRegistrados},{nombre:"Oficinas",valor:kpis.oficinas},{nombre:"Buses registrados",valor:kpis.busesRegistrados}]}/>
    <div className="flex flex-wrap items-center gap-4 rounded-lg border border-sky-200 bg-linear-to-r from-sky-50 to-sky-100 p-4"><span className="grid size-11 shrink-0 place-items-center rounded-full bg-sky-500 text-white"><Icono nombre="info" className="size-8"/></span><div className="min-w-0 flex-1"><p className="text-base font-bold tracking-tight text-blue-900 sm:text-lg">Cada cooperativa gestiona sus buses y frecuencias.</p><p className="mt-1 text-sm text-blue-900">Los oficinistas validan los comprobantes de pago.</p></div><button onClick={()=>navigate("/panel/cooperativas")} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 sm:w-auto"><Icono nombre="personas"/>Ver cooperativas</button></div>
    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">

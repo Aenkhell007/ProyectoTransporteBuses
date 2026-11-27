@@ -11,7 +11,7 @@ import { authRouter } from "./auth/router";
 import { correoConfigurado } from "./auth/brevo";
 import { iniciarBienvenidas } from "./auth/activacion";
 import { pagosRouter } from "./pagos/router";
-import flotaRouter from "./flota/router";
+import flotaRouter from "./flota/compatibilidadRouter";
 import { editorRouter } from "./flota/editorRouter";
 import { adminResumenRouter } from './oficina/admin';
 import { oficinaRouter } from './oficina/router';
