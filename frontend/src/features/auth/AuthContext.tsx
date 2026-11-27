@@ -1,3 +1,4 @@
+import { descartarLecturasPendientes } from '../../services/lecturasPendientes';
 import { startTransition, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import type { ReactNode } from "react";
@@ -11,7 +12,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<UsuarioSesion | null>(null);
   const [cargando, setCargando] = useState(true);
   const [errorSesion, setErrorSesion] = useState("");
-  useEffect(()=>{const invalidar=()=>{setUsuario(null);setErrorSesion('La sesión venció. Inicia sesión nuevamente.');};window.addEventListener('transporte:sesion-vencida',invalidar);return()=>window.removeEventListener('transporte:sesion-vencida',invalidar);},[]);
+  useEffect(()=>{const invalidar=()=>{descartarLecturasPendientes();setUsuario(null);setErrorSesion('La sesión venció. Inicia sesión nuevamente.');};window.addEventListener('transporte:sesion-vencida',invalidar);return()=>window.removeEventListener('transporte:sesion-vencida',invalidar);},[]);
   useEffect(() => {
     let activo = true;
     authApi.me().then(({ usuario }) => { if (activo) setUsuario(usuario); })
@@ -21,11 +22,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
   async function login(email: string, password: string, recordar = false) {
     const datos = await authApi.login(email, password, recordar);
+    descartarLecturasPendientes();
     setUsuario(datos.usuario); setErrorSesion("");
   }
-  async function refrescar() { try{const datos = await authApi.me(); setUsuario(datos.usuario);}catch(e){if(e instanceof ErrorAuth&&e.status===401)setUsuario(null);throw e;} }
+  async function refrescar() { try{const datos = await authApi.me(); setUsuario(datos.usuario);}catch(e){if(e instanceof ErrorAuth&&e.status===401){descartarLecturasPendientes();setUsuario(null);}throw e;} }
   async function logout() {
     await authApi.logout();
+    descartarLecturasPendientes();
     startTransition(() => {
       navigate("/", { replace: true });
       setUsuario(null);

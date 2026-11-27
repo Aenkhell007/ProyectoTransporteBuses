@@ -1,56 +1,50 @@
-import ReportesAuditoria from './features/operacion/ReportesAuditoria';
-import PoliticaReembolso from './features/operacion/PoliticaReembolso';
-import CooperativaResumen from './features/operacion/CooperativaResumen';
-import FrecuenciasGestion from './features/operacion/FrecuenciasGestion';
-import HojaRutaGestion from './features/operacion/HojaRutaGestion';
-import TarifasGestion from './features/operacion/TarifasGestion';
-import CooperativasAdmin from './features/operacion/CooperativasAdmin';
-import UsuariosPage from './features/identidad/UsuariosPage';
-import AltasPage from './features/identidad/AltasPage';
-import AccesosPage from './features/identidad/AccesosPage';
-import {VentaOficinaReal} from './features/oficina/VentaOficinaReal';
-import { ReembolsosReal } from './features/oficina/ReembolsosReal';
-import { RevisionComprobanteReal } from './features/oficina/RevisionComprobanteReal';
-import { OficinaComprobantesReal } from './features/oficina/OficinaComprobantesReal';
+import { lazy, Suspense } from 'react';
 import { BusesConectados, BusConectado, IdentidadConectada, GlobalConectada, CompatibilidadesConectadas, GruposGestionConectada } from './pages/mikel/EditoresConectados';
 import ActivarCuenta from "./pages/auth/ActivarCuenta";
 import ReenviarActivacion from "./pages/auth/ReenviarActivacion";
 import Login from "./pages/auth/Login";
-import RegistroPage from "./pages/identidad/RegistroPage";
-import MiCuenta from "./pages/auth/MiCuenta";
-import RecuperarContrasena from "./pages/auth/RecuperarContrasena";
-import RestablecerContrasena from "./pages/auth/RestablecerContrasena";
 import { useAuth } from "./features/auth/AuthContext";
 import { Link, matchPath, Navigate, Route, Routes, useLocation } from "react-router";
-import { ResultadosPage } from "./pages/compra/ResultadosPage";
 import { PublicLayout } from "./components/layout";
 import AdminLayout from "./layouts/AdminLayout";
 import CooperativaLayout from "./layouts/CooperativaLayout";
-import AdminResumenPage from "./features/administracion/AdminResumenPage";
-import { MisViajesPage } from "./pages/mis-viajes/MisViajesPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { InicioPage } from "./pages/compra/InicioPage";
 import { PrivacidadPage } from "./pages/compra/PrivacidadPage";
 
-import SeleccionAsientosPage from "./pages/flota/SeleccionAsientosPage";
-import MetodoPago from "./pages/pagos/MetodoPago";
-import RespuestaPayphone from "./pages/pagos/RespuestaPayphone";
-import { PasajerosPage } from "./pages/compra/PasajerosPage";
-import SubirComprobante from "./pages/pagos/SubirComprobante";
-import SeguimientoPago from "./pages/pagos/SeguimientoPago";
-import ConfirmacionCompra from "./pages/pagos/ConfirmacionCompra";
-import SolicitarReembolso from "./pages/mis-viajes/SolicitarReembolso";
-import { ResumenCompraPage } from "./pages/compra/ResumenCompraPage";
-import ConfiguracionPagosPage from "./pages/configuracion/ConfiguracionPagosPage";
-
-
-
-
-
-// Importaciones de los submódulos de la Vista 12 y páginas oficiales de oficina
-import { OficinaResumenPage } from "./features/oficina/OficinaResumenPage";
-import { OficinaReservasPage } from "./features/oficina/OficinaReservasPage";
-
+const ReportesAuditoria = lazy(() => import('./features/operacion/ReportesAuditoria'));
+const PoliticaReembolso = lazy(() => import('./features/operacion/PoliticaReembolso'));
+const CooperativaResumen = lazy(() => import('./features/operacion/CooperativaResumen'));
+const FrecuenciasGestion = lazy(() => import('./features/operacion/FrecuenciasGestion'));
+const HojaRutaGestion = lazy(() => import('./features/operacion/HojaRutaGestion'));
+const TarifasGestion = lazy(() => import('./features/operacion/TarifasGestion'));
+const CooperativasAdmin = lazy(() => import('./features/operacion/CooperativasAdmin'));
+const UsuariosPage = lazy(() => import('./features/identidad/UsuariosPage'));
+const AltasPage = lazy(() => import('./features/identidad/AltasPage'));
+const AccesosPage = lazy(() => import('./features/identidad/AccesosPage'));
+const RegistroPage = lazy(() => import("./pages/identidad/RegistroPage"));
+const MiCuenta = lazy(() => import("./pages/auth/MiCuenta"));
+const RecuperarContrasena = lazy(() => import("./pages/auth/RecuperarContrasena"));
+const RestablecerContrasena = lazy(() => import("./pages/auth/RestablecerContrasena"));
+const AdminResumenPage = lazy(() => import("./features/administracion/AdminResumenPage"));
+const SeleccionAsientosPage = lazy(() => import("./pages/flota/SeleccionAsientosPage"));
+const MetodoPago = lazy(() => import("./pages/pagos/MetodoPago"));
+const RespuestaPayphone = lazy(() => import("./pages/pagos/RespuestaPayphone"));
+const SubirComprobante = lazy(() => import("./pages/pagos/SubirComprobante"));
+const SeguimientoPago = lazy(() => import("./pages/pagos/SeguimientoPago"));
+const ConfirmacionCompra = lazy(() => import("./pages/pagos/ConfirmacionCompra"));
+const SolicitarReembolso = lazy(() => import("./pages/mis-viajes/SolicitarReembolso"));
+const ConfiguracionPagosPage = lazy(() => import("./pages/configuracion/ConfiguracionPagosPage"));
+const VentaOficinaReal = lazy(() => import('./features/oficina/VentaOficinaReal').then(modulo => ({ default: modulo.VentaOficinaReal })));
+const ReembolsosReal = lazy(() => import('./features/oficina/ReembolsosReal').then(modulo => ({ default: modulo.ReembolsosReal })));
+const RevisionComprobanteReal = lazy(() => import('./features/oficina/RevisionComprobanteReal').then(modulo => ({ default: modulo.RevisionComprobanteReal })));
+const OficinaComprobantesReal = lazy(() => import('./features/oficina/OficinaComprobantesReal').then(modulo => ({ default: modulo.OficinaComprobantesReal })));
+const ResultadosPage = lazy(() => import("./pages/compra/ResultadosPage").then(modulo => ({ default: modulo.ResultadosPage })));
+const MisViajesPage = lazy(() => import("./pages/mis-viajes/MisViajesPage").then(modulo => ({ default: modulo.MisViajesPage })));
+const PasajerosPage = lazy(() => import("./pages/compra/PasajerosPage").then(modulo => ({ default: modulo.PasajerosPage })));
+const ResumenCompraPage = lazy(() => import("./pages/compra/ResumenCompraPage").then(modulo => ({ default: modulo.ResumenCompraPage })));
+const OficinaResumenPage = lazy(() => import("./features/oficina/OficinaResumenPage").then(modulo => ({ default: modulo.OficinaResumenPage })));
+const OficinaReservasPage = lazy(() => import("./features/oficina/OficinaReservasPage").then(modulo => ({ default: modulo.OficinaReservasPage })));
 
 const homeSections: Record<
   string,
@@ -76,6 +70,14 @@ const homeSections: Record<
 };
 
 export function App() {
+  return (
+    <Suspense fallback={<p role="status" className="p-6 text-center text-blue-900">Cargando sección…</p>}>
+      <RutasAplicacion />
+    </Suspense>
+  );
+}
+
+function RutasAplicacion() {
   const { usuario } = useAuth();
   const location = useLocation();
   const section = homeSections[location.hash] ?? homeSections[""];
