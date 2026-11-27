@@ -43,3 +43,10 @@ jobs:
           npm ci --no-audit --no-fund
           npm run build
           npm test
+
+      - name: Validar y construir imágenes Docker
+        run: |
+          mkdir -p backend/conexion-bd/certs
+          cp .env.docker.example .env.docker
+          docker compose config --quiet
+          docker compose build
