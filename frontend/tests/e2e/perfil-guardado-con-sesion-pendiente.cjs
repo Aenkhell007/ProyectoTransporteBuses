@@ -46,6 +46,9 @@ async function probar() {
     const estados = await page.locator('section').first().getByRole('status').allTextContents();
     assert.ok(estados.some((texto) => texto.includes('Datos personales guardados.')),
       'El usuario debe recibir confirmación del guardado exitoso. Avisos observados: ' + JSON.stringify(avisos));
+    assert.deepEqual(avisos, ['No se pudo actualizar la información de la sesión.'],
+      'El error de sesión debe mostrarse por separado.');
+    console.log('Mi perfil confirma el guardado y muestra por separado el aviso de sesión.');
   } finally {
     await browser.close();
   }

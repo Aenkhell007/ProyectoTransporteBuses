@@ -46,7 +46,31 @@ function PerfilCuenta() {
     setIntento((anterior) => anterior + 1);
   }
 async function cerrar(){if(ocupado)return;setOcupado(true);setError('');try{await auth.logout();}catch(e){setError(e instanceof Error?e.message:'No se pudo cerrar la sesión.');}finally{setOcupado(false);}}
-async function guardar(e:React.FormEvent){e.preventDefault();if(!datos||ocupado)return;setOcupado(true);setError('');setMensaje('');try{const d=await identidadApi.guardarPerfil({...datos,nacimiento:datos.nacimiento?.slice(0,10)||null});setDatos(d);setGuardados(d);await auth.refrescar();setMensaje('Datos personales guardados.');}catch(e){setError(e instanceof Error?e.message:'No se pudo guardar.');}finally{setOcupado(false);}}
+  async function guardar(evento: React.FormEvent) {
+    evento.preventDefault();
+    if (!datos || ocupado) return;
+    setOcupado(true);
+    setError('');
+    setMensaje('');
+
+    try {
+      const perfil = await identidadApi.guardarPerfil({
+        ...datos,
+        nacimiento: datos.nacimiento?.slice(0, 10) || null,
+      });
+      setDatos(perfil);
+      setGuardados(perfil);
+      setMensaje('Datos personales guardados.');
+
+      await auth.refrescar().catch(() => {
+        setError('No se pudo actualizar la información de la sesión.');
+      });
+    } catch (causa) {
+      setError(causa instanceof Error ? causa.message : 'No se pudo guardar.');
+    } finally {
+      setOcupado(false);
+    }
+  }
 return <section className="mx-auto my-5 w-[calc(100%-24px)] max-w-7xl rounded-xl bg-white p-4 text-blue-950 sm:p-6"><h1 className="text-3xl font-bold sm:text-4xl">Mi perfil</h1><p className="mt-1">Consulta y actualiza tus datos personales y de contacto.</p><Avisos error={error||auth.errorSesion} mensaje={mensaje}/>{!datos ? (
   error ? <button type="button" className={boton} onClick={reintentar}>Reintentar</button>
     : <p role="status">Consultando perfil…</p>
