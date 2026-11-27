@@ -49,6 +49,13 @@ type Oficina = {
   cooperativa_id: string;
   cooperativa: string;
 };
+interface CobroConfirmado {
+  reserva_id: string;
+  total_centavos: number;
+  recibido_centavos: number;
+  cambio_centavos: number;
+}
+
 export function VentaOficinaReal() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams(),
@@ -81,6 +88,7 @@ export function VentaOficinaReal() {
   const [ocupado, setOcupado] = useState(false),
     [error, setError] = useState(""),
     [resultado, setResultado] = useState(false);
+  const [cobro, setCobro] = useState<CobroConfirmado | null>(null);
   const [plegados, setPlegados] = useState<Record<string, boolean>>({});
   const [confirmacion, setConfirmacion] = useState<"cobrar" | "cancelar" | null>(null);
   const bloqueo = useRef(false),
@@ -262,10 +270,11 @@ export function VentaOficinaReal() {
           body: JSON.stringify({ version: reserva.cotizacion!.version }),
         },
       );
-      await http("/oficina/ventas/" + reserva.reserva_id + "/cobro", {
+      const confirmado = await http<CobroConfirmado>("/oficina/ventas/" + reserva.reserva_id + "/cobro", {
         method: "POST",
         body: JSON.stringify({ recibidoCentavos: centavos, clave }),
       });
+      setCobro(confirmado);
       setResultado(true);
       setReserva(await obtenerReserva(reserva.reserva_id));
     });
@@ -314,6 +323,13 @@ export function VentaOficinaReal() {
             El pago está registrado. Consulta el boleto para imprimirlo o
             descargarlo. No se confirma el envío de avisos externos.
           </Aviso>
+          {cobro?.reserva_id === reserva.reserva_id && (
+            <dl className="mt-4 grid grid-cols-1 gap-3 rounded-md bg-blue-50 p-4 sm:grid-cols-3">
+              <div><dt>Total pagado</dt><dd className="font-semibold">{dinero(cobro.total_centavos / 100)}</dd></div>
+              <div><dt>Efectivo recibido</dt><dd className="font-semibold">{dinero(cobro.recibido_centavos / 100)}</dd></div>
+              <div><dt>Cambio entregado</dt><dd className="font-semibold">{dinero(cobro.cambio_centavos / 100)}</dd></div>
+            </dl>
+          )}
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
               className={primario}
@@ -328,6 +344,7 @@ export function VentaOficinaReal() {
                 setPaso(1);
                 setReserva(null);
                 setResultado(false);
+                setCobro(null);
                 setClave(crypto.randomUUID());
                 claveReserva.current = {
                   firma: "",
