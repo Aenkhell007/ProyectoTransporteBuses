@@ -30,6 +30,7 @@
     "src/identidad/identidad.db.test.ts",
     "src/operacion/operacion.test.ts",
     "src/operacion/operacion.db.test.ts",
-    "src/pagos/entregaBoletos.test.ts"
+    "src/pagos/entregaBoletos.test.ts",
+    "src/abordaje/abordaje.test.ts"
   ]
 }
