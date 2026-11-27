@@ -28,6 +28,7 @@ model abordajes {
   @@unique([cooperativa_id, id])
   @@unique([cooperativa_id, reserva_asiento_id])
   @@index([cooperativa_id], map: "abordajes_coop_idx")
+  @@index([compra_id], map: "abordajes_compra_idx")
   @@schema("transporte")
 }
 
@@ -173,6 +174,7 @@ model bus_fotos {
   @@unique([bus_id, archivo_id])
   @@unique([cooperativa_id, id])
   @@index([cooperativa_id], map: "bus_fotos_coop_idx")
+  @@index([bus_id, orden, created_at, id], map: "bus_fotos_bus_orden_idx")
   @@schema("transporte")
 }
 
@@ -213,6 +215,8 @@ model ciudades {
   created_at DateTime     @default(now()) @db.Timestamptz(6)
   updated_at DateTime     @default(now()) @db.Timestamptz(6)
   terminales terminales[]
+  provincia_id String?      @db.Uuid
+  provincias   provincias?  @relation(fields: [provincia_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([nombre, provincia])
   @@schema("transporte")
@@ -257,6 +261,7 @@ model compras {
   @@unique([cooperativa_id, pago_id])
   @@unique([cooperativa_id, reserva_id])
   @@index([cooperativa_id], map: "compras_coop_idx")
+  @@index([cooperativa_id, created_at(sort: Desc)], map: "compras_coop_created_idx")
   @@schema("transporte")
 }
 
@@ -309,6 +314,7 @@ model config_cooperativa {
   updated_at       DateTime     @default(now()) @db.Timestamptz(6)
   cooperativas     cooperativas @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   archivos         archivos?    @relation(fields: [logo_archivo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  recargo_vip_bp   Int          @default(2500)
 
   @@unique([cooperativa_id, id])
   @@index([cooperativa_id], map: "config_cooperativa_coop_idx")
@@ -436,7 +442,11 @@ model cooperativas {
   solicitudes_reembolso    solicitudes_reembolso[]
   tarifas                  tarifas[]
   viajes                   viajes[]
+  ambito_operacion         String                     @default("INTERPROVINCIAL") @db.VarChar(20)
+  provincia                String?                    @db.VarChar(100)
+  terminales               terminales[]
 
+  @@index([ambito_operacion, provincia], map: "cooperativas_ambito_provincia_idx")
   @@schema("transporte")
 }
 
@@ -609,6 +619,7 @@ model frecuencias {
   @@unique([cooperativa_id, codigo])
   @@unique([cooperativa_id, id])
   @@index([cooperativa_id], map: "frecuencias_coop_idx")
+  @@index([ruta_id], map: "frecuencias_ruta_idx")
   @@schema("transporte")
 }
 
@@ -665,6 +676,7 @@ model grupos_bus {
   grupo_turnos      grupo_turnos[]
   cooperativas      cooperativas        @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   tarifas           tarifas[]
+  ambito            String              @default("INTERPROVINCIAL") @db.VarChar(20)
 
   @@unique([cooperativa_id, id])
   @@unique([cooperativa_id, nombre])
@@ -736,6 +748,8 @@ model intentos_pago {
   @@unique([actor_id, clave_intento])
   @@unique([cooperativa_id, id])
   @@index([cooperativa_id], map: "intentos_pago_coop_idx")
+  @@index([proveedor_orden, actor_id, created_at(sort: Desc)], map: "intentos_pago_payphone_orden_idx", where: raw("(proveedor_orden IS NOT NULL)"))
+  @@index([reserva_id, created_at(sort: Desc)], map: "intentos_pago_reserva_created_idx")
   @@schema("transporte")
 }
 
@@ -850,6 +864,7 @@ model pagos {
   @@unique([cooperativa_id, intento_id])
   @@unique([cooperativa_id, reserva_id])
   @@index([cooperativa_id], map: "pagos_coop_idx")
+  @@index([cooperativa_id, confirmado_at(sort: Desc)], map: "pagos_coop_confirmado_idx")
   @@schema("transporte")
 }
 
@@ -1014,6 +1029,7 @@ model reembolsos {
   @@unique([cooperativa_id, id])
   @@unique([cooperativa_id, solicitud_id])
   @@index([cooperativa_id], map: "reembolsos_coop_idx")
+  @@index([cooperativa_id, ejecutado_at(sort: Desc)], map: "reembolsos_coop_ejecutado_idx")
   @@schema("transporte")
 }
 
@@ -1063,6 +1079,7 @@ model reserva_asientos {
   @@unique([cooperativa_id, id])
   @@unique([reserva_id, asiento_id])
   @@index([cooperativa_id], map: "reserva_asientos_coop_idx")
+  @@index([viaje_id, estado, expires_at], map: "reserva_asientos_viaje_estado_idx")
   @@schema("transporte")
 }
 
@@ -1103,6 +1120,8 @@ model reservas {
   @@index([cliente_id, created_at(sort: Desc)], map: "reservas_cliente_fecha")
   @@index([cooperativa_id], map: "reservas_coop_idx")
   @@index([expires_at], map: "reservas_expirar", where: raw("(estado = 'PENDIENTE'::text)"))
+  @@index([cooperativa_id, created_at(sort: Desc)], map: "reservas_coop_created_idx")
+  @@index([viaje_id], map: "reservas_viaje_idx")
   @@schema("transporte")
 }
 
@@ -1155,6 +1174,7 @@ model ruta_paradas {
   @@unique([ruta_id, orden])
   @@unique([ruta_id, terminal_id])
   @@index([cooperativa_id], map: "ruta_paradas_coop_idx")
+  @@index([terminal_id, ruta_id, orden], map: "ruta_paradas_terminal_ruta_idx")
   @@schema("transporte")
 }
 
@@ -1200,6 +1220,9 @@ model sesiones {
   updated_at  DateTime  @default(now()) @db.Timestamptz(6)
   usuarios    usuarios  @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
+  @@index([expires_at], map: "sesiones_expiracion_idx")
+  @@index([usuario_id, expires_at], map: "sesiones_usuario_activas_idx", where: raw("(revocada_at IS NULL)"))
+  @@index([usuario_id], map: "sesiones_usuario_idx")
   @@schema("transporte")
 }
 
@@ -1249,6 +1272,7 @@ model solicitudes_reembolso {
   @@unique([solicitado_por, clave_intento])
   @@index([cooperativa_id, estado, created_at], map: "cola_reembolsos")
   @@index([cooperativa_id], map: "solicitudes_reembolso_coop_idx")
+  @@index([compra_id, created_at(sort: Desc)], map: "solicitudes_reembolso_compra_created_idx")
   @@schema("transporte")
 }
 
@@ -1295,8 +1319,15 @@ model terminales {
   updated_at   DateTime       @default(now()) @db.Timestamptz(6)
   ruta_paradas ruta_paradas[]
   ciudades     ciudades       @relation(fields: [ciudad_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tipo_punto     String         @default("TERMINAL") @db.VarChar(30)
+  sector         String?        @db.VarChar(150)
+  referencia     String?        @db.VarChar(250)
+  cooperativa_id String?        @db.Uuid
+  cooperativas   cooperativas?  @relation(fields: [cooperativa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([ciudad_id, nombre])
+  @@index([ciudad_id, tipo_punto], map: "terminales_ciudad_tipo_idx")
+  @@index([cooperativa_id], map: "terminales_cooperativa_idx")
   @@schema("transporte")
 }
 
@@ -1313,6 +1344,7 @@ model tokens_identidad {
   updated_at   DateTime  @default(now()) @db.Timestamptz(6)
   usuarios     usuarios  @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
+  @@index([expires_at], map: "tokens_identidad_limpieza_idx")
   @@schema("transporte")
 }
 
@@ -1371,6 +1403,7 @@ model usuarios {
   viajes                                                               viajes[]
 
   @@unique([tipo_documento, documento])
+  @@index([created_at(sort: Desc)], map: "usuarios_created_idx")
   @@schema("transporte")
 }
 
@@ -1401,6 +1434,8 @@ model viajes {
   @@index([bus_id, salida], map: "viajes_bus_fecha")
   @@index([cooperativa_id], map: "viajes_coop_idx")
   @@index([frecuencia_id, salida], map: "viajes_publicados", where: raw("(estado = 'PUBLICADO'::text)"))
+  @@index([cooperativa_id, salida], map: "viajes_coop_salida_idx")
+  @@index([salida], map: "viajes_publicado_salida_idx", where: raw("(estado = 'PUBLICADO'::text)"))
   @@schema("transporte")
 }
 
@@ -1442,4 +1477,26 @@ model usuario_permisos {
  permisos permisos @relation(fields:[permiso_id],references:[id],onDelete:NoAction,onUpdate:NoAction)
  @@id([membresia_id,permiso_id])
  @@schema("transporte")
+}
+
+model marcas_bus {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre     String   @db.VarChar(100)
+  tipo       String   @default("AMBAS") @db.VarChar(20)
+  activa     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@schema("transporte")
+}
+
+model provincias {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre     String     @db.VarChar(100)
+  activa     Boolean    @default(true)
+  created_at DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at DateTime   @default(now()) @db.Timestamptz(6)
+  ciudades   ciudades[]
+
+  @@schema("transporte")
 }

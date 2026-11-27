@@ -23,7 +23,7 @@ Los dos primeros comandos deben indicar que no hay migraciones pendientes. No se
 
 ## Instalación en una base nueva
 
-Usar las migraciones con `npm run db:deploy` en una base vacía compatible. No usar `resolve` para simular que ya existen tablas. La migración inicial crea roles y la extensión `btree_gist`; necesita un usuario administrativo con los permisos correspondientes. El usuario de ejecución de Express es `transporte_app`, distinto del utilizado para migraciones. Las credenciales se configuran en privado.
+Usar las migraciones con `npm run db:deploy` en una base vacía compatible. Para una instalación nueva, configurar `DIRECT_URL` con `schema=public` para guardar allí el historial de Prisma. Así la migración inicial puede crear `transporte`. En una base existente, conservar el esquema de conexión que ya contiene su historial `_prisma_migrations`. No usar `resolve` para simular que ya existen tablas. La migración inicial crea roles y la extensión `btree_gist`; necesita un usuario administrativo con los permisos correspondientes. El usuario de ejecución de Express es `transporte_app`, distinto del utilizado para migraciones. Las credenciales se configuran en privado.
 
 ## Otra base existente sin historial
 
