@@ -31,6 +31,10 @@
     "src/operacion/operacion.test.ts",
     "src/operacion/operacion.db.test.ts",
     "src/pagos/entregaBoletos.test.ts",
+    "src/lecturas.test.ts",
+    "src/origen.test.ts",
+    "src/pagos/payphone.test.ts",
+    "src/pagos/googleWallet.test.ts",
     "src/abordaje/abordaje.test.ts"
   ]
 }

@@ -5,13 +5,14 @@ import type { Request, Response, NextFunction } from "express";
 import type { PoolClient } from "pg";
 import { createHash, randomUUID } from "node:crypto";
 import { conSesion } from "../sesion";
+import { origenPermitido } from "../origen";
 import { guardarArchivo, borrarCreados, leerArchivo } from "./archivos";
 import {
   ErrorPago,
   uuid,
   validarArchivo,
   referenciaValida,
-  nombreSeguro,
+  cabecerasArchivoPago,
 } from "./validacion";
 import {
   payphoneConfigurado,
@@ -24,9 +25,11 @@ import { generarBoleto } from "./boleto";
 import { leerMarcaBoleto } from "./marcaBoleto";
 import type { DatosPago } from "../../../shared/pagos";
 import QRCode from "qrcode";
-import { ErrorGoogleWallet, generarEnlaceWalletOficial } from "./googleWallet";
 
-import { conservarDatosCompra,conEstadoReembolsos } from "./datos";
+import { consultarLote } from "../lecturas";
+import { conservarDatosCompra, conEstadoReembolsos } from "./datos";
+import { enriquecerDatosPagoConVip } from "./desgloseVip";
+import { ErrorGoogleWallet, generarEnlaceWalletOficial } from "./googleWallet";
 
 export const pagosRouter = Router();
 function token(req: Request) {
@@ -74,13 +77,9 @@ pagosRouter.use((req: Request, res: Response, next: NextFunction) => {
     return;
   }
   if (!["GET", "HEAD"].includes(req.method)) {
-    const permitidos = new Set([
-      process.env.FRONTEND_URL ?? "http://127.0.0.1:5173",
-      "http://localhost:5173",
-    ]);
     if (
       req.headers["sec-fetch-site"] === "cross-site" ||
-      (req.headers.origin && !permitidos.has(req.headers.origin))
+      (req.headers.origin && !origenPermitido(req.headers.origin))
     ) {
       res.status(403).json({ error: "Origen no permitido." });
       return;
@@ -106,22 +105,29 @@ export async function limpiarTrasError(req: Request, claves: string[]) {
   }
 }
 export async function consultar(db: PoolClient, id: string) {
-  const datos = conservarDatosCompra(
-    (
-      await db.query("SELECT transporte.consultar_pago_cliente($1) AS datos", [
-        id,
-      ])
-    ).rows[0].datos as DatosPago,
-  );
+  const [pagoRows, predRows] = await consultarLote(db, [
+    { sql: "SELECT transporte.consultar_pago_cliente($1) AS datos", valores: [id] },
+    { sql: "SELECT transporte.cuenta_predeterminada_cliente($1) AS id", valores: [id] },
+  ]);
+  const datos = conservarDatosCompra(pagoRows[0].datos as DatosPago);
   if (!payphoneConfigurado()) {
     datos.metodos = datos.metodos.map((metodo) =>
       metodo.id === "PAYPHONE" ? { ...metodo, habilitado: false } : metodo,
     );
   }
-  const predeterminada = (await db.query('SELECT transporte.cuenta_predeterminada_cliente($1) AS id', [id])).rows[0]?.id;
+  const predeterminada = predRows[0]?.id;
   datos.cuentas.sort((a, b) => Number(b.id === predeterminada) - Number(a.id === predeterminada));
-  return conEstadoReembolsos(db,datos);
+  const conReembolsos = await conEstadoReembolsos(db, datos);
+  return enriquecerDatosPagoConVip(db, conReembolsos);
 }
+pagosRouter.get('/reservas/:id/cooperativa/logo', async (req, res) => {
+  try {
+    const contenido = await conSesion(token(req), async db => (await db.query('SELECT transporte.logo_cooperativa_reserva($1) AS contenido', [uuid(req.params.id)])).rows[0]?.contenido);
+    if (!contenido) throw new ErrorPago(404, 'Logo no disponible.');
+    res.setHeader('Cache-Control', 'private, max-age=300');
+    res.type('png').send(contenido);
+  } catch (e) { responderError(res, e); }
+});
 pagosRouter.get('/reservas/:id/cuentas/:cuenta/qr', async (req, res) => {
   try {
     const contenido = await conSesion(token(req), async db => (await db.query('SELECT transporte.qr_cuenta_cliente($1,$2) AS contenido', [uuid(req.params.id), uuid(req.params.cuenta)])).rows[0]?.contenido);
@@ -222,7 +228,7 @@ pagosRouter.post(
   "/reservas/:id/comprobantes",
   express.raw({
     type: ["image/jpeg", "image/png", "application/pdf"],
-    limit: "50mb",
+    limit: "6mb",
   }),
   async (req, res) => {
     const creados: string[] = [];
@@ -321,10 +327,12 @@ pagosRouter.get("/reservas/:id/archivos/:archivoId", async (req, res) => {
     );
     if (!archivo?.id) throw new ErrorPago(404, "Archivo no disponible.");
     const contenido = await leerArchivo(archivo.ruta_privada);
-    res.setHeader("Content-Type", archivo.mime);
-    res.setHeader(
-      "Content-Disposition",
-      `${req.query.ver === "1" && ["image/png", "image/jpeg", "application/pdf"].includes(archivo.mime) ? "inline" : "attachment"}; filename="${nombreSeguro(archivo.ruta_privada.split("/").pop())}"`,
+    res.set(
+      cabecerasArchivoPago(
+        archivo.ruta_privada,
+        archivo.mime,
+        req.query.ver === "1",
+      ),
     );
     res.send(contenido);
   } catch (e) {
@@ -409,18 +417,10 @@ pagosRouter.post("/pagos/compras/:id/documento", async (req, res) => {
     const id = uuid(req.params.id);
     await conSesion(token(req), async (db) => {
       const r = await db.query(
-        "SELECT reserva_id,cooperativa_id FROM transporte.compras WHERE id=$1",
+        `SELECT c.reserva_id FROM transporte.compras c JOIN transporte.reservas r ON r.id=c.reserva_id WHERE c.id=$1 AND ${alcanceReserva("pagos.revisar")}`,
         [id],
       );
-      if (!r.rows[0]) throw new ErrorPago(404, "Compra no disponible.");
-      if (
-        !(
-          await db.query(
-            "SELECT transporte.puede('pagos.revisar',$1,NULL) AS permitido",
-            [r.rows[0].cooperativa_id],
-          )
-        ).rows[0].permitido
-      )
+      if (!r.rows[0])
         throw new ErrorPago(
           403,
           "No tienes permiso para emitir este documento.",

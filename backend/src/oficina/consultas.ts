@@ -28,16 +28,23 @@ export async function accesoOficina(db: PoolClient) {
   return oficinas;
 }
 
-export async function listarReservas(
-  db: PoolClient,
-  historial = false,
-  comprobantes?: { id?: string },
-) {
-  await accesoOficina(db);
-  const id = comprobantes?.id;
-  const filtro = id ? " AND cp.id=$1" : comprobantes ? " AND cp.id IS NOT NULL" : "";
-  return (
-    await db.query(`SELECT r.id,r.cooperativa_id,r.oficina_id,r.viaje_id,r.estado,
+export interface OpcionesListaReservas {
+  historial?: boolean;
+  soloComprobantes?: boolean;
+  comprobanteId?: string;
+  limite?: number;
+}
+
+export function sqlListarReservas(opciones: OpcionesListaReservas = {}) {
+  const { historial = false, soloComprobantes = false, comprobanteId, limite = 200 } = opciones;
+  const filtros = [alcanceReserva()];
+  const valores: unknown[] = [];
+  if (soloComprobantes) filtros.push("cp.id IS NOT NULL");
+  if (comprobanteId) {
+    valores.push(comprobanteId);
+    filtros.push(`cp.id=$${valores.length}`);
+  }
+  const sql = `SELECT r.id,r.cooperativa_id,r.oficina_id,r.viaje_id,r.estado,
     CASE WHEN r.estado='PENDIENTE' AND r.expires_at<=now() THEN 'VENCIDA' ELSE r.estado END AS estado_actual,
     r.created_at,r.expires_at,r.total_centavos,r.cantidad,v.salida,
     co.nombre AS cooperativa,coalesce((SELECT p.nombres || ' ' || p.apellidos FROM transporte.pasajeros p JOIN transporte.reserva_asientos ra ON ra.id=p.reserva_asiento_id WHERE ra.reserva_id=r.id ORDER BY ra.created_at,ra.id LIMIT 1),u.nombres || ' ' || u.apellidos) AS cliente,
@@ -61,6 +68,16 @@ export async function listarReservas(
     LEFT JOIN transporte.bancos banco ON banco.id::text=i.cuenta_snapshot->>'banco_id'
     LEFT JOIN LATERAL (SELECT s.estado,s.monto_centavos FROM transporte.solicitudes_reembolso s WHERE s.compra_id=c.id ORDER BY s.created_at DESC LIMIT 1) sr ON true
     LEFT JOIN transporte.comprobantes cp ON cp.intento_id=i.id LEFT JOIN transporte.archivos a ON a.id=cp.archivo_id
-    WHERE ${alcanceReserva()}${filtro} ORDER BY r.created_at DESC`, id ? [id] : [])
-  ).rows;
+    WHERE ${filtros.join(" AND ")} ORDER BY r.created_at DESC LIMIT ${Math.max(1, Math.min(500, limite))}`;
+  return { sql, valores };
+}
+
+export async function listarReservas(
+  db: PoolClient,
+  historial = false,
+  opciones: Omit<OpcionesListaReservas, "historial"> = {},
+) {
+  await accesoOficina(db);
+  const { sql, valores } = sqlListarReservas({ ...opciones, historial });
+  return (await db.query(sql, valores)).rows;
 }

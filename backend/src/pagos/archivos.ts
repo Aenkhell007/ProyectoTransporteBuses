@@ -1,12 +1,18 @@
-import { mkdir, writeFile, readFile, unlink } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { mkdir, writeFile, readFile, unlink, rmdir } from "node:fs/promises";
 import { resolve, sep } from "node:path";
 import { randomUUID, createHash } from "node:crypto";
 import type { PoolClient } from "pg";
 import { nombreSeguro, ErrorPago } from "./validacion";
 
-// Directorio privado: nunca se publica mediante express.static.
+// Directorio privado: nunca se publica mediante express.static (funciona desde src y dist).
 export const directorioPrivado = resolve(
-  process.env.PAGOS_ARCHIVOS_DIR ?? resolve(__dirname, "../../.data/pagos"),
+  process.env.PAGOS_ARCHIVOS_DIR ??
+    (existsSync(resolve(__dirname, "../../.data"))
+      ? resolve(__dirname, "../../.data/pagos")
+      : existsSync(resolve(__dirname, "../../../../.data"))
+        ? resolve(__dirname, "../../../../.data/pagos")
+        : resolve(process.cwd(), ".data/pagos")),
 );
 export function rutaArchivo(clave: string) {
   const ruta = resolve(directorioPrivado, clave);
@@ -42,7 +48,11 @@ export async function guardarArchivo(
 }
 export async function borrarCreados(claves: string[]) {
   await Promise.all(
-    claves.map((clave) => unlink(rutaArchivo(clave)).catch(() => {})),
+    claves.map(async (clave) => {
+      const ruta = rutaArchivo(clave);
+      await unlink(ruta).catch(() => {});
+      await rmdir(resolve(ruta, "..")).catch(() => {});
+    }),
   );
 }
 export async function leerArchivo(clave: string) {

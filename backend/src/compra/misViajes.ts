@@ -1,6 +1,6 @@
 import type { PoolClient } from "pg";
 import type { DatosPago } from "../../../shared/pagos";
-import { conservarDatosCompra,conEstadoReembolsos } from "../pagos/datos";
+import { conservarDatosCompra, conEstadoReembolsosLote } from "../pagos/datos";
 
 export interface FiltrosListaViajes {seccion:string;estado:string;q:string;desde:string;hasta:string;cursor:number}
 // Además de RLS, se exige que la reserva pertenezca al actor autenticado.
@@ -23,11 +23,12 @@ export async function listarViajesPropios(db:PoolClient,f:FiltrosListaViajes){
   AND ($4='' OR (salida AT TIME ZONE 'America/Guayaquil')::date >= nullif($4,'')::date)
   AND ($5='' OR (salida AT TIME ZONE 'America/Guayaquil')::date <= nullif($5,'')::date)
  ) SELECT id,estado,datos FROM filtrados ORDER BY CASE WHEN $1='proximos' THEN salida END ASC,CASE WHEN $1='historial' THEN salida END DESC,id OFFSET $6 LIMIT 13`,[f.seccion,f.estado,f.q,f.desde,f.hasta,f.cursor]);
- const data=[];
- for(const item of r.rows.slice(0,12)){
-  const d=await conEstadoReembolsos(db,conservarDatosCompra(item.datos as DatosPago));
-  data.push(tarjetaViaje(d,item.estado));
- }
+ const pagina = r.rows.slice(0, 12);
+ const enriquecidos = await conEstadoReembolsosLote(
+  db,
+  pagina.map((item) => conservarDatosCompra(item.datos as DatosPago)),
+ );
+ const data = pagina.map((item, idx) => tarjetaViaje(enriquecidos[idx], item.estado));
  return {data,next_cursor:r.rows.length>12?String(f.cursor+12):null};
 }
 export function tarjetaViaje(d:DatosPago,estado:string){

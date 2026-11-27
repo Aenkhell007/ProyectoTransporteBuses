@@ -485,6 +485,7 @@ test(
       const { pagosRouter } = await import("./router.js");
       const {oficinaRouter}=await import('../oficina/router.js');
       const {adminResumenRouter}=await import('../oficina/admin.js');
+      const { abordajeRouter } = await import("../abordaje/router.js");
       const app = express();
       app.use(express.json());
       app.use(cookieParser());
@@ -492,6 +493,7 @@ test(
       app.use("/api", adminResumenRouter);
       app.use("/api", compraRouter);
       app.use("/api", pagosRouter);
+      app.use("/api/abordaje", abordajeRouter);
       const servidor = app.listen(0, "127.0.0.1");
       await new Promise<void>((r) => servidor.once("listening", r));
       const direccion = servidor.address();
@@ -749,6 +751,68 @@ test(
         assert.equal(
           (await peticion(`/reservas/${rid}/boleto/qr`, cliente.token)).status,
           200,
+        );
+        const walletRes = await peticion(`/reservas/${rid}/google-wallet`, cliente.token);
+        assert.equal(walletRes.status, 200);
+        const walletData = await walletRes.json() as { disponible: boolean; modo: string; vistaPrevia?: { barcode: string } };
+        assert.equal(walletData.disponible, false);
+        assert.equal(walletData.modo, "DEMO_SIN_CREDENCIALES");
+        assert.equal(walletData.vistaPrevia?.barcode, datos.documento.qrId);
+        assert.equal(
+          (await peticion(`/pagos/compras/${datos.compra.id}/google-wallet`, cliente.token)).status,
+          200,
+        );
+        assert.equal(
+          (await peticion(`/pagos/compras/${datos.compra.id}/google-wallet`, otro.token)).status,
+          404,
+        );
+        await db.query("RESET ROLE");
+        const personalBus = await usuario();
+        await db.query(
+          "INSERT INTO transporte.membresias(cooperativa_id,usuario_id,rol_id) SELECT $1,$2,id FROM transporte.roles WHERE codigo='PERSONAL_BUS'",
+          [coop, personalBus.id],
+        );
+        assert.equal(
+          (await peticion(`/abordaje/boletos/${datos.documento.qrId}`, cliente.token)).status,
+          403,
+        );
+        const consAb = await peticion(`/abordaje/boletos/${datos.documento.qrId}`, personalBus.token);
+        assert.equal(consAb.status, 200, JSON.stringify(await consAb.clone().text()));
+        const bodyAb = await consAb.json() as {
+          boleto: { qrId: string; estado: string };
+          pasajeros: Array<{ reservaAsientoId: string; abordado: boolean }>;
+        };
+        assert.equal(bodyAb.boleto.qrId, datos.documento.qrId);
+        assert.ok(bodyAb.pasajeros.length >= 1);
+        assert.equal(bodyAb.pasajeros[0].abordado, false);
+        const claveAb = randomUUID();
+        const regAb = await peticion("/abordaje/registrar", personalBus.token, {
+          qrId: datos.documento.qrId,
+          reservaAsientoId: bodyAb.pasajeros[0].reservaAsientoId,
+          clave: claveAb,
+        });
+        assert.equal(regAb.status, 201, JSON.stringify(await regAb.clone().text()));
+        const resAb = await regAb.json() as { abordajeId: string; boleto: { pasajeros: Array<{ abordado: boolean }> } };
+        assert.equal(resAb.boleto.pasajeros[0].abordado, true);
+        assert.equal(
+          (
+            await peticion("/abordaje/registrar", personalBus.token, {
+              qrId: datos.documento.qrId,
+              reservaAsientoId: bodyAb.pasajeros[0].reservaAsientoId,
+              clave: claveAb,
+            })
+          ).status,
+          201,
+        );
+        assert.equal(
+          (
+            await peticion("/abordaje/registrar", personalBus.token, {
+              qrId: datos.documento.qrId,
+              reservaAsientoId: bodyAb.pasajeros[0].reservaAsientoId,
+              clave: randomUUID(),
+            })
+          ).status,
+          409,
         );
         assert.equal(
           (

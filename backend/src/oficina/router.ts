@@ -1,13 +1,20 @@
 import { ventasRouter } from "./ventas";
 import { reembolsosRouter } from "./reembolsos";
 import { leerArchivo } from "../pagos/archivos";
-import { nombreSeguro, ErrorPago } from "../pagos/validacion";
+import { cabecerasArchivoPago, ErrorPago } from "../pagos/validacion";
 import { conservarDatosCompra } from "../pagos/datos";
+import {
+  enriquecerCotizacionConVip,
+  enriquecerDatosPagoConVip,
+  obtenerDetalleVipMarca,
+} from "../pagos/desgloseVip";
 import type { DatosPago } from "../../../shared/pagos";
 import { Router } from "express";
 import type { Request, Response, NextFunction } from "express";
+import { consultarLote } from "../lecturas";
 import { sesionOficina, ErrorOficina, fechaConsulta } from "./acceso";
-import { accesoOficina, listarReservas, alcanceReserva } from "./consultas";
+import { accesoOficina, listarReservas, sqlListarReservas, alcanceReserva } from "./consultas";
+import { origenPermitido } from "../origen";
 
 export const oficinaRouter = Router();
 oficinaRouter.use(
@@ -18,13 +25,8 @@ oficinaRouter.use(
       "X-Content-Type-Options": "nosniff",
     });
     if (!["GET", "HEAD"].includes(req.method)) {
-      const origen = req.get("origin");
       if (
-        !origen ||
-        ![
-          process.env.FRONTEND_URL ?? "http://127.0.0.1:5173",
-          "http://localhost:5173",
-        ].includes(origen) ||
+        !origenPermitido(req.get("origin")) ||
         req.get("sec-fetch-site") === "cross-site"
       )
         return next(new ErrorOficina(403, "Origen no autorizado."));
@@ -51,7 +53,22 @@ oficinaRouter.get("/oficina/resumen", async (req, res, next) => {
     );
     res.json(
       await sesionOficina(req, async (db) => {
-        const reservas = await listarReservas(db);
+        await accesoOficina(db);
+        const consultaReservas = sqlListarReservas({ limite: 200 });
+        const [reservas, salidas] = await consultarLote(db, [
+          consultaReservas,
+          {
+            sql: `SELECT v.id,b.unidad,v.salida,
+        (SELECT count(*)::int FROM transporte.plano_celdas pc WHERE pc.plano_id=v.plano_id AND pc.tipo='ASIENTO') AS capacidad,
+        (SELECT count(*)::int FROM transporte.reserva_asientos ra WHERE ra.viaje_id=v.id AND ra.estado='CONFIRMADO') AS vendidos,
+        (SELECT ci.nombre FROM transporte.ruta_paradas rp JOIN transporte.terminales t ON t.id=rp.terminal_id JOIN transporte.ciudades ci ON ci.id=t.ciudad_id WHERE rp.ruta_id=f.ruta_id ORDER BY rp.orden LIMIT 1) AS origen,
+        (SELECT ci.nombre FROM transporte.ruta_paradas rp JOIN transporte.terminales t ON t.id=rp.terminal_id JOIN transporte.ciudades ci ON ci.id=t.ciudad_id WHERE rp.ruta_id=f.ruta_id ORDER BY rp.orden DESC LIMIT 1) AS destino
+        FROM transporte.viajes v JOIN transporte.buses b ON b.id=v.bus_id JOIN transporte.frecuencias f ON f.id=v.frecuencia_id
+        WHERE v.estado='PUBLICADO' AND v.salida>now() AND (v.salida AT TIME ZONE 'America/Guayaquil')::date=$1::date
+        AND (transporte.puede('cooperativa.leer',v.cooperativa_id) OR EXISTS (SELECT 1 FROM transporte.oficinas o WHERE o.cooperativa_id=v.cooperativa_id AND (transporte.puede('oficina.vender',v.cooperativa_id,o.id) OR transporte.puede('cooperativa.leer',v.cooperativa_id,o.id)))) ORDER BY v.salida LIMIT 20`,
+            valores: [fecha],
+          },
+        ]);
         const hoy = reservas.filter(
           (r) =>
             r.confirmado_at &&
@@ -62,19 +79,6 @@ oficinaRouter.get("/oficina/resumen", async (req, res, next) => {
         const pendientes = reservas.filter(
           (r) => r.comprobante_estado === "EN_REVISION",
         );
-        const salidas = (
-          await db.query(
-            `SELECT v.id,b.unidad,v.salida,
-        (SELECT count(*)::int FROM transporte.plano_celdas pc WHERE pc.plano_id=v.plano_id AND pc.tipo='ASIENTO') AS capacidad,
-        (SELECT count(*)::int FROM transporte.reserva_asientos ra WHERE ra.viaje_id=v.id AND ra.estado='CONFIRMADO') AS vendidos,
-        (SELECT ci.nombre FROM transporte.ruta_paradas rp JOIN transporte.terminales t ON t.id=rp.terminal_id JOIN transporte.ciudades ci ON ci.id=t.ciudad_id WHERE rp.ruta_id=f.ruta_id ORDER BY rp.orden LIMIT 1) AS origen,
-        (SELECT ci.nombre FROM transporte.ruta_paradas rp JOIN transporte.terminales t ON t.id=rp.terminal_id JOIN transporte.ciudades ci ON ci.id=t.ciudad_id WHERE rp.ruta_id=f.ruta_id ORDER BY rp.orden DESC LIMIT 1) AS destino
-        FROM transporte.viajes v JOIN transporte.buses b ON b.id=v.bus_id JOIN transporte.frecuencias f ON f.id=v.frecuencia_id
-        WHERE v.estado='PUBLICADO' AND v.salida>now() AND (v.salida AT TIME ZONE 'America/Guayaquil')::date=$1::date
-        AND (transporte.puede('cooperativa.leer',v.cooperativa_id) OR EXISTS (SELECT 1 FROM transporte.oficinas o WHERE o.cooperativa_id=v.cooperativa_id AND (transporte.puede('oficina.vender',v.cooperativa_id,o.id) OR transporte.puede('cooperativa.leer',v.cooperativa_id,o.id)))) ORDER BY v.salida LIMIT 20`,
-            [fecha],
-          )
-        ).rows;
         return {
           kpis: {
             ventasHoy:
@@ -135,11 +139,21 @@ oficinaRouter.get("/oficina/reservas/:id", async (req, res, next) => {
         ).rows[0];
         if (!r)
           throw new ErrorOficina(404, "Reserva no disponible en tu ámbito.");
-        return (
+        const datos = (
           await db.query("SELECT transporte.compra_resumen($1) AS datos", [
             r.id,
           ])
         ).rows[0].datos;
+        if (datos?.cotizacion) {
+          const detalle = await obtenerDetalleVipMarca(db, r.id);
+          if (detalle) {
+            datos.cotizacion = enriquecerCotizacionConVip(
+              datos.cotizacion,
+              detalle.tarifaNormalCentavos,
+            );
+          }
+        }
+        return datos;
       }),
     );
   } catch (e) {
@@ -159,7 +173,10 @@ oficinaRouter.get("/oficina/comprobantes", async (req, res, next) => {
   try {
     res.json(
       await sesionOficina(req, async (db) => ({
-        comprobantes: await listarReservas(db, true, {}),
+        comprobantes: await listarReservas(db, true, {
+          soloComprobantes: true,
+          limite: 200,
+        }),
       })),
     );
   } catch (e) {
@@ -170,8 +187,10 @@ oficinaRouter.get("/oficina/comprobantes/:id", async (req, res, next) => {
   try {
     res.json(
       await sesionOficina(req, async (db) => {
-        const id = identificador(req.params.id);
-        const [fila] = await listarReservas(db, true, { id });
+        const compId = identificador(req.params.id);
+        const fila = (
+          await listarReservas(db, true, { comprobanteId: compId, limite: 1 })
+        )[0];
         if (!fila) throw new ErrorOficina(404, "Comprobante no disponible.");
         const d = (
           await db.query(
@@ -179,7 +198,10 @@ oficinaRouter.get("/oficina/comprobantes/:id", async (req, res, next) => {
             [fila.id],
           )
         ).rows[0].datos as DatosPago;
-        return { comprobante: fila, compra: conservarDatosCompra(d) };
+        return {
+          comprobante: fila,
+          compra: await enriquecerDatosPagoConVip(db, conservarDatosCompra(d)),
+        };
       }),
     );
   } catch (e) {
@@ -193,7 +215,7 @@ oficinaRouter.get(
       const a = await sesionOficina(req, async (db) => {
         const r = (
           await db.query(
-            `SELECT a.ruta_privada,a.mime FROM transporte.comprobantes cp JOIN transporte.intentos_pago i ON i.id=cp.intento_id JOIN transporte.reservas r ON r.id=i.reserva_id JOIN transporte.archivos a ON a.id=cp.archivo_id WHERE cp.id=$1 AND ${alcanceReserva()}`,
+            `SELECT a.ruta_privada,a.mime FROM transporte.comprobantes cp JOIN transporte.intentos_pago i ON i.id=cp.intento_id JOIN transporte.reservas r ON r.id=i.reserva_id JOIN transporte.archivos a ON a.id=cp.archivo_id WHERE cp.id=$1 AND ${alcanceReserva("pagos.revisar")}`,
             [identificador(req.params.id)],
           )
         ).rows[0];
@@ -201,10 +223,12 @@ oficinaRouter.get(
         return r;
       });
       res
-        .type(a.mime)
         .set(
-          "Content-Disposition",
-          `${req.query.descargar === "1" ? "attachment" : "inline"}; filename="${nombreSeguro(a.ruta_privada.split("/").pop())}"`,
+          cabecerasArchivoPago(
+            a.ruta_privada,
+            a.mime,
+            req.query.descargar !== "1",
+          ),
         )
         .send(await leerArchivo(a.ruta_privada));
     } catch (e) {
@@ -231,7 +255,7 @@ oficinaRouter.use(
                 : 503;
     res.status(status).json({
       error:
-        e instanceof ErrorOficina
+        e instanceof ErrorOficina || e instanceof ErrorPago
           ? e.message
           : status === 401
             ? "La sesión venció. Inicia sesión."
