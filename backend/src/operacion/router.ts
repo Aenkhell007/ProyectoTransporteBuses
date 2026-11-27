@@ -1,4 +1,5 @@
 import {registrarExtras} from './consultasExtras';
+import {detectarConflictosEnLote} from './loteAsignaciones';
 import express, {type Request} from 'express';
 import type {PoolClient} from 'pg';
 import {conSesion} from '../sesion';
@@ -125,27 +126,111 @@ export function crearOperacionRouter(contexto:typeof sesion=sesion) {
    }
   }return {propuestas,avisos};
  }));}catch(e){next(e);}});
- router.put('/asignaciones',async(req,res,next)=>{try{res.json(await contexto(req,async db=>{
-  const {id:c}=await ambito(db,req,'operacion.admin');const lista=req.body.asignaciones;exigir(Array.isArray(lista)&&lista.length>0&&lista.length<=100,'Selecciona entre una y 100 asignaciones.');const ids:string[]=[];
-  for(const d of lista){let id=d.id?uuid(d.id):null;if(id){const v=(await db.query('SELECT estado,version FROM transporte.viajes WHERE id=$1 AND cooperativa_id=$2 FOR UPDATE',[id,c])).rows[0];if(!v)throw new ErrorOperacion(404,'Asignación no disponible.');if(v.version!==d.version)throw new ErrorOperacion(409,'La asignación cambió. Recarga la planificación.');exigir(v.estado==='BORRADOR','Solo se puede editar una asignación en borrador.');}
-   const t=await comprobarAsignacion(db,c,d,id);const conductor=d.conductorId?uuid(d.conductorId):null;
-   if(conductor){exigir((await db.query(`SELECT 1 FROM transporte.membresias m JOIN transporte.roles r ON r.id=m.rol_id JOIN transporte.usuarios u ON u.id=m.usuario_id WHERE m.cooperativa_id=$1 AND m.usuario_id=$2 AND m.activa AND u.activo AND r.codigo='PERSONAL_BUS'`,[c,conductor])).rowCount,'El conductor debe ser personal activo de esta cooperativa.');
-    exigir(!(await db.query("SELECT 1 FROM transporte.viajes WHERE conductor_id=$1 AND cooperativa_id=$2 AND estado<>'CANCELADO' AND ($3::uuid IS NULL OR id<>$3) AND tstzrange(salida,liberacion_bus,'[)') && tstzrange($4::timestamptz,$5::timestamptz,'[)')",[conductor,c,id,t.salida,t.liberacion])).rowCount,'El conductor ya tiene otra asignación en ese horario.');}
-   if(id)await db.query('UPDATE transporte.viajes SET frecuencia_id=$2,bus_id=$3,plano_id=$4,salida=$5,llegada=$6,liberacion_bus=$7,conductor_id=$8,version=version+1,updated_at=now() WHERE id=$1',[id,d.frecuenciaId,d.busId,t.planoId,t.salida,t.llegada,t.liberacion,conductor]);
-   else id=(await db.query('INSERT INTO transporte.viajes(cooperativa_id,frecuencia_id,bus_id,plano_id,salida,llegada,liberacion_bus,conductor_id)VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id',[c,d.frecuenciaId,d.busId,t.planoId,t.salida,t.llegada,t.liberacion,conductor])).rows[0].id;
-   ids.push(id!);
-  }return {ids,mensaje:'Borrador guardado. Todavía no está disponible para la venta.'};
- }));}catch(e){next(e);}});
- router.post('/publicar',async(req,res,next)=>{try{res.json(await contexto(req,async db=>{
-  const {id:c}=await ambito(db,req,'operacion.admin');exigir(Array.isArray(req.body.viajes)&&req.body.viajes.length>0&&req.body.viajes.length<=100,'Selecciona los borradores a publicar.');
-  for(const d of req.body.viajes){const id=uuid(d.id),v=(await db.query(`SELECT *,to_char(salida AT TIME ZONE 'America/Guayaquil','YYYY-MM-DD') fecha FROM transporte.viajes WHERE id=$1 AND cooperativa_id=$2 FOR UPDATE`,[id,c])).rows[0];
-   if(!v)throw new ErrorOperacion(404,'Asignación no disponible.');if(v.version!==d.version)throw new ErrorOperacion(409,'La planificación cambió. Recarga antes de publicar.');exigir(v.estado==='BORRADOR','Solo se publican viajes en borrador.');
-   await comprobarAsignacion(db,c,{frecuenciaId:v.frecuencia_id,busId:v.bus_id,fecha:v.fecha},id);
-   const faltan=(await db.query(`SELECT 1 FROM transporte.plano_celdas pc WHERE pc.plano_id=$1 AND pc.tipo='ASIENTO' AND pc.activa AND NOT EXISTS(SELECT 1 FROM transporte.tarifas t JOIN transporte.frecuencias f ON f.id=t.frecuencia_id WHERE t.frecuencia_id=$2 AND t.grupo_id=(SELECT grupo_id FROM transporte.buses WHERE id=$3) AND t.clase_id=pc.clase_id AND t.activa AND t.precio_centavos>0 AND t.vigencia @> $4::date AND t.origen_orden=0 AND t.destino_orden=(SELECT max(orden) FROM transporte.ruta_paradas WHERE ruta_id=f.ruta_id)) LIMIT 1`,[v.plano_id,v.frecuencia_id,v.bus_id,v.fecha])).rowCount;
-   exigir(!faltan,'Configura una tarifa de ruta completa para cada clase de asiento antes de publicar.');
-   await db.query("UPDATE transporte.viajes SET estado='PUBLICADO',version=version+1,updated_at=now() WHERE id=$1",[id]);
-  }return {mensaje:'Salidas publicadas. Ya pueden encontrarse en la búsqueda del cliente.'};
- }));}catch(e){next(e);}});
+ router.put('/asignaciones', async (req, res, next) => {
+   try {
+     const resultado = await contexto(req, async db => {
+       const { id: cooperativaId } = await ambito(db, req, 'operacion.admin');
+       const lista = req.body?.asignaciones;
+       exigir(Array.isArray(lista) && lista.length > 0 && lista.length <= 100,
+         'Selecciona entre una y 100 asignaciones.');
+
+       const existentes = new Set<string>();
+       const verificadas = [];
+       for (const entrada of lista) {
+         exigir(entrada && typeof entrada === 'object', 'Selecciona asignaciones válidas.');
+         const id = entrada.id ? uuid(entrada.id) : null;
+         if (id) {
+           exigir(!existentes.has(id), 'No repitas un borrador en el mismo lote.');
+           existentes.add(id);
+           const { estado } = await cargarBorrador(db, cooperativaId, id, entrada.version);
+           exigir(estado === 'BORRADOR', 'Solo se puede editar una asignación en borrador.');
+         }
+         const dia = fecha(entrada.fecha);
+         const frecuenciaId = uuid(entrada.frecuenciaId);
+         const busId = uuid(entrada.busId);
+         const conductor = entrada.conductorId ? uuid(entrada.conductorId) : null;
+         const tiempos = await comprobarAsignacion(db, cooperativaId, { fecha: dia, frecuenciaId, busId }, id);
+         if (conductor) {
+           await comprobarConductor(db, cooperativaId, conductor, id, tiempos.salida, tiempos.liberacion);
+         }
+         verificadas.push({ id, dia, frecuenciaId, busId, conductor, ...tiempos });
+       }
+
+       detectarConflictosEnLote(verificadas);
+       const ids: string[] = [];
+       for (const { id, frecuenciaId, busId, planoId, salida, llegada, liberacion, conductor } of verificadas) {
+         const campos = [frecuenciaId, busId, planoId, salida, llegada, liberacion, conductor];
+         if (id) {
+           await db.query(
+             'UPDATE transporte.viajes SET frecuencia_id=$2,bus_id=$3,plano_id=$4,salida=$5,llegada=$6,liberacion_bus=$7,conductor_id=$8,version=version+1,updated_at=now() WHERE id=$1',
+             [id, ...campos],
+           );
+           ids.push(id);
+         } else {
+           const { rows } = await db.query<{ id: string }>(
+             'INSERT INTO transporte.viajes(cooperativa_id,frecuencia_id,bus_id,plano_id,salida,llegada,liberacion_bus,conductor_id)VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id',
+             [cooperativaId, ...campos],
+           );
+           ids.push(rows[0].id);
+         }
+       }
+       return { ids, mensaje: 'Borrador guardado. Todavía no está disponible para la venta.' };
+     });
+     res.json(resultado);
+   } catch (error) {
+     next(error);
+   }
+ });
+
+ router.post('/publicar', async (req, res, next) => {
+   try {
+     const resultado = await contexto(req, async db => {
+       const { id: cooperativaId } = await ambito(db, req, 'operacion.admin');
+       const lista = req.body?.viajes;
+       exigir(Array.isArray(lista) && lista.length > 0 && lista.length <= 100,
+         'Selecciona los borradores a publicar.');
+
+       const ids = new Set<string>();
+       for (const entrada of lista) {
+         exigir(entrada && typeof entrada === 'object', 'Selecciona borradores válidos.');
+         const id = uuid(entrada.id);
+         exigir(!ids.has(id), 'No repitas un borrador en la publicación.');
+         ids.add(id);
+         const viaje = await cargarBorrador(db, cooperativaId, id, entrada.version);
+         exigir(viaje.estado === 'BORRADOR', 'Solo se publican viajes en borrador.');
+         const tiempos = await comprobarAsignacion(db, cooperativaId, {
+           frecuenciaId: viaje.frecuencia_id, busId: viaje.bus_id, fecha: viaje.fecha,
+         }, id);
+         exigir(viaje.plano_id === tiempos.planoId
+           && new Date(viaje.salida).toISOString() === tiempos.salida
+           && new Date(viaje.llegada).toISOString() === tiempos.llegada
+           && new Date(viaje.liberacion_bus).toISOString() === tiempos.liberacion,
+         'La frecuencia o el plano del bus cambió. Vuelve a guardar el borrador antes de publicar.');
+         if (viaje.conductor_id) {
+           await comprobarConductor(db, cooperativaId, viaje.conductor_id, id, tiempos.salida, tiempos.liberacion);
+         }
+         const { rowCount: faltan } = await db.query(`
+           SELECT 1 FROM transporte.plano_celdas pc
+           WHERE pc.plano_id=$1 AND pc.tipo='ASIENTO' AND pc.activa AND NOT EXISTS(
+             SELECT 1 FROM transporte.tarifas t JOIN transporte.frecuencias f ON f.id=t.frecuencia_id
+             WHERE t.frecuencia_id=$2 AND t.grupo_id=(SELECT grupo_id FROM transporte.buses WHERE id=$3)
+               AND t.clase_id=pc.clase_id AND t.activa AND t.precio_centavos>0 AND t.vigencia @> $4::date
+               AND t.origen_orden=0 AND t.destino_orden=(SELECT max(orden) FROM transporte.ruta_paradas WHERE ruta_id=f.ruta_id)
+           ) LIMIT 1`, [viaje.plano_id, viaje.frecuencia_id, viaje.bus_id, viaje.fecha]);
+         exigir(!faltan, 'Configura una tarifa de ruta completa para cada clase de asiento antes de publicar.');
+       }
+
+       await db.query(
+         "UPDATE transporte.viajes SET estado='PUBLICADO',version=version+1,updated_at=now() WHERE cooperativa_id=$1 AND id=ANY($2::uuid[])",
+         [cooperativaId, [...ids]],
+       );
+       return { mensaje: 'Salidas publicadas. Ya pueden encontrarse en la búsqueda del cliente.' };
+     });
+     res.json(resultado);
+   } catch (error) {
+     next(error);
+   }
+ });
  router.post('/cancelar',async(req,res,next)=>{try{res.json(await contexto(req,async db=>{
   const {id:c}=await ambito(db,req,'operacion.admin'),id=uuid(req.body.id);const v=(await db.query('SELECT estado,version FROM transporte.viajes WHERE id=$1 AND cooperativa_id=$2 FOR UPDATE',[id,c])).rows[0];if(!v)throw new ErrorOperacion(404,'Asignación no disponible.');if(v.version!==req.body.version)throw new ErrorOperacion(409,'La asignación cambió.');exigir(['BORRADOR','PUBLICADO'].includes(v.estado),'Este viaje ya no se puede cancelar desde la planificación.');
   exigir(!(await db.query("SELECT 1 FROM transporte.reservas WHERE viaje_id=$1 AND estado IN('PENDIENTE','CONFIRMADA') LIMIT 1",[id])).rowCount,'Hay reservas activas. Resuélvelas antes de cancelar.');
@@ -157,6 +242,35 @@ export function crearOperacionRouter(contexto:typeof sesion=sesion) {
 }
 export const operacionRouter=crearOperacionRouter();
 
+async function cargarBorrador(db: PoolClient, cooperativaId: string, id: string, version: unknown) {
+  const { rows } = await db.query(`
+    SELECT estado,version,frecuencia_id,bus_id,plano_id,conductor_id,salida,llegada,liberacion_bus,
+      to_char(salida AT TIME ZONE 'America/Guayaquil','YYYY-MM-DD') fecha
+    FROM transporte.viajes WHERE id=$1 AND cooperativa_id=$2 FOR UPDATE`, [id, cooperativaId]);
+  const viaje = rows[0];
+  if (!viaje) throw new ErrorOperacion(404, 'Asignación no disponible.');
+  if (viaje.version !== version) throw new ErrorOperacion(409, 'La asignación cambió. Recarga la planificación.');
+  return viaje;
+}
+
+async function comprobarConductor(
+  db: PoolClient, cooperativaId: string, conductor: string, excepto: string | null,
+  salida: string, liberacion: string,
+) {
+  const personal = await db.query(`
+    SELECT 1 FROM transporte.membresias m
+    JOIN transporte.roles r ON r.id=m.rol_id JOIN transporte.usuarios u ON u.id=m.usuario_id
+    WHERE m.cooperativa_id=$1 AND m.usuario_id=$2 AND m.activa AND u.activo AND r.codigo='PERSONAL_BUS'`,
+    [cooperativaId, conductor]);
+  exigir(personal.rowCount, 'El conductor debe ser personal activo de esta cooperativa.');
+  const ocupacion = await db.query(`
+    SELECT 1 FROM transporte.viajes
+    WHERE conductor_id=$1 AND cooperativa_id=$2 AND estado<>'CANCELADO'
+      AND ($3::uuid IS NULL OR id<>$3)
+      AND tstzrange(salida,liberacion_bus,'[)') && tstzrange($4::timestamptz,$5::timestamptz,'[)')`,
+    [conductor, cooperativaId, excepto, salida, liberacion]);
+  exigir(!ocupacion.rowCount, 'El conductor ya tiene otra asignación en ese horario.');
+}
 async function comprobarAsignacion(db:PoolClient,c:string,d:{fecha:unknown;frecuenciaId:unknown;busId:unknown},excepto:string|null=null) {
  const dia=fecha(d.fecha),fid=uuid(d.frecuenciaId),bid=uuid(d.busId);
  const f=(await db.query(`SELECT f.id,f.activa,to_char(f.hora_salida,'HH24:MI') hora,(SELECT max(minutos_desde_origen) FROM transporte.ruta_paradas p WHERE p.ruta_id=f.ruta_id) duracion FROM transporte.frecuencias f WHERE f.id=$1 AND f.cooperativa_id=$2`,[fid,c])).rows[0];
