@@ -35,7 +35,9 @@ services:
         read_only: true
         bind:
           create_host_path: false
-      - datos_pagos:/app/backend/.data
+      - type: bind
+        source: ${DOCKER_DATA_DIR:-./backend/.data}
+        target: /app/backend/.data
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -69,6 +71,3 @@ services:
       timeout: 5s
       start_period: 10s
       retries: 3
-
-volumes:
-  datos_pagos:

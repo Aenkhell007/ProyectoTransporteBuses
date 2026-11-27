@@ -21,10 +21,34 @@ export async function enviarBoletoWhatsApp(telefono:string,pdf:Buffer,codigo:str
  const r=await peticion(base+'/messages',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({messaging_product:'whatsapp',to:telefono.slice(1),type:'template',template:{name:process.env.WHATSAPP_TEMPLATE_BOLETO,language:{code:process.env.WHATSAPP_TEMPLATE_IDIOMA},components:[{type:'header',parameters:[{type:'document',document:{id:media.id,filename:'boleto-'+codigo.replace(/[^a-z0-9-]/gi,'')+'.pdf'}}]},{type:'body',parameters:[{type:'text',text:codigo}]}]}}),signal:AbortSignal.timeout(15000)});
  if(!r.ok)throw new ErrorWhatsApp(r.status);const result=await r.json() as {messages?:{id:string}[]};if(!result.messages?.[0]?.id)throw new Error('RESPUESTA_DESCONOCIDA');return result.messages[0].id;
 }
-export async function entregar(n:Entrega,pdf:Buffer){
- if(n.canal==='WHATSAPP')return enviarBoletoWhatsApp(n.telefono??'',pdf,n.codigo);
- if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(n.email))throw new Error('CORREO_NO_VALIDO');
- const r=await enviarCorreo(n.email,'Tu boleto '+n.codigo+' — Gran Continental','Tu compra está confirmada. Adjuntamos tu boleto PDF con los pasajeros y el QR de identificación. Conserva este documento y presenta tu identificación al viajar.',{idempotencyKey:n.notificacion_id,adjuntos:[{name:'boleto.pdf',content:pdf.toString('base64')}]});return r.messageId;
+export async function entregar(n: Entrega, pdf: Buffer) {
+  if (n.canal === 'WHATSAPP')
+    return enviarBoletoWhatsApp(n.telefono ?? '', pdf, n.codigo);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(n.email))
+    throw new Error('CORREO_NO_VALIDO');
+  const codigoLimpio = n.codigo.replace(/[<>&"]/g, '');
+  const nombreArchivo = `boleto-${n.codigo.replace(/[^a-z0-9-]/gi, '') || 'viaje'}.pdf`;
+  const htmlContent = [
+    '<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">',
+    '<div style="background:#CB102E;color:#ffffff;padding:16px 20px"><h1 style="margin:0;font-size:18px">Tu boleto está confirmado</h1></div>',
+    '<div style="height:4px;background:#00833E"></div>',
+    '<div style="padding:20px;color:#1A2A33;font-size:14px;line-height:1.5">',
+    `<p style="margin-top:0">Hola, tu compra con código <strong>${codigoLimpio}</strong> fue aprobada.</p>`,
+    '<p>Adjuntamos tu boleto electrónico en formato <strong>PDF</strong> con el código QR de identificación y el detalle de tus asientos y tarifa.</p>',
+    '<p style="margin-bottom:0;color:#475569;font-size:13px">Conserva este documento y presenta tu cédula o documento de identidad al abordar.</p>',
+    '</div></div>',
+  ].join('');
+  const r = await enviarCorreo(
+    n.email,
+    'Tu boleto ' + n.codigo + ' — Boleto electrónico',
+    'Tu compra está confirmada. Adjuntamos tu boleto PDF con los pasajeros y el QR de identificación. Conserva este documento y presenta tu identificación al viajar.',
+    {
+      idempotencyKey: n.notificacion_id,
+      htmlContent,
+      adjuntos: [{ name: nombreArchivo, content: pdf.toString('base64') }],
+    },
+  );
+  return r.messageId;
 }
 export function errorEntrega(e:unknown){if(e instanceof ErrorCorreo)return e.codigo==='duplicate_parameter'?'ACEPTADO_DUPLICADO':e.estado===429||e.estado>=500?'REINTENTABLE':'PROVEEDOR_RECHAZO';if(e instanceof ErrorWhatsApp)return e.estado===429?'REINTENTABLE':'WHATSAPP_RECHAZO_O_RESULTADO_DESCONOCIDO';return e instanceof Error&&['TELEFONO_NO_VALIDO','CORREO_NO_VALIDO'].includes(e.message)?e.message:'RESULTADO_DESCONOCIDO';}
 export async function procesarEntregas(deps={db:pool,leer:leerArchivo,enviar:entregar}){
