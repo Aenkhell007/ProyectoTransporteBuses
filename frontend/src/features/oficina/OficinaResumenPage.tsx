@@ -18,6 +18,7 @@ export function OficinaResumenPage() {
   <div className="flex justify-end"><label className="flex items-center gap-2 text-xs text-blue-900"><span>Fecha de consulta</span><input aria-label="Fecha de consulta" type="date" required value={fecha} onChange={e=>{if(e.target.value)setFecha(e.target.value)}} className="h-9 rounded-md border border-blue-200 bg-white px-2 text-sm focus-visible:outline-2 focus-visible:outline-blue-600" /></label></div>
   <ConsultaEstado {...c} />
   {d && <>
+   <Link to="reembolsos" className="flex items-center justify-between rounded-lg border border-blue-100 bg-white px-4 py-3 text-sm font-semibold text-blue-900 hover:bg-blue-50 lg:hidden"><span className="flex items-center gap-2"><Icono nombre="documento" className="size-5 text-blue-700" />Reembolsos</span><Icono nombre="chevronDerecha" className="size-4 text-blue-700" /></Link>
    <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-3">
     {([
       {nombre:"Ventas de hoy",valor:dinero(d.kpis.ventasHoy),icono:"dinero",color:"bg-green-100 text-green-700"},

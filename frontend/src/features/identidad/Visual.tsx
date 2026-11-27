@@ -3,7 +3,10 @@ export type Simbolo = 'usuario'|'grupo'|'escudo'|'edificio'|'corona'|'oficina'|'
 export function I({nombre, clase = 'size-5'}: {nombre: Simbolo; clase?: string}) {
   return <IconoBiblioteca nombre={nombre==='check'?'checkCirculo':nombre} className={clase}/>;
 }
-export function LogoCooperativa({nombre}: {nombre: string}) {
+export function LogoCooperativa({nombre, logoArchivoId}: {nombre: string; logoArchivoId?: string | null}) {
+  if (logoArchivoId) {
+    return <img src={`/api/mikel/imagenes/${logoArchivoId}`} alt={nombre} className="h-20 w-44 max-w-full object-contain"/>;
+  }
   return nombre.trim().toLocaleLowerCase('es') === 'gran continental'
     ? <img src="/images/Logo%20G-C.png" alt="Gran Continental" className="h-20 w-44 max-w-full object-contain"/>
     : <span className="flex h-20 w-28 items-center justify-center rounded-lg bg-blue-50 text-blue-700"><I nombre="edificio" clase="size-10"/></span>;

@@ -19,4 +19,5 @@ export type Herramienta =
   | { tipo: 'ASIENTO'; clase_id: string }
   | { tipo: 'PASILLO' }
   | { tipo: 'BLOQUE' }
+  | { tipo: 'PUERTA' }
   | { tipo: 'BORRAR' };

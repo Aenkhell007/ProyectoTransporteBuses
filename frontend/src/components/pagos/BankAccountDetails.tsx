@@ -77,11 +77,27 @@ export default function BankAccountDetails({
     },
   ];
 
+  const inicialesBanco =
+    cuenta.banco
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase() ?? "")
+      .join("") || "BK";
+
   return (
     <section aria-label={`Datos bancarios de ${cuenta.banco}`}>
       <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_170px]">
         <div className="rounded-md border border-indigo-100 p-4">
-          <h3 className="mb-4 font-bold text-blue-950">{cuenta.banco}</h3>
+          <div className="mb-4 flex items-center gap-3">
+            <span
+              aria-hidden="true"
+              className="grid size-10 shrink-0 place-items-center rounded-md bg-yellow-300 text-xs font-extrabold tracking-tight text-blue-950"
+            >
+              {inicialesBanco}
+            </span>
+            <h3 className="font-bold text-blue-950">{cuenta.banco}</h3>
+          </div>
 
           <dl className="space-y-3">
             {datos.map((dato) => (

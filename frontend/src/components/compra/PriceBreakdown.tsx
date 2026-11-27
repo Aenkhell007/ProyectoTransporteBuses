@@ -43,6 +43,16 @@ export function PriceBreakdown({
   const cerrado = plegable && !abierto;
   const { lineas } = cotizacion;
   const iva = `IVA (${formatearPuntosBase(cotizacion.impuesto_bp)})`;
+  const recargoVipLineas = lineas.reduce(
+    (s, l) => s + (l.recargo_vip_centavos ?? 0),
+    0,
+  );
+  const totalRecargoVip = cotizacion.recargo_vip_centavos ?? recargoVipLineas;
+  const tieneRecargoVip = totalRecargoVip > 0;
+  const totalNormal =
+    cotizacion.tarifa_normal_centavos ??
+    Math.max(0, cotizacion.base_centavos - totalRecargoVip);
+  const columnas = tieneRecargoVip ? 5 : 4;
 
   return (
     <section
@@ -69,7 +79,7 @@ export function PriceBreakdown({
           >
             <Icono nombre={abierto ? "chevronArriba" : "chevronAbajo"} />
             <span className="sr-only">
-              {abierto ? "Contraer" : "Expandir"} {titulo}
+              {abiertaLabel(abierto, titulo)}
             </span>
           </button>
         )}
@@ -89,8 +99,13 @@ export function PriceBreakdown({
               Concepto
             </th>
             <th scope="col" className="py-1.5 text-right font-medium">
-              Tarifa
+              {tieneRecargoVip ? "Tarifa normal" : "Tarifa"}
             </th>
+            {tieneRecargoVip && (
+              <th scope="col" className="py-1.5 text-right font-medium">
+                Recargo VIP
+              </th>
+            )}
             <th scope="col" className="py-1.5 text-right font-medium">
               Descuento
             </th>
@@ -103,59 +118,99 @@ export function PriceBreakdown({
           </tr>
         </thead>
         <tbody>
-          {lineas.map((l) => (
-            <tr
-              key={l.reserva_asiento_id}
-              className="border-b border-slate-100"
-            >
-              <th
-                scope="row"
-                className="py-1.5 text-left font-normal text-slate-800"
+          {lineas.map((l) => {
+            const recargo = l.recargo_vip_centavos ?? 0;
+            const esVip = recargo > 0 || l.clase === "VIP" || l.clase === "EJECUTIVO";
+            const tarifaNormal = l.tarifa_normal_centavos ?? l.base_centavos;
+            return (
+              <tr
+                key={l.reserva_asiento_id}
+                className="border-b border-slate-100"
               >
-                {etiquetaLinea(l)}
-              </th>
-              <td className="py-1.5 text-right">
-                {formatearCentavos(l.base_centavos)}
-              </td>
-              <td
-                className={`py-1.5 text-right ${l.descuento_centavos > 0 ? "text-green-700" : ""}`}
-              >
-                {descuento(l.descuento_centavos)}
-              </td>
-              <td className="py-1.5 text-right">
-                {formatearCentavos(l.servicio_centavos)}
-              </td>
-              <td className="py-1.5 text-right">
-                {formatearCentavos(l.subtotal_neto_centavos)}
-              </td>
-            </tr>
-          ))}
+                <th
+                  scope="row"
+                  className="py-1.5 text-left font-normal text-slate-800"
+                >
+                  <span>{etiquetaLinea(l)}</span>
+                  {esVip && (
+                    <span className="ml-2 inline-block rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-900">
+                      VIP
+                    </span>
+                  )}
+                </th>
+                <td className="py-1.5 text-right">
+                  {formatearCentavos(tarifaNormal)}
+                </td>
+                {tieneRecargoVip && (
+                  <td
+                    className={`py-1.5 text-right ${recargo > 0 ? "font-semibold text-amber-700" : "text-slate-400"}`}
+                  >
+                    {recargo > 0
+                      ? `+ ${formatearCentavos(recargo)}${(l.recargo_vip_pct ?? 0) > 0 ? ` (+${l.recargo_vip_pct}%)` : ""}`
+                      : "-"}
+                  </td>
+                )}
+                <td
+                  className={`py-1.5 text-right ${l.descuento_centavos > 0 ? "text-green-700" : ""}`}
+                >
+                  {descuento(l.descuento_centavos)}
+                </td>
+                <td className="py-1.5 text-right">
+                  {formatearCentavos(l.servicio_centavos)}
+                </td>
+                <td className="py-1.5 text-right font-medium">
+                  {formatearCentavos(l.subtotal_neto_centavos)}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
         <tfoot>
+          {tieneRecargoVip ? (
+            <>
+              <Fila
+                colSpan={columnas}
+                etiqueta="Tarifa base (Normal)"
+                valor={formatearCentavos(totalNormal)}
+              />
+              <Fila
+                colSpan={columnas}
+                etiqueta="Recargo por asiento VIP"
+                valor={`+ ${formatearCentavos(totalRecargoVip)}`}
+                destacado="text-amber-700 font-semibold"
+              />
+            </>
+          ) : (
+            <Fila
+              colSpan={columnas}
+              etiqueta="Tarifas"
+              valor={formatearCentavos(cotizacion.base_centavos)}
+            />
+          )}
           <Fila
-            etiqueta="Tarifas"
-            valor={formatearCentavos(cotizacion.base_centavos)}
-          />
-          <Fila
+            colSpan={columnas}
             etiqueta="Descuentos"
             valor={descuento(cotizacion.descuento_centavos)}
           />
           <Fila
+            colSpan={columnas}
             etiqueta="Tarifa de servicio"
             valor={formatearCentavos(cotizacion.servicio_centavos)}
           />
           <Fila
+            colSpan={columnas}
             etiqueta="Subtotal sin IVA"
             valor={formatearCentavos(cotizacion.subtotal_neto_centavos)}
             fuerte
           />
           <Fila
+            colSpan={columnas}
             etiqueta={iva}
             valor={formatearCentavos(cotizacion.iva_centavos)}
             fuerte
           />
           <tr className="bg-green-50 text-lg font-bold text-[#08035b]">
-            <th scope="row" colSpan={4} className="px-2 py-2 text-left">
+            <th scope="row" colSpan={columnas} className="px-2 py-2 text-left">
               Total a pagar
             </th>
             <td className="px-2 py-2 text-right text-xl">
@@ -169,24 +224,47 @@ export function PriceBreakdown({
         id={`${id}-lista`}
         className={`mt-3 space-y-1 text-sm sm:hidden ${cerrado ? "hidden" : ""}`}
       >
-        {lineas.map((l) => (
-          <div
-            key={l.reserva_asiento_id}
-            className="flex justify-between gap-3"
-          >
-            <dt className="text-slate-700">
-              {etiquetaLinea(l)}
-              {l.descuento_centavos > 0 && (
-                <span className="block text-xs text-green-700">
-                  Descuento {descuento(l.descuento_centavos)}
-                </span>
-              )}
-            </dt>
-            <dd className="font-semibold">
-              {formatearCentavos(l.subtotal_neto_centavos)}
-            </dd>
-          </div>
-        ))}
+        {lineas.map((l) => {
+          const recargo = l.recargo_vip_centavos ?? 0;
+          const tarifaNormal = l.tarifa_normal_centavos ?? l.base_centavos;
+          return (
+            <div
+              key={l.reserva_asiento_id}
+              className="flex justify-between gap-3"
+            >
+              <dt className="text-slate-700">
+                {etiquetaLinea(l)}
+                {recargo > 0 && (
+                  <span className="block text-xs font-medium text-amber-700">
+                    Base {formatearCentavos(tarifaNormal)} + Recargo VIP
+                    {(l.recargo_vip_pct ?? 0) > 0 ? ` (+${l.recargo_vip_pct}%)` : ""}:{" "}
+                    {formatearCentavos(recargo)}
+                  </span>
+                )}
+                {l.descuento_centavos > 0 && (
+                  <span className="block text-xs text-green-700">
+                    Descuento {descuento(l.descuento_centavos)}
+                  </span>
+                )}
+              </dt>
+              <dd className="font-semibold">
+                {formatearCentavos(l.subtotal_neto_centavos)}
+              </dd>
+            </div>
+          );
+        })}
+        {tieneRecargoVip && (
+          <>
+            <Par
+              etiqueta="Tarifa base (Normal)"
+              valor={formatearCentavos(totalNormal)}
+            />
+            <Par
+              etiqueta="Recargo VIP"
+              valor={`+ ${formatearCentavos(totalRecargoVip)}`}
+            />
+          </>
+        )}
         <Par
           etiqueta="Tarifa de servicio"
           valor={formatearCentavos(cotizacion.servicio_centavos)}
@@ -209,18 +287,26 @@ export function PriceBreakdown({
   );
 }
 
+function abiertaLabel(abierto: boolean, titulo: string) {
+  return `${abierto ? "Contraer" : "Expandir"} ${titulo}`;
+}
+
 function Fila({
   etiqueta,
   valor,
   fuerte,
+  colSpan = 4,
+  destacado,
 }: {
   etiqueta: string;
   valor: string;
   fuerte?: boolean;
+  colSpan?: number;
+  destacado?: string;
 }) {
   return (
-    <tr className={fuerte ? "font-semibold" : "text-slate-600"}>
-      <th scope="row" colSpan={4} className="py-1 text-left font-[inherit]">
+    <tr className={destacado ?? (fuerte ? "font-semibold" : "text-slate-600")}>
+      <th scope="row" colSpan={colSpan} className="py-1 text-left font-[inherit]">
         {etiqueta}
       </th>
       <td className="py-1 text-right">{valor}</td>

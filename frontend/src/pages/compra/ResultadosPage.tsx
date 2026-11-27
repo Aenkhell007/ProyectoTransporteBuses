@@ -553,7 +553,7 @@ export function ResultadosPage() {
                 to="/#contacto"
                 className={`${botonSecundario} mt-3 border-green-700 text-green-800`}
               >
-                <Icono nombre="whatsapp" className="h-4 w-4" /> Contacto
+                <Icono nombre="whatsapp" className="h-4 w-4" /> WhatsApp <Icono nombre="flechaDerecha" className="h-4 w-4" />
               </Link>
             </section>
           </aside>

@@ -104,3 +104,167 @@
 @media (min-width: 640px) {
   .gc-footer.gc-footer--admin { margin-inline: 20px; }
 }
+
+.gc-public-scroll {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.gc-panel-scroll {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+.gc-mobile-tabbar,
+.gc-mobile-tabbar__more {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .gc-shell--with-tabbar {
+    padding-bottom: 64px;
+  }
+  .gc-mobile-tabbar {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 45;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    box-shadow: 0 -2px 10px rgba(8, 6, 78, 0.08);
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  .gc-mobile-tabbar a,
+  .gc-mobile-tabbar button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 58px;
+    padding: 6px 4px;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font: inherit;
+    text-decoration: none;
+    color: #334155;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .gc-mobile-tabbar a[aria-current],
+  .gc-mobile-tabbar button[aria-expanded="true"] {
+    color: #e6001c;
+  }
+  .gc-mobile-tabbar a:focus-visible,
+  .gc-mobile-tabbar button:focus-visible {
+    outline: 3px solid #00833e;
+    outline-offset: -3px;
+  }
+  .gc-mobile-tabbar__more {
+    position: fixed;
+    right: 8px;
+    bottom: 64px;
+    z-index: 46;
+    display: flex;
+    flex-direction: column;
+    min-width: 210px;
+    max-width: calc(100vw - 16px);
+    padding: 6px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(8, 6, 78, 0.16);
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  .gc-mobile-tabbar__more a,
+  .gc-mobile-tabbar__more button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: #0f172a;
+    text-align: left;
+    text-decoration: none;
+  }
+  .gc-mobile-tabbar__more a[aria-current] {
+    background: #fef2f2;
+    color: #e6001c;
+  }
+  .gc-mobile-tabbar__more button[data-logout="true"] {
+    border-top: 1px solid #e2e8f0;
+    border-radius: 0 0 8px 8px;
+    margin-top: 4px;
+    color: #dc2626;
+  }
+  .gc-mobile-tabbar__more a:hover,
+  .gc-mobile-tabbar__more button:hover {
+    background: #f1f5f9;
+  }
+  .gc-mobile-tabbar__more a:focus-visible,
+  .gc-mobile-tabbar__more button:focus-visible {
+    outline: 2px solid #00833e;
+    outline-offset: -2px;
+  }
+}
+
+@media (min-width: 961px) {
+  html:has(.gc-shell--fixed) {
+    overflow: hidden;
+    scrollbar-gutter: auto;
+  }
+  .gc-shell--fixed {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  .gc-shell--fixed > .gc-header {
+    position: relative;
+    top: auto;
+  }
+  .gc-public-scroll {
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+  }
+  .gc-shell--fixed .gc-main {
+    flex: 1 0 auto;
+  }
+  .gc-shell--fixed .gc-main [id] {
+    scroll-margin-top: 16px;
+  }
+}
+
+@media (min-width: 1476px) {
+  .gc-public-scroll {
+    scrollbar-gutter: stable both-edges;
+  }
+}
+
+@media print {
+  html:has(.gc-shell--fixed) {
+    overflow: visible !important;
+  }
+  .gc-mobile-tabbar,
+  .gc-mobile-tabbar__more {
+    display: none !important;
+  }
+  .gc-print-unclip,
+  .gc-shell--fixed,
+  .gc-public-scroll,
+  .gc-panel-scroll {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}

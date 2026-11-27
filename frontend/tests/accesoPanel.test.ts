@@ -10,4 +10,6 @@ test('paneles: se respetan permisos efectivos, incluso excepciones individuales'
  assert.equal(accesoPanel('cooperativa',['OFICINISTA'],['oficina.vender']),false);
  assert.equal(accesoPanel('oficina',['OFICINISTA'],[]),false);
  assert.equal(accesoPanel('oficina',['COOPERATIVA'],['oficina.vender']),true);
+ assert.equal(accesoPanel('abordaje',['PERSONAL_BUS'],['abordaje.registrar','cooperativa.leer']),true);
+ assert.equal(accesoPanel('abordaje',['CLIENTE'],[]),false);
 });

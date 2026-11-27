@@ -1,3 +1,16 @@
+import { solicitar } from './solicitudes';
+export interface CooperativaIdentidad {
+  id: string;
+  nombre: string;
+  ambito_operacion?: 'INTERPROVINCIAL' | 'URBANA' | 'RURAL';
+  provincia?: string | null;
+  lema?: string | null;
+  color_primario?: string | null;
+  color_secundario?: string | null;
+  color_texto?: string | null;
+  logo_archivo_id?: string | null;
+}
+
 export interface UsuarioSesion {
   id: string;
   nombres: string;
@@ -6,6 +19,8 @@ export interface UsuarioSesion {
   email_verificado_at: string | null;
   roles: string[];
   permisos?: string[];
+  cooperativa?: CooperativaIdentidad | null;
+  cooperativas?: CooperativaIdentidad[];
 }
 
 export class ErrorAuth extends Error {
@@ -15,7 +30,7 @@ export class ErrorAuth extends Error {
 // Misma base pública que el cliente HTTP integrado; la cookie es HttpOnly.
 async function peticion<T>(ruta: string, body?: unknown): Promise<T> {
   const base = (import.meta.env.VITE_API_URL ?? "/api").replace(/\/$/, "");
-  const respuesta = await fetch(`${base}/auth${ruta}`, {
+  const respuesta = await solicitar(`${base}/auth${ruta}`, {
     method: body === undefined ? "GET" : "POST",
     credentials: "include",
     headers: body === undefined ? undefined : { "Content-Type": "application/json" },

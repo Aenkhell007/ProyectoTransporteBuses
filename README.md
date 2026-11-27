@@ -42,7 +42,13 @@ El número de vista de cada módulo sale de la tabla de responsables del equipo;
 5. Resumen: el servidor calcula la cotización en centavos; el cliente acepta una versión concreta.
 6. Pago: el cliente elige una cuenta bancaria de la cooperativa y sube el comprobante (JPG, PNG o PDF de hasta 5 MB). La reserva pasa a EN REVISIÓN.
 7. Revisión: personal con el permiso `pagos.revisar` en la cooperativa de esa reserva aprueba o rechaza.
-8. Boleto: tras la aprobación se emite un PDF con QR, visible en Mis viajes solo para la cuenta dueña de la reserva.
+8. Boleto: tras la aprobación (o confirmación automática con PayPhone) se emite un PDF con QR, visible en Mis viajes solo para la cuenta dueña de la reserva, junto con el botón oficial **Agregar a Google Wallet** para dispositivos Android.
+9. Abordaje (RF11): el personal del bus o de la cooperativa valida el mismo QR (desde el PDF o Google Wallet) en `/abordaje` (o desde el menú del panel).
+
+## Google Wallet y RF11
+
+- **Google Wallet (Android):** ver [Guía gratuita y oficial de Google Wallet](docs/google-wallet-android.md) para configurar las credenciales RS256 (sin credenciales funciona en modo demostración).
+- **Validación QR de abordaje (RF11):** disponible en `/abordaje`, `/panel/abordaje`, `/oficina/abordaje` y `/cooperativa/abordaje`.
 
 ## Tecnologías
 

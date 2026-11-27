@@ -16,7 +16,7 @@ import {
 } from "../../features/compra/fechas";
 import { Icono } from "../../components/compra/Icono";
 import { BusImagen } from "../../components/compra/BusImagen";
-import { nombreGrupo, SERVICIOS_BUS } from "../../components/compra/TripCard";
+import { infoServicioBus, nombreGrupo } from "../../components/compra/TripCard";
 import { formatearCentavos } from "../../features/compra/dinero";
 import { formatearDuracion, minutosEntre } from "../../features/compra/fechas";
 export default function SeleccionAsientosPage() {
@@ -31,6 +31,7 @@ export default function SeleccionAsientosPage() {
   const reservaId = p.get("reserva_id");
   const [reserva, setReserva] = useState<ReservaPendiente | null>(null);
   const [confirmandoCambio, setConfirmandoCambio] = useState(false);
+  const [resumenMovilAbierto, setResumenMovilAbierto] = useState(false);
   const valido =
     !!id &&
     p.has("origen_orden") &&
@@ -53,7 +54,7 @@ export default function SeleccionAsientosPage() {
   const cambiar = useCallback((ids: string[]) => setSeleccion(ids), []);
   useEffect(() => {
     let vigente = true;
-    if (sesionCargando) return;
+    if (reservaId && sesionCargando) return;
     setReserva(null);
     setConfirmandoCambio(false);
     setSeleccion([]);
@@ -139,6 +140,125 @@ export default function SeleccionAsientosPage() {
   ) } : null;
   const elegidos=viaje?.mapa.celdas.filter(c=>seleccion.includes(c.id)) ?? [];
   const origen=viaje?.paradas.find(x=>x.orden===o),destino=viaje?.paradas.find(x=>x.orden===d);
+  const tarifaNormalReferencia =
+    viaje?.tarifas_clase?.NORMAL ?? viaje?.tarifa_desde_centavos ?? 0;
+  const infoVipAsiento = (celda: { id: string; clase: string | null }) => {
+    const reservado = reserva?.asientos.find((a) => a.asiento_id === celda.id);
+    const codigo = String(reservado?.clase ?? celda.clase ?? "NORMAL").toUpperCase();
+    const esVip = codigo === "VIP" || codigo === "EJECUTIVO";
+    const precio = reservado
+      ? reservado.tarifa_centavos
+      : esVip
+        ? (viaje?.tarifas_clase?.VIP ??
+          viaje?.tarifas_clase?.EJECUTIVO ??
+          viaje?.tarifa_desde_centavos ??
+          0)
+        : (viaje?.tarifas_clase?.NORMAL ?? viaje?.tarifa_desde_centavos ?? 0);
+    const recargo =
+      esVip && tarifaNormalReferencia > 0 && precio > tarifaNormalReferencia
+        ? precio - tarifaNormalReferencia
+        : 0;
+    const baseNormal = recargo > 0 ? precio - recargo : precio;
+    return { precio, esVip, recargo, baseNormal };
+  };
+  const totalEstimado = elegidos.reduce((acc, c) => acc + infoVipAsiento(c).precio, 0);
+  const totalBaseNormal = elegidos.reduce((acc, c) => acc + infoVipAsiento(c).baseNormal, 0);
+  const totalRecargoVip = elegidos.reduce((acc, c) => acc + infoVipAsiento(c).recargo, 0);
+  const baseVipParaPct = elegidos.reduce((acc, c) => {
+    const info = infoVipAsiento(c);
+    return info.recargo > 0 ? acc + info.baseNormal : acc;
+  }, 0);
+  const pctRecargoVip =
+    totalRecargoVip > 0 && baseVipParaPct > 0
+      ? Math.round((totalRecargoVip * 100) / baseVipParaPct)
+      : 0;
+  const deshabilitadoContinuar =
+    enviando || sesionCargando || cargando || (!bloqueada && seleccion.length !== cantidad) || confirmandoCambio;
+  const textoContinuar = enviando
+    ? "Guardando…"
+    : bloqueada
+      ? "Consultar estado"
+      : hayCambios
+        ? "Revisar cambio de asientos"
+        : usuario
+          ? "Continuar"
+          : "Iniciar sesión y continuar";
+
+  const listaAsientosElegidos = (
+    <>
+      {elegidos.map((c) => {
+        const info = infoVipAsiento(c);
+        return (
+          <li key={c.id} className="flex items-center justify-between gap-2">
+            <span className="flex flex-wrap items-center gap-1.5">
+              <strong>{c.codigo}</strong>
+              {info.esVip && (
+                <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
+                  VIP
+                </span>
+              )}
+              {viaje && viaje.bus.pisos > 1 && (
+                <small className="text-slate-500">
+                  {c.piso === 1 ? "Piso inferior" : "Piso superior"}
+                </small>
+              )}
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="font-semibold text-[#08035b]">
+                {formatearCentavos(info.precio)}
+              </span>
+              <button
+                type="button"
+                aria-label={`Quitar asiento ${c.codigo}`}
+                disabled={bloqueada || enviando || confirmandoCambio}
+                onClick={() => cambiar(seleccion.filter((x) => x !== c.id))}
+                className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-md text-red-600 hover:bg-red-50 disabled:opacity-40"
+              >
+                <Icono nombre="papelera" className="h-4 w-4" />
+              </button>
+            </span>
+          </li>
+        );
+      })}
+      {!elegidos.length && (
+        <li className="text-slate-500">Selecciona tus asientos en el plano.</li>
+      )}
+    </>
+  );
+
+  const desgloseTarifas = viaje && (
+    <dl className="space-y-2.5 border-t border-indigo-100 pt-3 text-sm">
+      {totalRecargoVip > 0 ? (
+        <>
+          <div className="flex justify-between gap-2 text-slate-600">
+            <dt>Tarifa base Normal ({elegidos.length})</dt>
+            <dd className="font-medium text-[#08035b]">{formatearCentavos(totalBaseNormal)}</dd>
+          </div>
+          <div className="flex justify-between gap-2 text-amber-700">
+            <dt className="font-medium">
+              Recargo VIP {pctRecargoVip > 0 ? `(+${pctRecargoVip}%)` : ""}
+            </dt>
+            <dd className="font-semibold">+ {formatearCentavos(totalRecargoVip)}</dd>
+          </div>
+        </>
+      ) : (
+        <div className="flex justify-between gap-2 text-slate-600">
+          <dt>
+            Tarifa base ({elegidos.length} × {formatearCentavos(tarifaNormalReferencia)})
+          </dt>
+          <dd className="font-medium text-[#08035b]">{formatearCentavos(totalEstimado)}</dd>
+        </div>
+      )}
+      <div className="flex justify-between gap-2 text-slate-600">
+        <dt>Tarifa de servicio</dt>
+        <dd className="font-medium text-[#08035b]">{formatearCentavos(0)}</dd>
+      </div>
+      <div className="flex justify-between rounded bg-blue-50 p-3 text-lg font-bold text-[#08035b]">
+        <dt>Total estimado</dt>
+        <dd>{formatearCentavos(totalEstimado)}</dd>
+      </div>
+    </dl>
+  );
 
   // El enlace conserva los criterios que devuelve el detalle, sin inventar IDs de ciudades.
   const datosRuta=viaje as (typeof viaje & {origen?:{ciudad_id:string};destino?:{ciudad_id:string}});
@@ -147,23 +267,22 @@ export default function SeleccionAsientosPage() {
     <BookingProgress pasoActual={3}/>
     {cargando&&<p role="status" className="p-6">Consultando disponibilidad…</p>}
     {error&&<div role="alert" className="my-4 rounded-md bg-red-50 p-4 text-red-800">{error}<button type="button" onClick={()=>setVersion(v=>v+1)} className="ml-3 underline">Volver a consultar</button></div>}
-    {viaje&&<div className="mt-5 grid items-start gap-4 lg:grid-cols-[220px_minmax(0,1fr)_260px] xl:grid-cols-[250px_minmax(0,1fr)_280px]">
-      <aside className="overflow-hidden rounded-lg border border-indigo-100">
-        <Link to={resultados} className="flex min-h-11 items-center gap-2 bg-slate-50 px-4 text-sm text-blue-700"><Icono nombre="flechaIzquierda"/>Volver a resultados</Link>
-        <div className="space-y-3 p-4">
+    {viaje&&<div className="mt-5 grid items-start gap-4 lg:grid-cols-[220px_minmax(0,1fr)_270px] xl:grid-cols-[250px_minmax(0,1fr)_290px]">
+      <aside className="overflow-x-hidden rounded-lg border border-indigo-100 bg-white lg:sticky lg:top-4 lg:max-h-[calc(100dvh-7.5rem)] lg:overflow-y-auto">
+        <Link to={resultados} className="flex min-h-11 items-center gap-2 rounded-t-lg bg-slate-50 px-4 text-sm text-blue-700"><Icono nombre="flechaIzquierda"/>Volver a resultados</Link>
+        <div className="space-y-2.5 p-3.5">
           <h2 className="text-xl font-bold">{origen?.ciudad} → {destino?.ciudad}</h2>
           <p className="text-sm text-slate-600">{formatearFechaLarga(diaEnEcuador(viaje.salida))}<br/>{formatearHora(viaje.salida)} → {formatearHora(viaje.llegada)}</p>
           <span className="inline-block rounded-md bg-green-100 px-3 py-1 text-sm text-green-900">{nombreGrupo(viaje.bus.grupo,viaje.bus.pisos)}</span>
-          <dl className="hidden space-y-3 pt-2 text-sm text-slate-600 lg:block">
-            <div className="flex gap-2"><Icono nombre="reloj"/><dt>Duración:</dt><dd>{formatearDuracion(minutosEntre(viaje.salida,viaje.llegada))}</dd></div>
-            <div className="flex gap-2"><Icono nombre="ubicacion"/><dt>Paradas:</dt><dd>{Math.max(0,d-o-1)}</dd></div>
-            <div className="flex gap-2"><Icono nombre="bus"/><dd>Unidad {viaje.bus.unidad} · Placa {viaje.bus.placa}</dd></div>
-            <div className="flex gap-2"><Icono nombre="bus"/><dd>Chasis: {viaje.bus.chasis}<br/>Carrocería: {viaje.bus.carroceria}</dd></div>
+          <dl className="hidden space-y-2 pt-1.5 text-sm text-slate-600 lg:block">
+            <div className="flex gap-2"><Icono nombre="reloj" className="mt-0.5 h-4 w-4 shrink-0"/><dt>Duración:</dt><dd>{formatearDuracion(minutosEntre(viaje.salida,viaje.llegada))}</dd></div>
+            <div className="flex gap-2"><Icono nombre="ubicacion" className="mt-0.5 h-4 w-4 shrink-0"/><dt>Paradas:</dt><dd>{Math.max(0,d-o-1)}</dd></div>
+            <div className="flex gap-2"><Icono nombre="bus" className="mt-0.5 h-4 w-4 shrink-0"/><dd>Unidad {viaje.bus.unidad} · Placa {viaje.bus.placa}</dd></div>
           </dl>
-          <details className="text-xs text-blue-700 lg:hidden"><summary className="cursor-pointer py-2">Ver información del bus</summary><p className="leading-6">Unidad {viaje.bus.unidad} · Placa {viaje.bus.placa}<br/>Chasis: {viaje.bus.chasis}<br/>Carrocería: {viaje.bus.carroceria}</p></details>
-          {viaje.bus.servicios.length>0&&<div className="border-t border-indigo-100 pt-3"><h3 className="font-bold">Servicios a bordo:</h3><ul className="mt-3 space-y-3 text-sm text-slate-600">{viaje.bus.servicios.map(s=><li key={s} className="flex gap-3"><Icono nombre={SERVICIOS_BUS[s]?.[0]??"bus"}/>{SERVICIOS_BUS[s]?.[1]??s}</li>)}</ul></div>}
+          <details className="text-xs text-blue-700 lg:hidden"><summary className="cursor-pointer py-2">Ver información del bus</summary><p className="leading-6">Unidad {viaje.bus.unidad} · Placa {viaje.bus.placa}</p></details>
+          {viaje.bus.servicios.length>0&&<div className="border-t border-indigo-100 pt-2.5"><h3 className="font-bold">Servicios a bordo:</h3><ul className="mt-2 space-y-1.5 text-sm text-slate-600">{viaje.bus.servicios.map(s=>{const [icono,etiqueta]=infoServicioBus(s);return <li key={s} className="flex items-center gap-2.5"><Icono nombre={icono} className="h-4 w-4 shrink-0"/><span>{etiqueta}</span></li>;})}</ul></div>}
         </div>
-        <BusImagen src={viaje.bus.foto_url} pisos={viaje.bus.pisos} alt="Ilustración del servicio de bus" className="hidden h-40 w-full lg:block"/>
+        <BusImagen src={viaje.bus.foto_url} pisos={viaje.bus.pisos} alt="Ilustración del servicio de bus" className="hidden h-28 w-full lg:block"/>
       </aside>
       <div className="min-w-0 rounded-lg border border-indigo-100 p-3 sm:p-4">
         <h1 className="text-2xl font-bold">Selecciona tus asientos</h1>
@@ -174,17 +293,64 @@ export default function SeleccionAsientosPage() {
           <SelectorAsientos key={`${id}-${version}`} mapa={mapaEditable!} cantidad={cantidad} seleccion={seleccion} onChange={cambiar}/>
         </fieldset>
       </div>
-      <aside className="rounded-lg border border-indigo-100 bg-white p-4 lg:sticky lg:top-4">
-        <h2 className="border-b border-indigo-100 pb-3 text-lg font-bold">Resumen de tu selección</h2>
-        <div className="my-3 flex items-center gap-3"><BusImagen src={viaje.bus.foto_url} pisos={viaje.bus.pisos} alt="Ilustración del bus seleccionado" className="h-20 w-20 rounded-md"/><div className="min-w-0 text-sm"><strong>{origen?.ciudad} → {destino?.ciudad}</strong><p className="mt-1 text-slate-600">{formatearHora(viaje.salida)} → {formatearHora(viaje.llegada)}</p></div></div>
-        <p aria-live="polite" className="rounded bg-blue-50 p-3 text-sm font-semibold">{seleccion.length} de {cantidad} asientos seleccionados</p>
-        <h3 className="mt-5 font-bold">Asientos seleccionados</h3>
-        <ul className="my-3 space-y-3 text-sm">{elegidos.map(c=><li key={c.id} className="flex items-center justify-between gap-2"><span><strong>{c.codigo}</strong><small className="ml-2 text-slate-500">{c.piso===1?'Piso inferior':'Piso superior'}</small></span><button type="button" aria-label={`Quitar asiento ${c.codigo}`} disabled={bloqueada||enviando||confirmandoCambio} onClick={()=>cambiar(seleccion.filter(x=>x!==c.id))} className="min-h-10 min-w-10 text-red-600">✕</button></li>)}{!elegidos.length&&<li className="text-slate-500">Selecciona tus asientos en el plano.</li>}</ul>
-        <dl className="space-y-3 border-t border-indigo-100 pt-4 text-sm"><div className="flex justify-between gap-2"><dt>Tarifa desde</dt><dd>{formatearCentavos(viaje.tarifa_desde_centavos)} / asiento</dd></div><div className="flex justify-between rounded bg-blue-50 p-3 text-lg font-bold"><dt>Estimado desde</dt><dd>{formatearCentavos(viaje.tarifa_desde_centavos*seleccion.length)}</dd></div></dl>
+      <aside className="hidden rounded-lg border border-indigo-100 bg-white p-4 lg:sticky lg:top-4 lg:block lg:max-h-[calc(100dvh-7.5rem)] lg:overflow-y-auto">
+        <h2 className="border-b border-indigo-100 pb-3 text-lg font-bold">
+          {viaje.bus.pisos > 1 ? "Resumen de tu selección" : "Resumen de tarifas"}
+        </h2>
+        {viaje.bus.pisos > 1 && (
+          <div className="my-3 flex items-center gap-3">
+            <BusImagen src={viaje.bus.foto_url} pisos={viaje.bus.pisos} alt="Ilustración del bus seleccionado" className="h-20 w-20 rounded-md" />
+            <div className="min-w-0 text-sm">
+              <strong>{origen?.ciudad} → {destino?.ciudad}</strong>
+              <p className="mt-1 text-slate-600">{formatearHora(viaje.salida)} → {formatearHora(viaje.llegada)}</p>
+              <span className="mt-1 inline-block rounded bg-green-50 px-2 py-0.5 text-xs font-medium text-green-800">
+                {viaje.tipo_viaje === "DIRECTO" ? "Directo" : "Con paradas"}
+              </span>
+            </div>
+          </div>
+        )}
+        <p aria-live="polite" className="mt-3 rounded bg-blue-50 p-3 text-sm font-semibold">{seleccion.length} de {cantidad} asientos seleccionados</p>
+        <h3 className="mt-4 font-bold">Asientos seleccionados</h3>
+        <ul className="my-3 space-y-2.5 text-sm">{listaAsientosElegidos}</ul>
+        {desgloseTarifas}
         <p className="my-4 flex gap-2 rounded-md bg-blue-50 p-3 text-xs leading-5 text-blue-800"><Icono nombre="info"/>Los valores definitivos y descuentos se calculan al completar los pasajeros y cotizar en el servidor.</p>
-        <button type="button" disabled={enviando||sesionCargando||cargando||(!bloqueada&&seleccion.length!==cantidad)||confirmandoCambio} onClick={()=>void confirmar()} className="flex min-h-12 w-full items-center justify-center gap-3 rounded-md bg-[#ff0018] px-4 font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50">{enviando?'Guardando…':bloqueada?'Consultar estado':hayCambios?'Revisar cambio de asientos':usuario?'Continuar':'Iniciar sesión y continuar'}<Icono nombre="flechaDerecha"/></button>
+        <button type="button" disabled={deshabilitadoContinuar} onClick={()=>void confirmar()} className="flex min-h-12 w-full items-center justify-center gap-3 rounded-md bg-[#ff0018] px-4 font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50">{textoContinuar}<Icono nombre="flechaDerecha"/></button>
       </aside>
     </div>}
+    {viaje && (
+      <aside
+        aria-label="Resumen móvil de asientos"
+        className="sticky bottom-0 z-20 -mx-4 mt-4 border-t border-indigo-200 bg-white px-4 py-3 shadow-[0_-4px_12px_rgba(8,3,91,0.08)] sm:-mx-5 sm:px-5 lg:hidden"
+      >
+        <button
+          type="button"
+          aria-expanded={resumenMovilAbierto}
+          onClick={() => setResumenMovilAbierto((abierto) => !abierto)}
+          className="flex min-h-10 w-full items-center justify-between gap-2 text-left text-sm font-bold text-[#08035b]"
+        >
+          <span>{seleccion.length} de {cantidad} asientos seleccionados</span>
+          <span className="flex items-center gap-2">
+            <span>{formatearCentavos(totalEstimado)}</span>
+            <Icono nombre={resumenMovilAbierto ? "chevronAbajo" : "chevronArriba"} className="h-4 w-4" />
+          </span>
+        </button>
+        {resumenMovilAbierto && (
+          <div className="mt-2 space-y-2 border-t border-indigo-100 pt-2">
+            <ul className="space-y-2 text-sm">{listaAsientosElegidos}</ul>
+            {desgloseTarifas}
+          </div>
+        )}
+        <button
+          type="button"
+          disabled={deshabilitadoContinuar}
+          onClick={() => void confirmar()}
+          className="mt-2 flex min-h-11 w-full items-center justify-center gap-3 rounded-md bg-[#ff0018] px-4 font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {textoContinuar}
+          <Icono nombre="flechaDerecha" />
+        </button>
+      </aside>
+    )}
     {confirmandoCambio && reserva && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="presentation">
       <section role="dialog" aria-modal="true" aria-labelledby="confirmar-asientos" onKeyDown={e => {
         if (e.key === "Escape" && !enviando) { e.preventDefault(); setConfirmandoCambio(false); }

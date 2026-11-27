@@ -62,9 +62,23 @@ export function useFlujoPago() {
     },
     [reservaId],
   );
+  const reservaEstado = estado.id === reservaId ? estado.datos?.reserva.estado : undefined;
+  const compraEstado = estado.id === reservaId ? estado.datos?.compra?.estado : undefined;
+  const docEstado = estado.id === reservaId ? estado.datos?.documento?.estado : undefined;
+  const detenidoPorEstado =
+    [401, 403, 404, 422].includes(estado.status) ||
+    reservaEstado === "VENCIDA" ||
+    reservaEstado === "CANCELADA" ||
+    compraEstado === "CANCELADA" ||
+    compraEstado === "REEMBOLSADA" ||
+    (compraEstado === "CONFIRMADA" && docEstado === "LISTO");
+
   useEffect(() => {
     const abortar = new AbortController();
     void cargar(abortar.signal);
+    if (detenidoPorEstado) {
+      return () => abortar.abort();
+    }
     const reloj = setInterval(() => {
       if (document.visibilityState === "visible") void cargar(abortar.signal);
     }, 15000);
@@ -72,7 +86,7 @@ export function useFlujoPago() {
       abortar.abort();
       clearInterval(reloj);
     };
-  }, [cargar]);
+  }, [cargar, detenidoPorEstado]);
   const datos = estado.id === reservaId ? estado.datos : null;
   const cuentas =
     datos?.cuentas.map((c) => ({

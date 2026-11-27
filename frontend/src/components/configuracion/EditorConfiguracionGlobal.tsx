@@ -66,23 +66,42 @@ export default function EditorConfiguracionGlobal({ inicial, canales, admiteMfa,
       {['General', 'Seguridad', 'Archivos y notificaciones'].map(p => <button key={p} type="button" aria-current={pestana === p ? 'location' : undefined} className={`min-h-12 rounded-md px-2 text-sm font-semibold ${pestana === p ? 'bg-blue-700 text-white' : 'hover:bg-white'}`} onClick={() => { setPestana(p); secciones.current[p]?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>{p}</button>)}
     </nav>
     <fieldset disabled={ocupado} className="space-y-4">
-      <div ref={n => { secciones.current.General = n; }} className="scroll-mt-36"><BloqueConfiguracion titulo="Configuración general"><div className="grid gap-4 sm:grid-cols-3">
+      <div ref={n => { secciones.current.General = n; }} className="scroll-mt-4"><BloqueConfiguracion titulo="Configuración general"><div className="grid gap-4 sm:grid-cols-3">
         <label className="grid gap-2 text-sm">Idioma<select className={entradaConfiguracion} value={datos.idioma} onChange={e => cambiar('idioma', e.target.value)}><option value="es-EC">Español (Ecuador)</option></select></label>
         <label className="grid gap-2 text-sm">Moneda<select className={entradaConfiguracion} value={datos.moneda} disabled><option value="USD">USD · Dólar estadounidense</option></select></label>
         <label className="grid gap-2 text-sm">Zona horaria<select className={entradaConfiguracion} value={datos.zonaHoraria} onChange={e => cambiar('zonaHoraria', e.target.value)}><option>America/Guayaquil</option><option>Pacific/Galapagos</option></select></label>
       </div></BloqueConfiguracion></div>
-      <div ref={n => { secciones.current.Seguridad = n; }} className="scroll-mt-36"><BloqueConfiguracion titulo="Seguridad"><div className="grid gap-5 sm:grid-cols-2">
+      <div ref={n => { secciones.current.Seguridad = n; }} className="scroll-mt-4"><BloqueConfiguracion titulo="Seguridad"><div className="grid gap-5 sm:grid-cols-2">
         <label className="grid gap-2 text-sm">Tiempo de expiración de sesión (horas)<input className={entradaConfiguracion} type="number" min="1" max="24" step="1" required value={datos.sesionHoras} onChange={e => cambiar('sesionHoras', Number(e.target.value))}/><span className="text-xs text-slate-500">Entre 1 y 24 horas. Se aplica a las nuevas sesiones al iniciar sesión.</span></label>
-        <label className="flex items-start gap-3 rounded-lg bg-blue-50 p-4 text-sm"><input type="checkbox" className="mt-1 size-5" checked={datos.mfaAdministradores} disabled={!admiteMfa} onChange={e => cambiar('mfaAdministradores', e.target.checked)}/><span><strong className="block">Autenticación de dos factores (MFA)</strong><span className="mt-2 block text-xs">{admiteMfa ? 'Verificación adicional para administradores.' : 'Pendiente de integración. No se puede activar todavía.'}</span></span></label>
+        <div className="flex items-start justify-between gap-3 rounded-lg bg-blue-50 p-4 text-sm">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <strong className="block">Autenticación de dos factores (MFA)</strong>
+              {!admiteMfa && <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800">Pendiente de integración</span>}
+            </div>
+            <span className="mt-2 block text-xs">{admiteMfa ? 'Verificación adicional para administradores.' : 'Pendiente de integración. No se puede activar todavía.'}</span>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={datos.mfaAdministradores}
+            aria-label="Autenticación de dos factores (MFA)"
+            disabled={!admiteMfa}
+            onClick={() => cambiar('mfaAdministradores', !datos.mfaAdministradores)}
+            className={`relative mt-1 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${datos.mfaAdministradores ? 'bg-green-600' : 'bg-slate-300'}`}
+          >
+            <span className={`absolute top-0.5 size-5 rounded-full bg-white shadow-sm transition-all ${datos.mfaAdministradores ? 'left-[22px]' : 'left-0.5'}`} />
+          </button>
+        </div>
       </div></BloqueConfiguracion></div>
-      <div ref={n => { secciones.current['Archivos y notificaciones'] = n; }} className="scroll-mt-36"><BloqueConfiguracion titulo="Archivos"><div className="grid gap-4 sm:grid-cols-2">
+      <div ref={n => { secciones.current['Archivos y notificaciones'] = n; }} className="scroll-mt-4"><BloqueConfiguracion titulo="Archivos"><div className="grid gap-4 sm:grid-cols-2">
         <fieldset><legend className="mb-2 text-sm">Tipos de archivo permitidos</legend><div className="flex flex-wrap gap-3">{['JPG','PNG','PDF'].map(tipo => <label key={tipo} className="flex min-h-11 items-center gap-2 rounded-md bg-blue-50 px-3 text-sm"><input type="checkbox" checked={datos.formatos.includes(tipo)} onChange={e => cambiar('formatos', e.target.checked ? [...datos.formatos,tipo] : datos.formatos.filter(t => t !== tipo))}/>{tipo}</label>)}</div></fieldset>
         <label className="grid gap-2 text-sm">Tamaño máximo de archivo (MB)<input type="number" required min="1" max="5" step="1" className={entradaConfiguracion} value={datos.maxArchivoMB} onChange={e => cambiar('maxArchivoMB', Number(e.target.value))}/><span className="text-xs text-slate-500">Límite actual de comprobantes: 5 MB.</span></label>
       </div></BloqueConfiguracion></div>
-      <BloqueConfiguracion titulo="Notificaciones"><div className="grid gap-4 sm:grid-cols-2">{(['correo','whatsapp'] as const).map(c => <div key={c} className="rounded-lg border border-indigo-100 p-4 text-sm"><label className="flex items-center justify-between gap-3"><span><strong>{c === 'correo' ? 'Notificaciones por correo electrónico' : 'Notificaciones por WhatsApp'}</strong><small className="mt-2 block text-slate-500">{canales[c] ? 'Canal disponible' : 'Pendiente de conexión'}</small></span><input aria-label={'Activar ' + c} type="checkbox" checked={datos[c]} disabled={!canales[c]} onChange={e => cambiar(c,e.target.checked)}/></label><button type="button" className={botonConfiguracion + ' mt-3'} aria-expanded={ayudaCanal === c} onClick={() => setAyudaCanal(ayudaCanal === c ? '' : c)}>Configurar conexión</button>{ayudaCanal === c && <p role="status" className="mt-3 rounded bg-amber-50 p-3 text-xs leading-5">La conexión de {c === 'correo' ? 'correo' : 'WhatsApp'} debe configurarse y verificarse en el backend. Esta vista no solicita claves ni activa un proveedor. Al integrar el servicio se mostrará su estado real.</p>}</div>)}</div></BloqueConfiguracion>
+      <BloqueConfiguracion titulo="Notificaciones"><div className="grid gap-4 sm:grid-cols-2">{(['correo','whatsapp'] as const).map(c => <div key={c} className="rounded-lg border border-indigo-100 p-4 text-sm"><div className="flex items-start justify-between gap-3"><span><strong>{c === 'correo' ? 'Notificaciones por correo electrónico' : 'Notificaciones por WhatsApp'}</strong><span className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${canales[c] ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}><span className="size-1.5 rounded-full bg-current" />{canales[c] ? 'Canal disponible' : 'Pendiente de conexión'}</span></span><button type="button" role="switch" aria-checked={datos[c]} aria-label={'Activar ' + c} disabled={!canales[c]} onClick={() => cambiar(c, !datos[c])} className={`relative mt-1 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${datos[c] ? 'bg-green-600' : 'bg-slate-300'}`}><span className={`absolute top-0.5 size-5 rounded-full bg-white shadow-sm transition-all ${datos[c] ? 'left-[22px]' : 'left-0.5'}`} /></button></div><button type="button" className={botonConfiguracion + ' mt-3'} aria-expanded={ayudaCanal === c} onClick={() => setAyudaCanal(ayudaCanal === c ? '' : c)}>Configurar conexión</button>{ayudaCanal === c && <p role="status" className="mt-3 rounded bg-amber-50 p-3 text-xs leading-5">La conexión de {c === 'correo' ? 'correo' : 'WhatsApp'} debe configurarse y verificarse en el backend. Esta vista no solicita claves ni activa un proveedor. Al integrar el servicio se mostrará su estado real.</p>}</div>)}</div></BloqueConfiguracion>
     </fieldset>
     {!valido && <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-800">Selecciona al menos un formato, sesión de 1 a 24 horas y archivo de 1 a 5 MB.</p>}
-    <div className="rounded-lg bg-blue-50 p-4 text-sm"><p>Los límites de cada cooperativa no podrán superar los globales. Ningún canal se activa sin integración verificada.</p>
+    <div className="rounded-lg bg-blue-50 p-4 text-sm"><p>Las cuentas bancarias, tarifas y datos de cada cooperativa se gestionan en su propio panel. Los límites de cada cooperativa no podrán superar los globales y ningún canal se activa sin integración verificada.</p>
       <button type="button" className={`${botonConfiguracion} mt-3`} disabled={!valido || !modificado || ocupado} onClick={() => setImpacto(true)}>Revisar impacto de los cambios</button>
       {impacto && <div role="status" className="mt-3 space-y-1"><p>Sesión: {base.sesionHoras} → {datos.sesionHoras} horas.</p><p>Archivos: {datos.formatos.join(', ')} · máximo {datos.maxArchivoMB} MB.</p><p>No modifica documentos ni reservas existentes. El servidor verifica los permisos y la versión antes de guardar.</p></div>}
     </div>

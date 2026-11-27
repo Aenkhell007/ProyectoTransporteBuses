@@ -8,6 +8,7 @@ test('usa el panel correspondiente a los roles devueltos por el servidor', () =>
   assert.equal(destinoTrasLogin(undefined, ['COOPERATIVA']).pathname, '/cooperativa');
   assert.equal(destinoTrasLogin(undefined, ['CLIENTE']).pathname, '/');
   assert.equal(destinoTrasLogin(undefined, ['OFICINISTA', 'ADMIN_SISTEMA']).pathname, '/panel');
+  assert.equal(destinoTrasLogin(undefined, ['PERSONAL_BUS']).pathname, '/abordaje');
 });
 
 test('conserva una compra pendiente para un oficinista y rechaza destinos externos', () => {

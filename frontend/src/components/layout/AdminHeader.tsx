@@ -15,22 +15,32 @@ interface AdminHeaderProps {
   descripcion: string;
   nombreUsuario?: string;
   cargando: boolean;
+  logoSrc?: string;
+  brandName?: string;
+  colorTexto?: string;
 }
 
-export function AdminHeader({ cabeceraApp = false, homeHref = "/vista-previa/panel", titulo, descripcion, nombreUsuario, cargando }: AdminHeaderProps) {
+export function AdminHeader({ cabeceraApp = false, homeHref = "/vista-previa/panel", titulo, descripcion, nombreUsuario, cargando, logoSrc = "/images/Logo G-C.png", brandName = "Gran Continental", colorTexto }: AdminHeaderProps) {
   const hoy = new Date();
   const encabezado = (
     <div className="min-w-0 max-[960px]:sr-only">
-      <h1 className="truncate text-xl font-bold xl:text-2xl">{titulo}</h1>
+      <h1
+        title={titulo}
+        className="truncate text-xl font-bold xl:text-2xl"
+        style={colorTexto ? { color: colorTexto } : undefined}
+      >
+        {titulo}
+      </h1>
       <p className="mt-1 text-sm text-indigo-900">{descripcion}</p>
     </div>
   );
+  const cuentaHref = ['/cooperativa', '/oficina', '/panel'].includes(homeHref) ? `${homeHref}/mi-cuenta` : '/mi-cuenta';
   if (cabeceraApp) {
     return (
       <header className="gc-header">
         <div className="gc-header__inner">
-          <Link to={homeHref} className="gc-brand" aria-label="Gran Continental, resumen del panel">
-            <img src="/images/Logo G-C.png" alt="Gran Continental" width="216" height="88" />
+          <Link to={homeHref} className="gc-brand" aria-label={`${brandName}, resumen del panel`}>
+            <img src={logoSrc} alt={brandName} width="216" height="88" />
           </Link>
           {encabezado}
           <div className="flex shrink-0 items-center gap-4">
@@ -42,7 +52,7 @@ export function AdminHeader({ cabeceraApp = false, homeHref = "/vista-previa/pan
               <span role="status" className="text-sm">Consultando…</span>
             ) : (
               <Link
-                to={nombreUsuario ? "/mi-cuenta" : "/iniciar-sesion"}
+                to={nombreUsuario ? cuentaHref : "/iniciar-sesion"}
                 title={nombreUsuario}
                 aria-label={nombreUsuario ? `Mi cuenta, ${nombreUsuario}` : "Iniciar sesión"}
                 className="flex min-h-11 items-center gap-2 rounded-md bg-blue-50 px-3 text-sm"
@@ -60,7 +70,7 @@ export function AdminHeader({ cabeceraApp = false, homeHref = "/vista-previa/pan
   return (
     <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 bg-white px-4 pt-2 pb-4 text-[#08064e] sm:px-5 lg:min-h-24 lg:py-4">
       <div>
-        <h1 className="text-2xl leading-tight font-bold lg:text-4xl">{titulo}</h1>
+        <h1 className="text-2xl leading-tight font-bold lg:text-4xl" style={colorTexto ? { color: colorTexto } : undefined}>{titulo}</h1>
         <p className="mt-1 text-sm text-indigo-900">{descripcion}</p>
       </div>
       <div className="flex items-center gap-4">

@@ -156,7 +156,7 @@ export function InicioPage() {
           <p className="mt-3 font-serif text-xl text-white italic sm:text-3xl">
             El camino merece grandeza.
           </p>
-          <ul className="mt-8 grid grid-cols-2 gap-2 sm:mt-14 lg:grid-cols-4">
+          <ul className="mt-8 hidden gap-2 sm:mt-14 sm:grid sm:grid-cols-2 lg:grid-cols-4">
             {ventajas.map(([icono, titulo, texto]) => (
               <li
                 key={titulo}
@@ -203,6 +203,20 @@ export function InicioPage() {
           </div>
         </div>
       </section>
+
+      <ul className="mt-3 grid grid-cols-4 gap-1.5 sm:hidden" aria-label="Ventajas de viajar con Gran Continental">
+        {ventajas.map(([icono, titulo]) => (
+          <li
+            key={titulo}
+            className="flex flex-col items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white/95 px-1.5 py-2.5 text-center shadow-xs"
+          >
+            <Icono nombre={icono} className="h-5 w-5 text-[#ff0018]" />
+            <span className="text-[11px] leading-tight font-semibold text-[#08035b]">
+              {titulo}
+            </span>
+          </li>
+        ))}
+      </ul>
 
       <div className="mt-4 rounded-lg bg-white/95 px-4 sm:px-8">
         <ServiciosSeccion onElegir={elegirServicio} />

@@ -10,7 +10,7 @@ import {
 } from "../../features/compra/fechas";
 import { BusImagen } from "./BusImagen";
 import { Icono } from "./Icono";
-import { NOMBRE_CLASE, SERVICIOS_BUS, nombreGrupo } from "./TripCard";
+import { infoServicioBus, NOMBRE_CLASE, nombreGrupo } from "./TripCard";
 
 interface TripSummaryProps {
   reserva: ReservaPendiente;
@@ -30,9 +30,6 @@ export function TripSummary({ reserva, accion }: TripSummaryProps) {
   const { viaje, bus } = reserva;
   const pisos = [...new Set(reserva.asientos.map((a) => a.piso))].sort();
   const clases = [...new Set(reserva.asientos.map((a) => a.clase))];
-  const carroceria = [bus.carroceria, bus.carroceria_modelo]
-    .filter(Boolean)
-    .join(" ");
 
   return (
     <section
@@ -74,19 +71,8 @@ export function TripSummary({ reserva, accion }: TripSummaryProps) {
           <BusImagen
             src={bus.foto_url} pisos={bus.pisos}
             alt={`Bus unidad ${bus.unidad}`}
-            className="h-32 w-full rounded-md"
+            className="h-36 w-full rounded-md"
           />
-          <ul
-            className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-slate-600"
-            aria-label="Servicios del bus"
-          >
-            {bus.servicios.map((s) => (
-              <li key={s} className="flex items-center gap-1.5">
-                <Icono nombre={(SERVICIOS_BUS[s]?.[0] ?? "bus")} className="h-4 w-4" />
-                {(SERVICIOS_BUS[s]?.[1] ?? s)}
-              </li>
-            ))}
-          </ul>
         </div>
         <div className="min-w-0">
           <div className="flex flex-wrap items-start justify-between gap-2">
@@ -123,21 +109,17 @@ export function TripSummary({ reserva, accion }: TripSummaryProps) {
             {clases.map((c) => (
               <li
                 key={c}
-                className="rounded-md bg-blue-50 px-2.5 py-1 text-blue-800"
+                className={`rounded-md px-2.5 py-1 ${c === "VIP" || c === "EJECUTIVO" ? "bg-amber-100 font-semibold text-amber-900" : "bg-blue-50 text-blue-800"}`}
               >
                 {NOMBRE_CLASE[c]}
               </li>
             ))}
           </ul>
-          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
             <dt className="text-slate-500">Unidad</dt>
             <dd>
               {bus.unidad} · Placa {bus.placa}
             </dd>
-            <dt className="text-slate-500">Carrocería</dt>
-            <dd>{carroceria}</dd>
-            <dt className="text-slate-500">Chasis</dt>
-            <dd>{bus.chasis}</dd>
             <dt className="text-slate-500">Salida</dt>
             <dd>
               {viaje.origen.terminal} ({viaje.origen.ciudad})
@@ -146,8 +128,30 @@ export function TripSummary({ reserva, accion }: TripSummaryProps) {
             <dd>
               {viaje.destino.terminal} ({viaje.destino.ciudad})
             </dd>
-            <dt className="text-slate-500">Servicios</dt>
-            <dd>{bus.servicios.map((s) => (SERVICIOS_BUS[s]?.[1] ?? s)).join(", ")}</dd>
+            {bus.servicios.length > 0 && (
+              <>
+                <dt className="text-slate-500">Servicios</dt>
+                <dd>
+                  <ul
+                    className="flex flex-wrap gap-1.5"
+                    aria-label="Servicios del bus"
+                  >
+                    {bus.servicios.map((s) => {
+                      const [icono, etiqueta] = infoServicioBus(s);
+                      return (
+                        <li
+                          key={s}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-700"
+                        >
+                          <Icono nombre={icono} className="h-3.5 w-3.5 shrink-0 text-[#08035b]" />
+                          <span>{etiqueta}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </dd>
+              </>
+            )}
           </dl>
         </div>
       </div>

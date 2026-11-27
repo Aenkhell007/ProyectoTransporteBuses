@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
+import { IconoBiblioteca } from "../ui/IconoBiblioteca";
 
 export type DatosCuentaBancaria = {
   banco: string;
@@ -460,7 +461,8 @@ export default function FormularioCuentaBancaria({
 
         <div className="space-y-4">
           <section className={panel} aria-labelledby="titulo-qr">
-            <h3 id="titulo-qr" className="text-lg font-bold">
+            <h3 id="titulo-qr" className="flex items-center gap-2 text-lg font-bold">
+              <IconoBiblioteca nombre="camara" className="size-5 text-blue-800" />
               QR de cobro <span className="font-normal">(opcional)</span>
             </h3>
 
@@ -468,18 +470,28 @@ export default function FormularioCuentaBancaria({
               Sube el código QR proporcionado por el banco.
             </p>
 
-            <input
-              ref={archivoRef}
-              id="archivo-qr"
-              type="file"
-              accept="image/jpeg,image/png"
-              onChange={(evento) => seleccionarQR(evento.target.files?.[0])}
-              className="mt-4 block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-blue-800 hover:file:bg-blue-100"
-            />
-
-            <p className="mt-2 text-xs text-slate-500">
-              JPG o PNG, máximo 5 MB.
-            </p>
+            <label
+              htmlFor="archivo-qr"
+              className="mt-4 flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-blue-200 bg-blue-50/40 p-4 text-center transition hover:border-blue-400 hover:bg-blue-50"
+            >
+              <span className="mb-2 inline-flex size-10 items-center justify-center rounded-full bg-white text-blue-700 shadow-xs">
+                <IconoBiblioteca nombre="subir" className="size-5" />
+              </span>
+              <span className="text-sm font-medium text-blue-900">
+                Haz clic para seleccionar la imagen QR
+              </span>
+              <span className="mt-1 text-xs text-slate-500">
+                JPG o PNG, máximo 5 MB.
+              </span>
+              <input
+                ref={archivoRef}
+                id="archivo-qr"
+                type="file"
+                accept="image/jpeg,image/png"
+                onChange={(evento) => seleccionarQR(evento.target.files?.[0])}
+                className="sr-only"
+              />
+            </label>
 
             {vistaQR && (
               <div className="mt-4 rounded-lg border border-dashed border-blue-300 bg-blue-50/40 p-4 text-center">
@@ -516,7 +528,8 @@ export default function FormularioCuentaBancaria({
           </section>
 
           <section className={panel} aria-labelledby="titulo-previa">
-            <h3 id="titulo-previa" className="text-lg font-bold">
+            <h3 id="titulo-previa" className="flex items-center gap-2 text-lg font-bold">
+              <IconoBiblioteca nombre="ojo" className="size-5 text-blue-800" />
               Vista previa de la cuenta
             </h3>
 
@@ -557,8 +570,9 @@ export default function FormularioCuentaBancaria({
 
         <button
           type="submit"
-          className="min-h-11 rounded-md bg-red-600 px-6 py-2 text-sm font-semibold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-red-600 px-6 py-2 text-sm font-semibold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
         >
+          <IconoBiblioteca nombre="guardar" className="size-4" />
           {guardando ? 'Guardando…' : 'Guardar cuenta'}
         </button>
       </div>

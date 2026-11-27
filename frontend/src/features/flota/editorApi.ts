@@ -32,6 +32,13 @@ export interface GrupoCooperativa {
   buses?: number;
   frecuencias?: number;
 }
+export interface OficinaCooperativa {
+  id: string;
+  nombre: string;
+  direccion: string;
+  telefono: string;
+  activa: boolean;
+}
 export interface BusResumenFlota {
   id: string;
   unidad: string;
@@ -53,6 +60,9 @@ export interface CatalogosEditor {
   grupos: { id: string; nombre: string }[];
   clases: ClaseAsiento[];
   servicios: { id: string; nombre: string }[];
+  chasis?: string[];
+  carrocerias?: string[];
+  ambitoOperacion?: 'INTERPROVINCIAL' | 'URBANA' | 'RURAL';
 }
 export const editorApi = {
   ambitos: (permiso: string) => http<{ cooperativas: { id: string; nombre: string }[] }>('/mikel/ambitos/' + encodeURIComponent(permiso)),
@@ -69,4 +79,7 @@ export const editorApi = {
   crearGrupo: (datos: Omit<GrupoCooperativa, 'id' | 'buses' | 'frecuencias'>, cooperativaId?: string) => http<{ grupo: GrupoCooperativa; mensaje: string }>(ambito('/mikel/grupos', cooperativaId), { method: 'POST', body: JSON.stringify(datos) }),
   actualizarGrupo: (id: string, datos: Omit<GrupoCooperativa, 'id' | 'buses' | 'frecuencias'>, cooperativaId?: string) => guardar<{ grupo: GrupoCooperativa; mensaje: string }>(ambito(`grupos/${encodeURIComponent(id)}`, cooperativaId), datos),
   guardarCompatibilidades: (datos: CompatibilidadGrupos, cooperativaId?: string) => guardar<CompatibilidadGrupos>(ambito('compatibilidades', cooperativaId), datos),
+  listarOficinas: (cooperativaId?: string) => http<{ oficinas: OficinaCooperativa[] }>(ambito('/mikel/oficinas', cooperativaId)),
+  crearOficina: (datos: Omit<OficinaCooperativa, 'id'>, cooperativaId?: string) => http<{ oficina: OficinaCooperativa; mensaje: string }>(ambito('/mikel/oficinas', cooperativaId), { method: 'POST', body: JSON.stringify(datos) }),
+  actualizarOficina: (id: string, datos: Omit<OficinaCooperativa, 'id'>, cooperativaId?: string) => guardar<{ oficina: OficinaCooperativa; mensaje: string }>(ambito(`oficinas/${encodeURIComponent(id)}`, cooperativaId), datos),
 };

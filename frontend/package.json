@@ -10,7 +10,8 @@
     "dev": "vite",
     "check": "tsc --noEmit",
     "build": "npm run check && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node ../backend/node_modules/tsx/dist/cli.mjs --tsconfig tsconfig.json --test tests/*.test.ts && node --test tests/*.test.mjs"
   },
   "dependencies": {
     "@fortawesome/free-brands-svg-icons": "7.3.1",
