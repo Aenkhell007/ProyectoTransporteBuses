@@ -286,11 +286,13 @@ function FormularioContactoTarjeta() {
             He leído y acepto la{" "}
             <a
               href="/privacidad"
+              target="_blank"
+              rel="noopener noreferrer"
               className="font-semibold text-red-700 hover:underline focus-visible:outline-2 focus-visible:outline-blue-600"
             >
               Política de Privacidad
             </a>
-            .
+            {" "}(abre en otra pestaña).
           </span>
         </label>
         {ayuda("consentimiento")}

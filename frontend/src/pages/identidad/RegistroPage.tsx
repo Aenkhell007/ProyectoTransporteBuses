@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { Link } from "react-router";
 import { authApi } from "../../services/authApi";
-import { POLITICA_PRIVACIDAD } from "../../features/privacidad/politicaPrivacidad";
+import { ContenidoPoliticaPrivacidad } from "../../features/privacidad/ContenidoPoliticaPrivacidad";
 import "./registro.css";
 import { PresentacionAuth } from "../../components/auth/PresentacionAuth";
 
@@ -112,11 +112,7 @@ export default function RegistroPage() {
                 <p>Esta versión permite probar la creación de cuentas y el acceso al proyecto. No realiza compras reales. Los términos definitivos están pendientes de publicación.</p>
               </> : <>
                 <strong>Política de privacidad de la versión académica</strong>
-                <p>Versión {POLITICA_PRIVACIDAD.version} · <time dateTime={POLITICA_PRIVACIDAD.fecha}>{new Intl.DateTimeFormat("es-EC", { dateStyle: "long", timeZone: "UTC" }).format(new Date(POLITICA_PRIVACIDAD.fecha))}</time></p>
-                {POLITICA_PRIVACIDAD.secciones.map(({ titulo, texto }) => (
-                  <p key={titulo}><strong>{titulo}. </strong>{texto}</p>
-                ))}
-                <p><strong>Solicitud de eliminación. </strong>{POLITICA_PRIVACIDAD.solicitudEliminacion} <a href={`mailto:${POLITICA_PRIVACIDAD.contacto}`}>{POLITICA_PRIVACIDAD.contacto}</a>.</p>
+                <ContenidoPoliticaPrivacidad />
               </>}
             </div>}
             {error && <p role="alert" className="registro-error">{error}</p>}

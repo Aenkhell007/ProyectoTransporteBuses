@@ -1,3 +1,5 @@
+import { POLITICA_PRIVACIDAD } from "../privacidad/politicaPrivacidad";
+
 // Límites de la tabla contactos y regla de correo de enviar_contacto().
 export const LIMITES_CONTACTO = {
   nombre: 150,
@@ -6,8 +8,7 @@ export const LIMITES_CONTACTO = {
   mensaje: 4000,
 } as const;
 
-/** Identificador de la versión de la política aceptada; el equipo debe publicar la definitiva. */
-export const VERSION_POLITICA_PRIVACIDAD = "privacidad-borrador-2026-10";
+export const VERSION_POLITICA_PRIVACIDAD = POLITICA_PRIVACIDAD.version;
 
 const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
