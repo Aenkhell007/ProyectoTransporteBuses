@@ -39,7 +39,8 @@ async function solicitar<T>(ruta: string, opciones: RequestInit = {}): Promise<T
 
   if (!respuesta.ok) {
     avisarSesionVencida(respuesta.status);
-    const detalle = ['/reservas/','/mikel/','/oficina/','/admin/','/configuracion/pagos','/identidad/','/operacion/'].some(prefijo=>ruta.startsWith(prefijo)) && [403, 409, 413, 422, 503].includes(respuesta.status)
+    const detalleAbordaje = ruta.startsWith('/abordaje/') && [400, 403, 404, 409, 413, 422, 503].includes(respuesta.status);
+    const detalle = detalleAbordaje || ['/reservas/','/mikel/','/oficina/','/admin/','/configuracion/pagos','/identidad/','/operacion/'].some(prefijo=>ruta.startsWith(prefijo)) && [403, 409, 413, 422, 503].includes(respuesta.status)
       ? await respuesta.json().catch(() => null) as { error?: unknown } | null : null;
     throw new ApiError(
       respuesta.status,

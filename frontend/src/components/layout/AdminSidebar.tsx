@@ -36,17 +36,22 @@ const seccionesCooperativa = [
 interface AdminSidebarProps {
   sinLogo?: boolean;
   variant: "admin" | "oficina" | "cooperativa";
+  puedeVerAbordaje?: boolean;
   puedeSalir: boolean;
   saliendo: boolean;
   onSalir: () => void;
 }
 
-export function AdminSidebar({ sinLogo = false, variant, puedeSalir, saliendo, onSalir }: AdminSidebarProps) {
+export function AdminSidebar({ sinLogo = false, variant, puedeVerAbordaje = false, puedeSalir, saliendo, onSalir }: AdminSidebarProps) {
   const [abierto, setAbierto] = useState(false);
   const menuId = useId();
   const botonMenu = useRef<HTMLButtonElement>(null);
   const oficina = variant === "oficina";
-  const secciones = variant === "cooperativa" ? seccionesCooperativa : oficina ? seccionesOficina : seccionesAdmin;
+  const seccionesPanel = variant === "cooperativa" ? seccionesCooperativa : oficina ? seccionesOficina : seccionesAdmin;
+
+  const secciones = puedeVerAbordaje
+    ? [...seccionesPanel, { ruta: "/abordaje", nombre: "Abordaje QR" }]
+    : seccionesPanel;
 
   return (
     <aside
@@ -89,7 +94,7 @@ export function AdminSidebar({ sinLogo = false, variant, puedeSalir, saliendo, o
                   onClick={() => setAbierto(false)}
                   className={({ isActive }) => `flex min-h-11 items-center gap-3 rounded-md px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${isActive ? "bg-[#e6001c] text-white" : "text-indigo-50 hover:bg-white/10"}`}
                 >
-                  <IconoBiblioteca nombre={({'.':'inicio',cooperativas:'personas',usuarios:'persona',reportes:'grafico',configuracion:'configuracion',ventas:'ventas',reservas:'calendario',comprobantes:'documento',reembolsos:'reembolso',buses:'bus',grupos:'personas',frecuencias:'calendario','hoja-ruta':'ruta',personal:'personas'} as Record<string,NombreIconoBiblioteca>)[ruta]??'persona'}/>
+                  <IconoBiblioteca nombre={({'.':'inicio',cooperativas:'personas',usuarios:'persona',reportes:'grafico',configuracion:'configuracion',ventas:'ventas',reservas:'calendario',comprobantes:'documento',reembolsos:'reembolso','/abordaje':'documento',buses:'bus',grupos:'personas',frecuencias:'calendario','hoja-ruta':'ruta',personal:'personas'} as Record<string,NombreIconoBiblioteca>)[ruta]??'persona'}/>
 
                   {nombre}
                 </NavLink>

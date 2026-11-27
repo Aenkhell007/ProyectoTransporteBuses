@@ -68,6 +68,7 @@ export default function AdminLayout({
             <AdminSidebar
               sinLogo={panelFijo}
               variant={variant}
+              puedeVerAbordaje={!!usuario && accesoPanel("abordaje", usuario.roles, usuario.permisos)}
               puedeSalir={!!usuario}
               saliendo={saliendo}
               onSalir={cerrarSesion}

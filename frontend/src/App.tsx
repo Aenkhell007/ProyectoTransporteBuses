@@ -12,6 +12,7 @@ import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { InicioPage } from "./pages/compra/InicioPage";
 import { PrivacidadPage } from "./pages/compra/PrivacidadPage";
 
+const ValidarAbordajePage = lazy(() => import("./pages/abordaje/ValidarAbordajePage"));
 const ReportesAuditoria = lazy(() => import('./features/operacion/ReportesAuditoria'));
 const PoliticaReembolso = lazy(() => import('./features/operacion/PoliticaReembolso'));
 const CooperativaResumen = lazy(() => import('./features/operacion/CooperativaResumen'));
@@ -218,6 +219,7 @@ function RutasAplicacion() {
           />
         )}
         <Route path="/mi-cuenta" element={<MiCuenta />} />
+        <Route path="/abordaje" element={<ValidarAbordajePage key={usuario?.id} />} />
         <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
         <Route
           path="/restablecer-contrasena"
