@@ -4,6 +4,7 @@ import { sesionOficina, ErrorOficina } from "./acceso";
 import { accesoOficina, alcanceReserva } from "./consultas";
 import { uuid } from "../pagos/validacion";
 import { emitir, limpiarTrasError } from "../pagos/router";
+import { dispararEntregas } from "../pagos/entregaBoletos";
 export const ventasRouter = Router();
 ventasRouter.post("/oficina/ventas/reservas", async (req, res, next) => {
   try {
@@ -120,6 +121,7 @@ ventasRouter.post("/oficina/ventas/:id/cobro", async (req, res, next) => {
       await emitir(db, compra, creados);
       return { compra_id: compra, reserva_id: id };
     });
+    dispararEntregas();
     res.json(datos);
   } catch (e) {
     await limpiarTrasError(req, creados);

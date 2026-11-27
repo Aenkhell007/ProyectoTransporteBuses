@@ -20,7 +20,7 @@ export async function generarBoleto(datos: DatosPago, marca: MarcaBoleto = {}): 
     throw new Error("Compra no emitible");
   const qr = await QRCode.toBuffer(datos.documento.qrId, {
     width: 240,
-    margin: 2,
+    margin: 4,
     errorCorrectionLevel: "M",
   });
   const doc = new PDFDocument({
@@ -53,7 +53,7 @@ export async function generarBoleto(datos: DatosPago, marca: MarcaBoleto = {}): 
   doc
     .fontSize(10)
     .text(`Código: ${datos.compra.codigo}`, 42, doc.y + 12, { width: 370 });
-  doc.image(qr, 440, 40, { width: 110 });
+  doc.image(qr, 434, 40, { width: 120 });
   doc.y = Math.max(doc.y + 20, 170);
   const v = datos.viaje;
   for (const linea of [
@@ -65,7 +65,7 @@ export async function generarBoleto(datos: DatosPago, marca: MarcaBoleto = {}): 
     `${v.chasis} | ${v.carroceria}`,
   ])
     doc.fontSize(11).text(texto(linea), 42, doc.y + 6, { width: 510 });
-  doc.moveDown().fontSize(14).text("Pasajeros y asientos");
+  doc.moveDown().fillColor(primario).fontSize(14).text("Pasajeros y asientos");
   for (const p of datos.pasajeros) {
     if (doc.y > 650) doc.addPage();
     doc
@@ -82,7 +82,9 @@ export async function generarBoleto(datos: DatosPago, marca: MarcaBoleto = {}): 
       .fillColor("#444444")
       .text(texto(`Documento: ${p.documento} | ${p.categoria}`));
     doc.text(
-      `Tarifa ${dinero(p.tarifaCentavos)} | Descuento ${dinero(p.descuentoCentavos)} | Total ${dinero(p.tarifaCentavos - p.descuentoCentavos + p.servicioCentavos + p.ivaCentavos)}`,
+      `Tarifa ${dinero(p.tarifaCentavos)} | Descuento ${dinero(p.descuentoCentavos)} | ` +
+      `Servicio ${dinero(p.servicioCentavos)} | IVA ${dinero(p.ivaCentavos)} | ` +
+      `Total ${dinero(p.tarifaCentavos - p.descuentoCentavos + p.servicioCentavos + p.ivaCentavos)}`,
     );
   }
   if (datos.reembolsos?.cancelados.length) {

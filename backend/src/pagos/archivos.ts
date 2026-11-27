@@ -30,11 +30,14 @@ export async function guardarArchivo(
   await writeFile(ruta, datos, { flag: "wx", mode: 0o600 });
   creados.push(clave);
   const hash = createHash("sha256").update(datos).digest("hex");
-  await db.query(
+  const insertado = await db.query(
     `INSERT INTO transporte.archivos(id,propietario_id,cooperativa_id,categoria,ruta_privada,mime,bytes,sha256,validado_servidor)
     SELECT $1,transporte.actor(),r.cooperativa_id,$2,$3,$4,$5,$6,true FROM transporte.reservas r WHERE r.id=$7`,
     [id, categoria, clave, mime, datos.length, hash, reservaId],
   );
+  if (insertado.rowCount !== 1) {
+    throw new ErrorPago(404, "Reserva no disponible para registrar el archivo.");
+  }
   return id;
 }
 export async function borrarCreados(claves: string[]) {
